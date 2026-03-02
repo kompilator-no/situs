@@ -107,6 +107,13 @@ public class RunnerService {
             .toList();
     }
 
+    public List<RunRecord> all(String testId, RunState state, int limit, int offset) {
+        return all(testId, state).stream()
+            .skip(offset)
+            .limit(limit)
+            .toList();
+    }
+
     public RunSummary summary() {
         int queued = 0;
         int running = 0;
