@@ -1,8 +1,0 @@
-[workspace]
-members = [
-  "framework-core",
-  "transport-kafka",
-  "transport-http",
-  "transport-websocket",
-]
-resolver = "2"
