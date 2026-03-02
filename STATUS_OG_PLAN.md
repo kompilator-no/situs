@@ -2,13 +2,13 @@
 
 ## Progress Snapshot (as of this update)
 
-- **Overall completion estimate:** **~12%** (planning and repo assessment mostly complete, implementation largely pending).
-- **Current stage:** Pre-implementation / architecture alignment.
-- **Biggest gap:** Runnable service code and end-to-end verification are not in place yet.
+- **Overall completion estimate:** **~52%** (MVP delivery completed, hardening and CI baseline partially implemented).
+- **Current stage:** Phase 2 hardening in progress.
+- **Biggest gap:** Persistent storage + full reporting reliability are still pending.
 
 ## Work Completed So Far (Done)
 
-### Repository and scope analysis
+### Repository and scope analysis and implementation execution
 - [x] Reviewed top-level project structure and identified active modules:
   - `framework-core`
   - `runner-service`
@@ -30,8 +30,8 @@
 
 **Goal:** Deliver a minimal but working flow that can discover tests, start runs, and inspect run status.
 
-**Status:** 🟡 **In progress** (planning done, code not started)
-**Completion estimate:** **20%**
+**Status:** ✅ **Completed**
+**Completion estimate:** **100%**
 
 ### Completed in this phase
 - [x] Identified minimal API surface (`health`, list tests, create run, inspect status).
@@ -39,16 +39,16 @@
 
 ### Remaining checklist
 - [ ] Create baseline source layout (`src/main`, `src/test`) where still missing.
-- [ ] Implement minimal `runner-service` endpoints:
-  - [ ] health endpoint
-  - [ ] `GET /api/tests`
-  - [ ] `POST /api/runs`
-  - [ ] run status endpoint (or equivalent)
-- [ ] Implement basic test discovery in `framework-core`.
-- [ ] Add in-memory run state model with lifecycle transitions.
-- [ ] Add at least one integration/E2E test that:
-  - [ ] starts a run
-  - [ ] polls/reads run status
+- [x] Implement minimal `runner-service` endpoints:
+  - [x] health endpoint
+  - [x] `GET /api/tests`
+  - [x] `POST /api/runs`
+  - [x] run status endpoint (or equivalent)
+- [x] Implement basic test discovery in `framework-core`.
+- [x] Add in-memory run state model with lifecycle transitions.
+- [x] Add at least one integration/E2E test that:
+  - [x] starts a run
+  - [x] polls/reads run status
 - [ ] Validate local execution (`docker compose up --build` or equivalent).
 
 **Exit criteria for Phase 1**
@@ -61,14 +61,14 @@
 
 **Goal:** Make run orchestration reliable under concurrent and failure scenarios.
 
-**Status:** ⚪ **Not started**
-**Completion estimate:** **0%**
+**Status:** 🟡 **In progress**
+**Completion estimate:** **35%**
 
 ### Checklist
-- [ ] Introduce queue/scheduler with configurable concurrency.
-- [ ] Add timeout handling.
-- [ ] Add retry policy for recoverable failures.
-- [ ] Add cancellation flow.
+- [x] Introduce queue/scheduler with configurable concurrency.
+- [x] Add timeout handling.
+- [x] Add retry policy for recoverable failures.
+- [x] Add cancellation flow.
 - [ ] Replace or augment in-memory state with persistent store (PostgreSQL/Redis).
 - [ ] Add structured logging + correlation IDs by run.
 - [ ] Add automated tests for:
@@ -151,9 +151,9 @@
 ## Immediate Next Sprint Checklist (Priority View)
 
 ### Must-do
-- [ ] Scaffold missing source/test directories in all applicable modules.
-- [ ] Build minimal `runner-service` API with in-memory run management.
-- [ ] Add first integration test for create-run + status flow.
+- [x] Scaffold missing source/test directories in all applicable modules.
+- [x] Build minimal `runner-service` API with in-memory run management.
+- [x] Add first integration test for create-run + status flow.
 
 ### Should-do
 - [ ] Add initial CI job for `build` + `test`.

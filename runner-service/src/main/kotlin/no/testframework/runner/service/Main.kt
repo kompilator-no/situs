@@ -5,13 +5,13 @@ import no.testframework.transport.kafka.KafkaTransportClient
 import no.testframework.transport.websocket.WebSocketTransportStep
 
 fun main() {
-    RunnerService(
-        transports = listOf(
+    TransportBootstrap(
+        listOf(
             HttpTransportStep(),
             KafkaTransportClient(),
             WebSocketTransportStep(),
         ),
-    ).start()
+    ).verifyCompatibility()
 
     println("Runner service started")
 }
