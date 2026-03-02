@@ -98,6 +98,27 @@ Environment can be controlled via `sample-app/src/main/resources/application.yam
 - `RUNNER_OPAQUE_CLIENT_ID`
 - `RUNNER_OPAQUE_CLIENT_SECRET`
 
+
+## Run history retention
+
+`RunnerProperties` now supports history retention controls for completed runs:
+
+- `historyTtl` (default: `PT24H`): terminal runs older than this are eligible for cleanup.
+- `maxRunRecords` (default: `10000`): hard cap for terminal history; oldest completed runs are evicted first.
+- `cleanupInterval` (default: `PT5M`, nullable): if set, periodic cleanup runs in the background; if `null`, cleanup is performed on write and list operations.
+
+Operational tradeoffs:
+
+- Lower TTL/cap values reduce memory usage but shorten audit/debug history.
+- Background cleanup (`cleanupInterval`) smooths write latency but can do extra work on idle systems.
+- On-write/on-read compaction keeps behavior deterministic without scheduler dependency but adds small overhead to hot paths.
+- Active runs (`QUEUED`/`RUNNING`) are never evicted by retention cleanup.
+
+Run summary counters now include cleanup metrics:
+
+- `expiredDeleted`: how many TTL-expired terminal records were removed by the last compaction.
+- `retainedCount`: number of terminal records kept after retention is applied.
+
 ## Container
 
 Build and run:
