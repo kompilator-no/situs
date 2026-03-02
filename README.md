@@ -1,4 +1,22 @@
-# runner-service
+# Test Framework for Spring Boot (HTTP + Kafka)
+
+This project is a **test library for Spring Boot applications**, built to run regression tests against a test environment.
+
+The framework supports:
+
+- end-to-end test execution
+- HTTP-based test steps
+- Kafka-based test steps
+- orchestration with queueing, retries, timeouts, and cancellation
+
+## What is included
+
+- `runnerlib` (Spring Boot integration) for test discovery and run execution APIs.
+- `framework-core` for reusable DSL and test flow models.
+- `transport-http` and `transport-kafka` for transport-specific end-to-end steps.
+- `sample-app` as a reference Spring Boot application that uses the library.
+
+## runner-service
 
 Spring Boot service that discovers test definitions, exposes execution APIs, and handles queue/scheduler behavior with retries, timeouts, and cancellation.
 
