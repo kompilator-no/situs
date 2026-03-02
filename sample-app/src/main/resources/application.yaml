@@ -8,7 +8,15 @@ runner:
   queue-capacity: ${RUNNER_QUEUE_CAPACITY:100}
   default-timeout: ${RUNNER_DEFAULT_TIMEOUT:PT5M}
   default-retries: ${RUNNER_DEFAULT_RETRIES:1}
-  idempotency-window: ${RUNNER_IDEMPOTENCY_WINDOW:PT10M}
+  security:
+    jwt:
+      issuer-uri: ${RUNNER_JWT_ISSUER_URI:http://localhost:8083/realms/testframework}
+      audience: ${RUNNER_JWT_AUDIENCE:runner-service}
+    opaque:
+      enabled: ${RUNNER_OPAQUE_ENABLED:false}
+      introspection-uri: ${RUNNER_OPAQUE_INTROSPECTION_URI:http://localhost:8083/oauth2/introspect}
+      client-id: ${RUNNER_OPAQUE_CLIENT_ID:runner-service}
+      client-secret: ${RUNNER_OPAQUE_CLIENT_SECRET:change-me}
 
 integration:
   kafka:
