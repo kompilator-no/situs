@@ -1,8 +1,12 @@
 package no.testframework.runnerlib.execution;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,6 +33,7 @@ public class RunnerService {
 
     private final ThreadPoolExecutor executor;
     private final ConcurrentMap<UUID, RunRecord> records = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, UUID> idempotencyIndex = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, Future<?>> futures = new ConcurrentHashMap<>();
     private final TestDefinitionRegistry registry;
     private final ObjectProvider<TestDefinition> testDefinitions;
@@ -50,17 +55,39 @@ public class RunnerService {
             new ThreadPoolExecutor.AbortPolicy());
     }
 
-    public UUID start(String testId, Integer retries, Duration timeout, Map<String, Object> context) {
+    public UUID start(String testId,
+                      Integer retries,
+                      Duration timeout,
+                      Map<String, Object> context,
+                      String idempotencyKey) {
         registry.requireDefinition(testId);
+
+        int resolvedRetries = retries != null ? retries : properties.getDefaultRetries();
+        Duration resolvedTimeout = timeout != null ? timeout : properties.getDefaultTimeout();
+        Map<String, Object> resolvedContext = context != null ? context : Map.of();
+        String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
+        String payloadFingerprint = fingerprint(testId, resolvedRetries, resolvedTimeout, resolvedContext);
+
+        if (normalizedKey != null) {
+            UUID duplicateRunId = handleIdempotencyCheck(normalizedKey, payloadFingerprint);
+            if (duplicateRunId != null) {
+                return duplicateRunId;
+            }
+        }
 
         UUID runId = UUID.randomUUID();
         RunRecord record = new RunRecord(
             runId,
             testId,
-            retries != null ? retries : properties.getDefaultRetries(),
-            timeout != null ? timeout : properties.getDefaultTimeout(),
-            context != null ? context : Map.of());
+            resolvedRetries,
+            resolvedTimeout,
+            resolvedContext,
+            normalizedKey,
+            payloadFingerprint);
         records.put(runId, record);
+        if (normalizedKey != null) {
+            idempotencyIndex.put(normalizedKey, runId);
+        }
 
         try {
             Future<?> future = executor.submit(() -> executeWithPolicies(record));
@@ -68,7 +95,55 @@ public class RunnerService {
             return runId;
         } catch (RejectedExecutionException e) {
             records.remove(runId);
+            if (normalizedKey != null) {
+                idempotencyIndex.remove(normalizedKey, runId);
+            }
             throw new QueueFullException("Execution queue is full. Try again later.");
+        }
+    }
+
+    private UUID handleIdempotencyCheck(String idempotencyKey, String payloadFingerprint) {
+        UUID existingRunId = idempotencyIndex.get(idempotencyKey);
+        if (existingRunId == null) {
+            return null;
+        }
+        RunRecord existing = records.get(existingRunId);
+        if (existing == null) {
+            idempotencyIndex.remove(idempotencyKey, existingRunId);
+            return null;
+        }
+        Duration window = properties.getIdempotencyWindow();
+        if (window != null && !window.isNegative() && !window.isZero()) {
+            Instant expiresAt = existing.getCreatedAt().plus(window);
+            if (Instant.now().isAfter(expiresAt)) {
+                idempotencyIndex.remove(idempotencyKey, existingRunId);
+                return null;
+            }
+        }
+
+        if (!payloadFingerprint.equals(existing.getIdempotencyFingerprint())) {
+            throw new IdempotencyConflictException("Idempotency key is already used with a different run payload.");
+        }
+
+        return existing.getRunId();
+    }
+
+    private String normalizeIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null) {
+            return null;
+        }
+        String trimmed = idempotencyKey.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String fingerprint(String testId, int retries, Duration timeout, Map<String, Object> context) {
+        String payload = testId + "|" + retries + "|" + timeout + "|" + String.valueOf(context);
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(payload.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
         }
     }
 

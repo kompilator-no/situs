@@ -8,6 +8,7 @@ runner:
   queue-capacity: ${RUNNER_QUEUE_CAPACITY:100}
   default-timeout: ${RUNNER_DEFAULT_TIMEOUT:PT5M}
   default-retries: ${RUNNER_DEFAULT_RETRIES:1}
+  idempotency-window: ${RUNNER_IDEMPOTENCY_WINDOW:PT10M}
 
 integration:
   kafka:
