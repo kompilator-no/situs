@@ -1,5 +1,16 @@
 package no.testframework.runner.service
 
-class RunnerService {
+import no.testframework.framework.core.transport.TransportClient
+import no.testframework.framework.core.transport.TransportCompatibility
+
+class RunnerService(
+    private val transports: List<TransportClient>,
+) {
+    fun start() {
+        transports.forEach { transport ->
+            TransportCompatibility.requireCompatible(transport.metadata)
+        }
+    }
+
     fun describe() = "Executable service for test environments"
 }

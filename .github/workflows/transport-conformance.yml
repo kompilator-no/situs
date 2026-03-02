@@ -1,0 +1,20 @@
+name: transport-conformance
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run shared transport contract tests
+        run: ./gradlew :transport-http:test :transport-kafka:test :transport-websocket:test --tests '*ContractTest*'
