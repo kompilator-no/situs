@@ -126,5 +126,8 @@ export OTEL_LOG_LEVEL=debug
 Then start the sample app and call `POST /api/runs` with a correlation id:
 
 ```bash
-curl -X POST http://localhost:8080/api/runs   -H 'Content-Type: application/json'   -H 'X-Correlation-Id: demo-correlation-1'   -d '{"testId":"smoke-test"}'
+curl -X POST http://localhost:8080/api/runs \
+  -H 'Content-Type: application/json' \
+  -H 'X-Correlation-Id: demo-correlation-1' \
+  -d '{"testId":"smoke-test"}'
 ```

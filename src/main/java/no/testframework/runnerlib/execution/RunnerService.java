@@ -186,6 +186,13 @@ public class RunnerService {
             } catch (Exception e) {
                 run.setErrorType(e.getClass().getSimpleName());
                 run.setDetail("Attempt " + attempt + " failed: " + e.getMessage());
+                if (attempt > run.getMaxRetries()) {
+                    run.setState(RunState.COMPLETED);
+                    run.setFinishedAt(Instant.now());
+                    futures.remove(run.getRunId());
+                    emitEvent(run, RunState.COMPLETED, null);
+                    return;
+                }
             }
         }
 
