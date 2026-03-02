@@ -24,17 +24,16 @@ data class RunRecord(
     val testId: String,
     val state: RunState,
     val createdAt: Instant,
-    val finishedAt: Instant? = null
+    val finishedAt: Instant? = null,
 )
 
 data class CleanupMetrics(
     val expiredDeleted: Int,
-    val retainedCount: Int
+    val retainedCount: Int,
 )
 
 private data class CleanupResult(
     val expiredDeleted: Int,
-    val overflowDeleted: Int
 )
 
 data class RunSummary(
@@ -43,12 +42,12 @@ data class RunSummary(
     val running: Int,
     val completed: Int,
     val expiredDeleted: Int,
-    val retainedCount: Int
+    val retainedCount: Int,
 )
 
 data class RunsPage(
     val records: List<RunRecord>,
-    val nextToken: String?
+    val nextToken: String?,
 )
 
 private data class PageToken(val snapshotId: String, val offset: Int) {
@@ -65,7 +64,7 @@ private data class PageToken(val snapshotId: String, val offset: Int) {
 
 class RunnerService(
     private val properties: RunnerProperties = RunnerProperties(),
-    private val clock: Clock = Clock.systemUTC()
+    private val clock: Clock = Clock.systemUTC(),
 ) : AutoCloseable {
 
     private val runs = mutableListOf<RunRecord>()
@@ -100,7 +99,7 @@ class RunnerService(
             running = current.count { it.state == RunState.RUNNING },
             completed = current.count { it.state.isTerminal },
             expiredDeleted = lastCleanupMetrics.expiredDeleted,
-            retainedCount = lastCleanupMetrics.retainedCount
+            retainedCount = lastCleanupMetrics.retainedCount,
         )
     }
 
@@ -108,14 +107,26 @@ class RunnerService(
      * Backing logic for GET /api/runs with stable snapshot pagination.
      * If records expire between page calls, next pages still use the original snapshot.
      */
-    fun listRuns(limit: Int, pageToken: String? = null): RunsPage = synchronized(this) {
+    fun listRuns(
+        limit: Int,
+        pageToken: String? = null,
+        testId: String? = null,
+        state: RunState? = null,
+    ): RunsPage = synchronized(this) {
         require(limit > 0) { "limit must be > 0" }
         compactLocked()
 
         val token = pageToken?.let(PageToken::decode)
         val (snapshotId, offset) = if (token == null) {
             val newSnapshotId = UUID.randomUUID().toString()
-            snapshots[newSnapshotId] = runs.sortedByDescending { it.createdAt }.map { it.runId }
+            val filtered = runs
+                .asSequence()
+                .filter { testId == null || it.testId == testId }
+                .filter { state == null || it.state == state }
+                .sortedByDescending { it.createdAt }
+                .map { it.runId }
+                .toList()
+            snapshots[newSnapshotId] = filtered
             newSnapshotId to 0
         } else {
             token.snapshotId to token.offset
@@ -131,7 +142,7 @@ class RunnerService(
         }
         RunsPage(
             records = selected,
-            nextToken = if (hasNext) PageToken(snapshotId, nextOffset).encode() else null
+            nextToken = if (hasNext) PageToken(snapshotId, nextOffset).encode() else null,
         )
     }
 
@@ -144,7 +155,7 @@ class RunnerService(
                 { synchronized(this) { compactLocked() } },
                 interval.toMillis(),
                 interval.toMillis(),
-                TimeUnit.MILLISECONDS
+                TimeUnit.MILLISECONDS,
             )
         }
     }
@@ -153,7 +164,7 @@ class RunnerService(
         val result = compactRunsLocked(clock.instant())
         lastCleanupMetrics = CleanupMetrics(
             expiredDeleted = result.expiredDeleted,
-            retainedCount = runs.count { it.state.isTerminal }
+            retainedCount = runs.count { it.state.isTerminal },
         )
         return lastCleanupMetrics
     }
@@ -161,8 +172,10 @@ class RunnerService(
     private fun compactRunsLocked(now: Instant): CleanupResult {
         var expiredDeleted = 0
         runs.removeIf {
-            val shouldExpire = it.state.isTerminal && it.finishedAt != null &&
-                !it.finishedAt.plus(properties.historyTtl).isAfter(now)
+            val shouldExpire =
+                it.state.isTerminal &&
+                    it.finishedAt != null &&
+                    !it.finishedAt.plus(properties.historyTtl).isAfter(now)
             if (shouldExpire) {
                 expiredDeleted++
             }
@@ -173,35 +186,15 @@ class RunnerService(
             .sortedBy { it.finishedAt ?: Instant.EPOCH }
 
         val overflow = terminal.size - properties.maxRunRecords
-        var overflowDeleted = 0
         if (overflow > 0) {
             val toRemove = terminal.take(overflow).map { it.runId }.toSet()
-            runs.removeIf { run ->
-                val remove = run.runId in toRemove
-                if (remove) {
-                    overflowDeleted++
-                }
-                remove
-            }
+            runs.removeIf { run -> run.runId in toRemove }
         }
 
-        return CleanupResult(expiredDeleted = expiredDeleted, overflowDeleted = overflowDeleted)
+        return CleanupResult(expiredDeleted = expiredDeleted)
     }
 
     override fun close() {
         scheduler?.shutdownNow()
     }
-import no.testframework.framework.core.transport.TransportClient
-import no.testframework.framework.core.transport.TransportCompatibility
-
-class RunnerService(
-    private val transports: List<TransportClient>,
-) {
-    fun start() {
-        transports.forEach { transport ->
-            TransportCompatibility.requireCompatible(transport.metadata)
-        }
-    }
-
-    fun describe() = "Executable service for test environments"
 }
