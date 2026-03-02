@@ -23,6 +23,8 @@ public class RunnerProperties {
     @Min(0)
     private int defaultRetries = 1;
 
+    private Duration idempotencyWindow = Duration.ofHours(24);
+
     private Security security = new Security();
 
     public List<String> getDiscoveryPackages() {
@@ -63,6 +65,14 @@ public class RunnerProperties {
 
     public void setDefaultRetries(int defaultRetries) {
         this.defaultRetries = defaultRetries;
+    }
+
+    public Duration getIdempotencyWindow() {
+        return idempotencyWindow;
+    }
+
+    public void setIdempotencyWindow(Duration idempotencyWindow) {
+        this.idempotencyWindow = idempotencyWindow;
     }
 
     public Security getSecurity() {

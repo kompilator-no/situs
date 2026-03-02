@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import no.testframework.runnerlib.config.RunnerProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -30,7 +32,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             RunnerProperties runnerProperties,
                                             JwtAuthenticationConverter jwtAuthenticationConverter,
-                                            OpaqueTokenIntrospector opaqueTokenIntrospector) throws Exception {
+                                            ObjectProvider<OpaqueTokenIntrospector> opaqueTokenIntrospectorProvider) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -39,7 +41,7 @@ public class SecurityConfig {
                 .anyRequest().permitAll())
             .oauth2ResourceServer(oauth2 -> {
                 if (runnerProperties.getSecurity().getOpaque().isEnabled()) {
-                    oauth2.opaqueToken(opaque -> opaque.introspector(opaqueTokenIntrospector));
+                    oauth2.opaqueToken(opaque -> opaque.introspector(opaqueTokenIntrospectorProvider.getObject()));
                 } else {
                     oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter));
                 }
@@ -76,6 +78,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(prefix = "runner.security.opaque", name = "enabled", havingValue = "true")
     OpaqueTokenIntrospector opaqueTokenIntrospector(RunnerProperties runnerProperties) {
         RunnerProperties.Security.Opaque opaque = runnerProperties.getSecurity().getOpaque();
         return new NimbusOpaqueTokenIntrospector(

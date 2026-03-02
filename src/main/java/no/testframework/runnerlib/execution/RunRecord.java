@@ -1,5 +1,6 @@
 package no.testframework.runnerlib.execution;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -10,7 +11,7 @@ public class RunRecord {
     private final UUID runId;
     private final String testId;
     private final int maxRetries;
-    private final java.time.Duration timeout;
+    private final Duration timeout;
     private final Map<String, Object> context;
     private final String correlationId;
     private final String traceId;
@@ -27,10 +28,10 @@ public class RunRecord {
     public RunRecord(UUID runId,
                      String testId,
                      int maxRetries,
-                     java.time.Duration timeout,
+                     Duration timeout,
                      Map<String, Object> context,
                      String correlationId,
-                     String traceId) {
+                     String traceId,
                      String idempotencyKey,
                      String idempotencyFingerprint) {
         this.runId = runId;
@@ -47,7 +48,7 @@ public class RunRecord {
     public UUID getRunId() { return runId; }
     public String getTestId() { return testId; }
     public int getMaxRetries() { return maxRetries; }
-    public java.time.Duration getTimeout() { return timeout; }
+    public Duration getTimeout() { return timeout; }
     public Map<String, Object> getContext() { return context; }
     public String getCorrelationId() { return correlationId; }
     public String getTraceId() { return traceId; }
@@ -71,6 +72,6 @@ public class RunRecord {
         if (startedAt == null || finishedAt == null) {
             return null;
         }
-        return java.time.Duration.between(startedAt, finishedAt).toMillis();
+        return Duration.between(startedAt, finishedAt).toMillis();
     }
 }
