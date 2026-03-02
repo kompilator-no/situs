@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.testframework.runnerlib.discovery.TestDefinitionRegistry;
+import no.testframework.runnerlib.execution.RunState;
+import no.testframework.runnerlib.execution.RunSummary;
 import no.testframework.runnerlib.execution.RunnerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -54,7 +57,13 @@ public class RunnerController {
     }
 
     @GetMapping("/runs")
-    public List<RunResponse> runs() {
-        return runnerService.all().values().stream().map(RunResponse::from).toList();
+    public List<RunResponse> runs(@RequestParam(required = false) String testId,
+                                  @RequestParam(required = false) RunState state) {
+        return runnerService.all(testId, state).stream().map(RunResponse::from).toList();
+    }
+
+    @GetMapping("/runs/summary")
+    public RunSummary summary() {
+        return runnerService.summary();
     }
 }

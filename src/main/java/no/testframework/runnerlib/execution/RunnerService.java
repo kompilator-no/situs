@@ -2,6 +2,8 @@ package no.testframework.runnerlib.execution;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -12,6 +14,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -59,9 +62,14 @@ public class RunnerService {
             context != null ? context : Map.of());
         records.put(runId, record);
 
-        Future<?> future = executor.submit(() -> executeWithPolicies(record));
-        futures.put(runId, future);
-        return runId;
+        try {
+            Future<?> future = executor.submit(() -> executeWithPolicies(record));
+            futures.put(runId, future);
+            return runId;
+        } catch (RejectedExecutionException e) {
+            records.remove(runId);
+            throw new QueueFullException("Execution queue is full. Try again later.");
+        }
     }
 
     public boolean stop(UUID runId) {
@@ -89,6 +97,28 @@ public class RunnerService {
 
     public Map<UUID, RunRecord> all() {
         return Map.copyOf(records);
+    }
+
+    public List<RunRecord> all(String testId, RunState state) {
+        return records.values().stream()
+            .filter(run -> testId == null || run.getTestId().equals(testId))
+            .filter(run -> state == null || run.getState() == state)
+            .sorted(Comparator.comparing(RunRecord::getCreatedAt).reversed())
+            .toList();
+    }
+
+    public RunSummary summary() {
+        int queued = 0;
+        int running = 0;
+        int completed = 0;
+        for (RunRecord run : records.values()) {
+            switch (run.getState()) {
+                case QUEUED -> queued++;
+                case RUNNING, RETRYING -> running++;
+                default -> completed++;
+            }
+        }
+        return new RunSummary(records.size(), queued, running, completed);
     }
 
     private void executeWithPolicies(RunRecord run) {
