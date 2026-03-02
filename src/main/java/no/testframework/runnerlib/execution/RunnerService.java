@@ -1,4 +1,4 @@
-package no.testframework.runner.execution;
+package no.testframework.runnerlib.execution;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -15,9 +15,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import no.testframework.runner.config.RunnerProperties;
-import no.testframework.runner.discovery.TestDefinitionRegistry;
-import no.testframework.runner.model.TestDefinition;
+import no.testframework.runnerlib.config.RunnerProperties;
+import no.testframework.runnerlib.discovery.TestDefinitionRegistry;
+import no.testframework.runnerlib.model.TestDefinition;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 

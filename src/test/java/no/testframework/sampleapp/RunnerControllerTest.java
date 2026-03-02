@@ -1,4 +1,4 @@
-package no.testframework.runner;
+package no.testframework.sampleapp;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;

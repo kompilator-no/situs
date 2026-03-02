@@ -1,9 +1,9 @@
-package no.testframework.runner.api;
+package no.testframework.runnerlib.api;
 
 import java.time.Instant;
 import java.util.UUID;
-import no.testframework.runner.execution.RunRecord;
-import no.testframework.runner.execution.RunState;
+import no.testframework.runnerlib.execution.RunRecord;
+import no.testframework.runnerlib.execution.RunState;
 
 public record RunResponse(
     UUID runId,

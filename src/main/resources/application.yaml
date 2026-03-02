@@ -3,7 +3,7 @@ server:
 
 runner:
   discovery-packages:
-    - ${RUNNER_DISCOVERY_PACKAGES:no.testframework.runner.sample}
+    - ${RUNNER_DISCOVERY_PACKAGES:no.testframework.sampleapp}
   concurrency: ${RUNNER_CONCURRENCY:4}
   queue-capacity: ${RUNNER_QUEUE_CAPACITY:100}
   default-timeout: ${RUNNER_DEFAULT_TIMEOUT:PT5M}

@@ -1,4 +1,4 @@
-package no.testframework.runner.config;
+package no.testframework.runnerlib.config;
 
 import jakarta.validation.constraints.Min;
 import java.time.Duration;
@@ -10,7 +10,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "runner")
 public class RunnerProperties {
 
-    private List<String> discoveryPackages = List.of("no.testframework.runner.sample");
+    private List<String> discoveryPackages = List.of("no.testframework.sampleapp");
 
     @Min(1)
     private int concurrency = 4;

@@ -1,4 +1,4 @@
-package no.testframework.runner.api;
+package no.testframework.runnerlib.api;
 
 import java.util.Map;
 import org.springframework.http.HttpStatus;

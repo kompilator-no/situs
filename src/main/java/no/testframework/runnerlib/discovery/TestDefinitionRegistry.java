@@ -1,11 +1,11 @@
-package no.testframework.runner.discovery;
+package no.testframework.runnerlib.discovery;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import no.testframework.runner.config.RunnerProperties;
-import no.testframework.runner.model.TestDefinition;
+import no.testframework.runnerlib.config.RunnerProperties;
+import no.testframework.runnerlib.model.TestDefinition;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AnnotationTypeFilter;

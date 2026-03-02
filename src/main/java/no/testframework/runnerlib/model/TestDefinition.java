@@ -1,4 +1,4 @@
-package no.testframework.runner.model;
+package no.testframework.runnerlib.model;
 
 import java.util.Map;
 
