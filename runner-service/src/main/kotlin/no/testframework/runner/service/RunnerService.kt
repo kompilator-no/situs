@@ -32,6 +32,11 @@ data class CleanupMetrics(
     val retainedCount: Int
 )
 
+private data class CleanupResult(
+    val expiredDeleted: Int,
+    val overflowDeleted: Int
+)
+
 data class RunSummary(
     val total: Int,
     val queued: Int,
@@ -53,7 +58,7 @@ private data class PageToken(val snapshotId: String, val offset: Int) {
         fun decode(raw: String): PageToken {
             val parts = raw.split(':', limit = 2)
             require(parts.size == 2) { "Invalid page token" }
-            return PageToken(parts[0], parts[1].toInt())
+            return PageToken(parts[0], parts[1].toInt().also { require(it >= 0) { "Invalid page token" } })
         }
     }
 }
@@ -145,30 +150,42 @@ class RunnerService(
     }
 
     private fun compactLocked(): CleanupMetrics {
-        val now = clock.instant()
-        val before = runs.size
+        val result = compactRunsLocked(clock.instant())
+        lastCleanupMetrics = CleanupMetrics(
+            expiredDeleted = result.expiredDeleted,
+            retainedCount = runs.count { it.state.isTerminal }
+        )
+        return lastCleanupMetrics
+    }
 
-        // 1) remove expired terminal runs. Running/queued runs are never TTL-deleted.
+    private fun compactRunsLocked(now: Instant): CleanupResult {
+        var expiredDeleted = 0
         runs.removeIf {
-            it.state.isTerminal && it.finishedAt != null && it.finishedAt.plus(properties.historyTtl).isBefore(now)
+            val shouldExpire = it.state.isTerminal && it.finishedAt != null &&
+                !it.finishedAt.plus(properties.historyTtl).isAfter(now)
+            if (shouldExpire) {
+                expiredDeleted++
+            }
+            shouldExpire
         }
 
-        // 2) cap terminal records, evict oldest terminal runs first.
         val terminal = runs.filter { it.state.isTerminal }
             .sortedBy { it.finishedAt ?: Instant.EPOCH }
 
         val overflow = terminal.size - properties.maxRunRecords
+        var overflowDeleted = 0
         if (overflow > 0) {
             val toRemove = terminal.take(overflow).map { it.runId }.toSet()
-            runs.removeIf { it.runId in toRemove }
+            runs.removeIf { run ->
+                val remove = run.runId in toRemove
+                if (remove) {
+                    overflowDeleted++
+                }
+                remove
+            }
         }
 
-        val deleted = before - runs.size
-        lastCleanupMetrics = CleanupMetrics(
-            expiredDeleted = deleted,
-            retainedCount = runs.count { it.state.isTerminal }
-        )
-        return lastCleanupMetrics
+        return CleanupResult(expiredDeleted = expiredDeleted, overflowDeleted = overflowDeleted)
     }
 
     override fun close() {

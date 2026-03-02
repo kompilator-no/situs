@@ -86,6 +86,34 @@ class RunnerServiceTest {
             second.nextToken shouldBe null
         }
     }
+    @Test
+    fun `expired deleted metric only counts ttl removals`() {
+        val now = Instant.parse("2025-01-01T00:00:00Z")
+        val clock = MutableClock(now)
+        RunnerService(
+            properties = RunnerProperties(historyTtl = Duration.ofMinutes(1), maxRunRecords = 1, cleanupInterval = null),
+            clock = clock
+        ).use { service ->
+            service.addOrUpdateRun(RunRecord("old", "t", RunState.PASSED, now.minusSeconds(3600), now.minusSeconds(3600)))
+            service.addOrUpdateRun(RunRecord("new1", "t", RunState.PASSED, now.minusSeconds(10), now.minusSeconds(10)))
+            service.addOrUpdateRun(RunRecord("new2", "t", RunState.PASSED, now.minusSeconds(5), now.minusSeconds(5)))
+
+            val metrics = service.triggerCleanup()
+            metrics.expiredDeleted shouldBe 1
+            metrics.retainedCount shouldBe 1
+        }
+    }
+
+    @Test
+    fun `invalid pagination token is rejected`() {
+        RunnerService().use { service ->
+            val ex = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+                service.listRuns(limit = 5, pageToken = "broken")
+            }
+            ex.message shouldBe "Invalid page token"
+        }
+    }
+
 }
 
 private class MutableClock(private var current: Instant) : Clock() {

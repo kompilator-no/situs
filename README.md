@@ -70,7 +70,7 @@ Operational tradeoffs:
 
 Run summary counters now include cleanup metrics:
 
-- `expiredDeleted`: how many records were removed by the last compaction.
+- `expiredDeleted`: how many TTL-expired terminal records were removed by the last compaction.
 - `retainedCount`: number of terminal records kept after retention is applied.
 
 ## Container
