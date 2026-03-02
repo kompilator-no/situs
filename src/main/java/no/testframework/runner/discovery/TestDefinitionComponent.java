@@ -1,0 +1,14 @@
+package no.testframework.runner.discovery;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface TestDefinitionComponent {
+    String id();
+
+    String description() default "";
+}
