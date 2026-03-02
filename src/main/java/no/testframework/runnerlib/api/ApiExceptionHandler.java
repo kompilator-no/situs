@@ -2,6 +2,7 @@ package no.testframework.runnerlib.api;
 
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import no.testframework.runnerlib.execution.QueueFullException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -13,6 +14,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Map<String, String> notFound(IllegalArgumentException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+
+    @ExceptionHandler(QueueFullException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public Map<String, String> queueFull(QueueFullException e) {
         return Map.of("error", e.getMessage());
     }
 

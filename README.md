@@ -16,10 +16,11 @@ Spring Boot service that discovers test definitions, exposes execution APIs, and
 ## API
 
 - `GET /api/tests` – list discovered test definitions.
-- `POST /api/runs` – start a run.
+- `POST /api/runs` – start a run (returns `429` when queue is full).
 - `DELETE /api/runs/{runId}` – stop a run.
 - `GET /api/runs/{runId}` – get status for a run.
-- `GET /api/runs` – get status for all runs.
+- `GET /api/runs` – get status for all runs (optional query params: `testId`, `state`).
+- `GET /api/runs/summary` – queue/runtime counters (`total`, `queued`, `running`, `completed`).
 
 Example `POST /api/runs`:
 

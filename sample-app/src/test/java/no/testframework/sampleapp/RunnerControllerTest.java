@@ -2,6 +2,7 @@ package no.testframework.sampleapp;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -36,5 +37,27 @@ class RunnerControllerTest {
                     }
                     """))
             .andExpect(status().isAccepted());
+    }
+
+    @Test
+    void shouldFilterRunsAndExposeSummary() throws Exception {
+        mvc.perform(post("/api/runs")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "testId": "smoke-test"
+                    }
+                    """))
+            .andExpect(status().isAccepted());
+
+        mvc.perform(get("/api/runs").queryParam("testId", "smoke-test"))
+            .andExpect(status().isOk());
+
+        mvc.perform(get("/api/runs/summary"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.total").isNumber())
+            .andExpect(jsonPath("$.queued").isNumber())
+            .andExpect(jsonPath("$.running").isNumber())
+            .andExpect(jsonPath("$.completed").isNumber());
     }
 }
