@@ -50,6 +50,7 @@ public class RunnerController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, UUID> start(@Valid @RequestBody RunRequest request,
                                    @RequestHeader(value = "X-Correlation-Id", required = false) String headerCorrelationId,
+                                   @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
                                    @RequestHeader HttpHeaders headers) {
         Map<String, Object> context = request.context() != null ? new HashMap<>(request.context()) : new HashMap<>();
         String correlationId = headerCorrelationId != null ? headerCorrelationId : UUID.randomUUID().toString();
@@ -63,14 +64,7 @@ public class RunnerController {
             context.put("traceparent", traceparent);
         }
 
-        UUID runId = runnerService.start(request.testId(), request.retries(), request.timeout(), context);
-                                   @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
-        UUID runId = runnerService.start(
-            request.testId(),
-            request.retries(),
-            request.timeout(),
-            request.context(),
-            idempotencyKey);
+        UUID runId = runnerService.start(request.testId(), request.retries(), request.timeout(), context, idempotencyKey);
         return Map.of("runId", runId);
     }
 

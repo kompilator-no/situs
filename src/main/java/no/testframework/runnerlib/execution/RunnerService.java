@@ -1,11 +1,6 @@
 package no.testframework.runnerlib.execution;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Comparator;
-import java.util.HashMap;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -15,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -88,26 +84,25 @@ public class RunnerService {
         Duration resolvedTimeout = timeout != null ? timeout : properties.getDefaultTimeout();
         Map<String, Object> resolvedContext = context != null ? context : Map.of();
         String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
-        String payloadFingerprint = fingerprint(testId, resolvedRetries, resolvedTimeout, resolvedContext);
 
         UUID runId = UUID.randomUUID();
-        Map<String, Object> effectiveContext = context != null ? new HashMap<>(context) : new HashMap<>();
+        Map<String, Object> effectiveContext = new HashMap<>(resolvedContext);
+        Map<String, Object> fingerprintContext = new HashMap<>(effectiveContext);
+        fingerprintContext.remove(CONTEXT_CORRELATION_ID);
+        fingerprintContext.remove(CONTEXT_TRACE_ID);
+        fingerprintContext.remove("traceparent");
+        String payloadFingerprint = fingerprint(testId, resolvedRetries, resolvedTimeout, fingerprintContext);
         String correlationId = String.valueOf(effectiveContext.getOrDefault(CONTEXT_CORRELATION_ID, runId.toString()));
         String traceId = String.valueOf(effectiveContext.getOrDefault(CONTEXT_TRACE_ID, ""));
 
         RunRecord record = new RunRecord(
             runId,
             testId,
-            retries != null ? retries : properties.getDefaultRetries(),
-            timeout != null ? timeout : properties.getDefaultTimeout(),
-            Map.copyOf(effectiveContext),
-            correlationId,
-            traceId);
-        records.put(runId, record);
-        emitEvent(record, RunState.QUEUED, null);
             resolvedRetries,
             resolvedTimeout,
-            resolvedContext,
+            Map.copyOf(effectiveContext),
+            correlationId,
+            traceId,
             normalizedKey,
             payloadFingerprint);
 
@@ -123,6 +118,7 @@ public class RunnerService {
         } else {
             records.put(runId, record);
         }
+        emitEvent(record, RunState.QUEUED, null);
 
         try {
             Future<?> future = executor.submit(() -> executeWithPolicies(record));
@@ -179,7 +175,7 @@ public class RunnerService {
             String payload = fingerprintMapper.writeValueAsString(Map.of(
                 "testId", testId,
                 "retries", retries,
-                "timeout", timeout,
+                "timeout", timeout != null ? timeout.toString() : null,
                 "context", context));
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(payload.getBytes(StandardCharsets.UTF_8));

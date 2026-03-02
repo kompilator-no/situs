@@ -1,8 +1,12 @@
 package no.testframework.sampleapp;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+
+import java.util.Arrays;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,16 +15,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -51,17 +59,17 @@ class RunnerControllerTest {
 
     @Test
     void shouldAllowReadOnlyTokenToListTestsAndRuns() throws Exception {
-        mvc.perform(get("/api/tests").with(jwt().jwt(jwt -> jwt.claim("scope", "runner:read"))))
+        mvc.perform(get("/api/tests").with(token("runner:read")))
             .andExpect(status().isOk());
 
-        mvc.perform(get("/api/runs").with(jwt().jwt(jwt -> jwt.claim("scope", "runner:read"))))
+        mvc.perform(get("/api/runs").with(token("runner:read")))
             .andExpect(status().isOk());
     }
 
     @Test
     void shouldDenyReadOnlyTokenForRunStartAndCancel() throws Exception {
         mvc.perform(post("/api/runs")
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:read")))
+                .with(token("runner:read"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -74,7 +82,7 @@ class RunnerControllerTest {
     @Test
     void shouldAllowExecuteTokenToStartAndCancelRuns() throws Exception {
         MvcResult startResult = mvc.perform(post("/api/runs")
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:execute runner:cancel")))
+                .with(token("runner:execute", "runner:cancel"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -90,7 +98,7 @@ class RunnerControllerTest {
         String runId = body.get("runId").asText();
 
         mvc.perform(delete("/api/runs/{runId}", runId)
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:cancel"))))
+                .with(token("runner:cancel")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.cancelled").isBoolean());
     }
@@ -98,7 +106,7 @@ class RunnerControllerTest {
     @Test
     void shouldSupportRunPaginationParameters() throws Exception {
         mvc.perform(post("/api/runs")
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:execute")))
+                .with(token("runner:execute"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -108,7 +116,7 @@ class RunnerControllerTest {
             .andExpect(status().isAccepted());
 
         mvc.perform(get("/api/runs")
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:read")))
+                .with(token("runner:read"))
                 .queryParam("testId", "smoke-test")
                 .queryParam("limit", "1")
                 .queryParam("offset", "0"))
@@ -119,7 +127,7 @@ class RunnerControllerTest {
     @Test
     void shouldFilterRunsAndExposeSummary() throws Exception {
         mvc.perform(post("/api/runs")
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:execute")))
+                .with(token("runner:execute"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -129,12 +137,12 @@ class RunnerControllerTest {
             .andExpect(status().isAccepted());
 
         mvc.perform(get("/api/runs")
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:read")))
+                .with(token("runner:read"))
                 .queryParam("testId", "smoke-test"))
             .andExpect(status().isOk());
 
         mvc.perform(get("/api/runs/summary")
-                .with(jwt().jwt(jwt -> jwt.claim("scope", "runner:read"))))
+                .with(token("runner:read")))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.total").isNumber())
             .andExpect(jsonPath("$.queued").isNumber())
@@ -146,8 +154,41 @@ class RunnerControllerTest {
     void shouldPropagateCorrelationAndTraceAndEmitStructuredLifecycleLogs(CapturedOutput output) throws Exception {
         String correlationId = "corr-e2e-123";
         MvcResult runStartResult = mvc.perform(post("/api/runs")
+                .with(token("runner:execute", "runner:read"))
                 .header("X-Correlation-Id", correlationId)
                 .header("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "testId": "smoke-test"
+                    }
+                    """))
+            .andExpect(status().isAccepted())
+            .andReturn();
+
+        JsonNode startPayload = objectMapper.readTree(runStartResult.getResponse().getContentAsString());
+        String runId = startPayload.get("runId").asText();
+
+        Thread.sleep(200);
+
+        mvc.perform(get("/api/runs/{runId}", runId)
+                .with(token("runner:read")))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.correlationId").value(correlationId))
+            .andExpect(jsonPath("$.traceId").isString())
+            .andExpect(jsonPath("$.state").value("COMPLETED"));
+
+        String logs = output.getOut();
+        assertTrue(logs.contains("\"runId\":\"" + runId + "\""));
+        assertTrue(logs.contains("\"testId\":\"smoke-test\""));
+        assertTrue(logs.contains("\"state\":\"QUEUED\""));
+        assertTrue(logs.contains("\"state\":\"RUNNING\""));
+        assertTrue(logs.contains("\"state\":\"COMPLETED\""));
+        assertTrue(logs.contains("\"attempt\":"));
+        assertTrue(logs.contains("\"correlationId\":\"" + correlationId + "\""));
+    }
+
+    @Test
     void sameIdempotencyKeyAndPayloadReturnsSameRun() throws Exception {
         String payload = """
             {
@@ -161,6 +202,7 @@ class RunnerControllerTest {
             """;
 
         MvcResult first = mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .header("Idempotency-Key", "idem-key-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
@@ -168,6 +210,7 @@ class RunnerControllerTest {
             .andReturn();
 
         MvcResult second = mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .header("Idempotency-Key", "idem-key-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(payload))
@@ -182,6 +225,7 @@ class RunnerControllerTest {
     @Test
     void sameIdempotencyKeyAndDifferentPayloadReturnsConflict() throws Exception {
         mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .header("Idempotency-Key", "idem-key-2")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -194,6 +238,7 @@ class RunnerControllerTest {
             .andExpect(status().isAccepted());
 
         mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .header("Idempotency-Key", "idem-key-2")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -206,16 +251,16 @@ class RunnerControllerTest {
             .andExpect(status().isConflict());
     }
 
-
     @Test
     void sameIdempotencyKeyWithEquivalentContextOrderReturnsSameRun() throws Exception {
         MvcResult first = mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .header("Idempotency-Key", "idem-key-3")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
                       "testId": "smoke-test",
-                      "timeout": "PT2S"
+                      "timeout": "PT2S",
                       "context": {
                         "a": 1,
                         "b": 2
@@ -226,11 +271,13 @@ class RunnerControllerTest {
             .andReturn();
 
         MvcResult second = mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .header("Idempotency-Key", "idem-key-3")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
                       "testId": "smoke-test",
+                      "timeout": "PT2S",
                       "context": {
                         "b": 2,
                         "a": 1
@@ -248,6 +295,7 @@ class RunnerControllerTest {
     @Test
     void missingIdempotencyKeyKeepsExistingBehavior() throws Exception {
         MvcResult first = mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -258,6 +306,7 @@ class RunnerControllerTest {
             .andReturn();
 
         MvcResult second = mvc.perform(post("/api/runs")
+                .with(token("runner:execute"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
@@ -267,27 +316,15 @@ class RunnerControllerTest {
             .andExpect(status().isAccepted())
             .andReturn();
 
-        JsonNode startPayload = objectMapper.readTree(runStartResult.getResponse().getContentAsString());
-        String runId = startPayload.get("runId").asText();
-
-        Thread.sleep(200);
-
-        mvc.perform(get("/api/runs/{runId}", runId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.correlationId").value(correlationId))
-            .andExpect(jsonPath("$.traceId").isString())
-            .andExpect(jsonPath("$.state").value("COMPLETED"));
-
-        String logs = output.getOut();
-        assertTrue(logs.contains("\"runId\":\"" + runId + "\""));
-        assertTrue(logs.contains("\"testId\":\"smoke-test\""));
-        assertTrue(logs.contains("\"state\":\"QUEUED\""));
-        assertTrue(logs.contains("\"state\":\"RUNNING\""));
-        assertTrue(logs.contains("\"state\":\"COMPLETED\""));
-        assertTrue(logs.contains("\"attempt\":"));
-        assertTrue(logs.contains("\"correlationId\":\"" + correlationId + "\""));
         String firstId = JsonPath.read(first.getResponse().getContentAsString(), "$.runId");
         String secondId = JsonPath.read(second.getResponse().getContentAsString(), "$.runId");
-        org.junit.jupiter.api.Assertions.assertNotEquals(firstId, secondId);
+        assertNotEquals(firstId, secondId);
     }
+    private RequestPostProcessor token(String... authorities) {
+        GrantedAuthority[] granted = Arrays.stream(authorities)
+            .map(SimpleGrantedAuthority::new)
+            .toArray(GrantedAuthority[]::new);
+        return jwt().authorities(granted);
+    }
+
 }
