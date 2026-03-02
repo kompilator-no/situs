@@ -1,6 +1,7 @@
 package no.testframework.sampleapp;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,9 +12,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.MediaType;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -23,6 +27,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 @TestPropertySource(properties = {
     "runner.security.jwt.issuer-uri=https://issuer.example.test",
     "runner.security.jwt.audience=runner-service"
@@ -138,6 +143,11 @@ class RunnerControllerTest {
     }
 
     @Test
+    void shouldPropagateCorrelationAndTraceAndEmitStructuredLifecycleLogs(CapturedOutput output) throws Exception {
+        String correlationId = "corr-e2e-123";
+        MvcResult runStartResult = mvc.perform(post("/api/runs")
+                .header("X-Correlation-Id", correlationId)
+                .header("traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01")
     void sameIdempotencyKeyAndPayloadReturnsSameRun() throws Exception {
         String payload = """
             {
@@ -205,6 +215,7 @@ class RunnerControllerTest {
                 .content("""
                     {
                       "testId": "smoke-test",
+                      "timeout": "PT2S"
                       "context": {
                         "a": 1,
                         "b": 2
@@ -256,6 +267,25 @@ class RunnerControllerTest {
             .andExpect(status().isAccepted())
             .andReturn();
 
+        JsonNode startPayload = objectMapper.readTree(runStartResult.getResponse().getContentAsString());
+        String runId = startPayload.get("runId").asText();
+
+        Thread.sleep(200);
+
+        mvc.perform(get("/api/runs/{runId}", runId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.correlationId").value(correlationId))
+            .andExpect(jsonPath("$.traceId").isString())
+            .andExpect(jsonPath("$.state").value("COMPLETED"));
+
+        String logs = output.getOut();
+        assertTrue(logs.contains("\"runId\":\"" + runId + "\""));
+        assertTrue(logs.contains("\"testId\":\"smoke-test\""));
+        assertTrue(logs.contains("\"state\":\"QUEUED\""));
+        assertTrue(logs.contains("\"state\":\"RUNNING\""));
+        assertTrue(logs.contains("\"state\":\"COMPLETED\""));
+        assertTrue(logs.contains("\"attempt\":"));
+        assertTrue(logs.contains("\"correlationId\":\"" + correlationId + "\""));
         String firstId = JsonPath.read(first.getResponse().getContentAsString(), "$.runId");
         String secondId = JsonPath.read(second.getResponse().getContentAsString(), "$.runId");
         org.junit.jupiter.api.Assertions.assertNotEquals(firstId, secondId);

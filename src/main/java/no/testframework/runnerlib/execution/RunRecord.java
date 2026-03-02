@@ -12,12 +12,15 @@ public class RunRecord {
     private final int maxRetries;
     private final java.time.Duration timeout;
     private final Map<String, Object> context;
+    private final String correlationId;
+    private final String traceId;
     private final String idempotencyKey;
     private final String idempotencyFingerprint;
     private final Instant createdAt = Instant.now();
     private final AtomicInteger attempts = new AtomicInteger(0);
     private final AtomicReference<RunState> state = new AtomicReference<>(RunState.QUEUED);
     private volatile String detail;
+    private volatile String errorType;
     private volatile Instant startedAt;
     private volatile Instant finishedAt;
 
@@ -26,6 +29,8 @@ public class RunRecord {
                      int maxRetries,
                      java.time.Duration timeout,
                      Map<String, Object> context,
+                     String correlationId,
+                     String traceId) {
                      String idempotencyKey,
                      String idempotencyFingerprint) {
         this.runId = runId;
@@ -33,6 +38,8 @@ public class RunRecord {
         this.maxRetries = maxRetries;
         this.timeout = timeout;
         this.context = context;
+        this.correlationId = correlationId;
+        this.traceId = traceId;
         this.idempotencyKey = idempotencyKey;
         this.idempotencyFingerprint = idempotencyFingerprint;
     }
@@ -42,6 +49,8 @@ public class RunRecord {
     public int getMaxRetries() { return maxRetries; }
     public java.time.Duration getTimeout() { return timeout; }
     public Map<String, Object> getContext() { return context; }
+    public String getCorrelationId() { return correlationId; }
+    public String getTraceId() { return traceId; }
     public String getIdempotencyKey() { return idempotencyKey; }
     public String getIdempotencyFingerprint() { return idempotencyFingerprint; }
     public Instant getCreatedAt() { return createdAt; }
@@ -51,8 +60,17 @@ public class RunRecord {
     public void setState(RunState newState) { this.state.set(newState); }
     public String getDetail() { return detail; }
     public void setDetail(String detail) { this.detail = detail; }
+    public String getErrorType() { return errorType; }
+    public void setErrorType(String errorType) { this.errorType = errorType; }
     public Instant getStartedAt() { return startedAt; }
     public void setStartedAt(Instant startedAt) { this.startedAt = startedAt; }
     public Instant getFinishedAt() { return finishedAt; }
     public void setFinishedAt(Instant finishedAt) { this.finishedAt = finishedAt; }
+
+    public Long durationMs() {
+        if (startedAt == null || finishedAt == null) {
+            return null;
+        }
+        return java.time.Duration.between(startedAt, finishedAt).toMillis();
+    }
 }

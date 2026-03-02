@@ -1,6 +1,9 @@
 package no.testframework.runnerlib.api;
 
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanContext;
 import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -8,6 +11,7 @@ import no.testframework.runnerlib.discovery.TestDefinitionRegistry;
 import no.testframework.runnerlib.execution.RunState;
 import no.testframework.runnerlib.execution.RunSummary;
 import no.testframework.runnerlib.execution.RunnerService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,8 +21,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -45,6 +49,21 @@ public class RunnerController {
     @PreAuthorize("hasAuthority('runner:execute')")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, UUID> start(@Valid @RequestBody RunRequest request,
+                                   @RequestHeader(value = "X-Correlation-Id", required = false) String headerCorrelationId,
+                                   @RequestHeader HttpHeaders headers) {
+        Map<String, Object> context = request.context() != null ? new HashMap<>(request.context()) : new HashMap<>();
+        String correlationId = headerCorrelationId != null ? headerCorrelationId : UUID.randomUUID().toString();
+        SpanContext spanContext = Span.current().getSpanContext();
+        String traceId = spanContext.isValid() ? spanContext.getTraceId() : "";
+        String traceparent = headers.getFirst("traceparent");
+
+        context.put("correlationId", correlationId);
+        context.put("traceId", traceId);
+        if (traceparent != null && !traceparent.isBlank()) {
+            context.put("traceparent", traceparent);
+        }
+
+        UUID runId = runnerService.start(request.testId(), request.retries(), request.timeout(), context);
                                    @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         UUID runId = runnerService.start(
             request.testId(),

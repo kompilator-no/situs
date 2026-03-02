@@ -4,8 +4,7 @@ public enum RunState {
     QUEUED,
     RUNNING,
     RETRYING,
-    SUCCEEDED,
-    FAILED,
+    COMPLETED,
     TIMED_OUT,
     CANCELLED
 }
