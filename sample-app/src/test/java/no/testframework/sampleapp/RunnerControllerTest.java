@@ -144,6 +144,44 @@ class RunnerControllerTest {
             .andExpect(status().isConflict());
     }
 
+
+    @Test
+    void sameIdempotencyKeyWithEquivalentContextOrderReturnsSameRun() throws Exception {
+        MvcResult first = mvc.perform(post("/api/runs")
+                .header("Idempotency-Key", "idem-key-3")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "testId": "smoke-test",
+                      "context": {
+                        "a": 1,
+                        "b": 2
+                      }
+                    }
+                    """))
+            .andExpect(status().isAccepted())
+            .andReturn();
+
+        MvcResult second = mvc.perform(post("/api/runs")
+                .header("Idempotency-Key", "idem-key-3")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "testId": "smoke-test",
+                      "context": {
+                        "b": 2,
+                        "a": 1
+                      }
+                    }
+                    """))
+            .andExpect(status().isAccepted())
+            .andReturn();
+
+        String firstId = JsonPath.read(first.getResponse().getContentAsString(), "$.runId");
+        String secondId = JsonPath.read(second.getResponse().getContentAsString(), "$.runId");
+        assertEquals(firstId, secondId);
+    }
+
     @Test
     void missingIdempotencyKeyKeepsExistingBehavior() throws Exception {
         MvcResult first = mvc.perform(post("/api/runs")

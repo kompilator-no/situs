@@ -1,5 +1,9 @@
 package no.testframework.runnerlib.execution;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -38,6 +42,10 @@ public class RunnerService {
     private final TestDefinitionRegistry registry;
     private final ObjectProvider<TestDefinition> testDefinitions;
     private final RunnerProperties properties;
+    private final ObjectMapper fingerprintMapper = new ObjectMapper()
+        .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+    private final Object idempotencyLock = new Object();
 
     public RunnerService(TestDefinitionRegistry registry,
                          ObjectProvider<TestDefinition> testDefinitions,
@@ -68,13 +76,6 @@ public class RunnerService {
         String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
         String payloadFingerprint = fingerprint(testId, resolvedRetries, resolvedTimeout, resolvedContext);
 
-        if (normalizedKey != null) {
-            UUID duplicateRunId = handleIdempotencyCheck(normalizedKey, payloadFingerprint);
-            if (duplicateRunId != null) {
-                return duplicateRunId;
-            }
-        }
-
         UUID runId = UUID.randomUUID();
         RunRecord record = new RunRecord(
             runId,
@@ -84,9 +85,18 @@ public class RunnerService {
             resolvedContext,
             normalizedKey,
             payloadFingerprint);
-        records.put(runId, record);
+
         if (normalizedKey != null) {
-            idempotencyIndex.put(normalizedKey, runId);
+            synchronized (idempotencyLock) {
+                UUID duplicateRunId = handleIdempotencyCheck(normalizedKey, payloadFingerprint);
+                if (duplicateRunId != null) {
+                    return duplicateRunId;
+                }
+                records.put(runId, record);
+                idempotencyIndex.put(normalizedKey, runId);
+            }
+        } else {
+            records.put(runId, record);
         }
 
         try {
@@ -96,7 +106,9 @@ public class RunnerService {
         } catch (RejectedExecutionException e) {
             records.remove(runId);
             if (normalizedKey != null) {
-                idempotencyIndex.remove(normalizedKey, runId);
+                synchronized (idempotencyLock) {
+                    idempotencyIndex.remove(normalizedKey, runId);
+                }
             }
             throw new QueueFullException("Execution queue is full. Try again later.");
         }
@@ -112,6 +124,7 @@ public class RunnerService {
             idempotencyIndex.remove(idempotencyKey, existingRunId);
             return null;
         }
+
         Duration window = properties.getIdempotencyWindow();
         if (window != null && !window.isNegative() && !window.isZero()) {
             Instant expiresAt = existing.getCreatedAt().plus(window);
@@ -137,11 +150,17 @@ public class RunnerService {
     }
 
     private String fingerprint(String testId, int retries, Duration timeout, Map<String, Object> context) {
-        String payload = testId + "|" + retries + "|" + timeout + "|" + String.valueOf(context);
         try {
+            String payload = fingerprintMapper.writeValueAsString(Map.of(
+                "testId", testId,
+                "retries", retries,
+                "timeout", timeout,
+                "context", context));
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(payload.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Unable to serialize run payload for idempotency matching", e);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 is unavailable", e);
         }
