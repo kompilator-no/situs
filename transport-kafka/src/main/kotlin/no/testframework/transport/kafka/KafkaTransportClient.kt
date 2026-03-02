@@ -18,6 +18,7 @@ import java.util.Base64
 import java.util.Properties
 
 private const val DEFAULT_TOPIC = "test-framework-runs"
+private const val DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092"
 private const val HEADER_TOPIC = "topic"
 private const val HEADER_KEY = "key"
 private const val HEADER_PAYLOAD_ENCODING = "payload-encoding"
@@ -81,6 +82,10 @@ class KafkaTransportClient(
     private val gateway: KafkaRecordGateway,
     private val defaultTopic: String = DEFAULT_TOPIC,
 ) : TransportClient {
+
+    constructor() : this(
+        bootstrapServers = System.getenv("KAFKA_BOOTSTRAP_SERVERS") ?: DEFAULT_BOOTSTRAP_SERVERS,
+    )
 
     constructor(
         bootstrapServers: String,
