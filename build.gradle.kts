@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -20,10 +19,6 @@ subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
     apply(plugin = "org.jetbrains.kotlin.plugin.serialization")
 
-    extensions.configure<KotlinJvmProjectExtension> {
-        jvmToolchain(25)
-    }
-
     dependencies {
         "implementation"(kotlin("stdlib"))
         "implementation"("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
@@ -35,12 +30,12 @@ subprojects {
 
     tasks.withType<KotlinCompile>().configureEach {
         compilerOptions {
-            jvmTarget.set(JvmTarget.fromTarget("22"))
+            jvmTarget.set(JvmTarget.fromTarget("21"))
         }
     }
 
     tasks.withType<JavaCompile>().configureEach {
-        options.release.set(25)
+        options.release.set(21)
     }
 
     tasks.withType<Test>().configureEach {
