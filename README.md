@@ -15,12 +15,26 @@ Spring Boot service that discovers test definitions, exposes execution APIs, and
 
 ## API
 
+- `GET /api/tests` – list discovered test definitions.
+- `POST /api/runs` – start a run (returns `429` when queue is full). Supports optional `Idempotency-Key` header.
+- `DELETE /api/runs/{runId}` – stop a run.
+- `GET /api/runs/{runId}` – get status for a run.
+- `GET /api/runs` – get status for all runs (optional query params: `testId`, `state`, `limit`, `offset`).
+- `GET /api/runs/summary` – queue/runtime counters (`total`, `queued`, `running`, `completed`).
 - `GET /api/tests` – list discovered test definitions (`runner:read`).
 - `POST /api/runs` – start a run (returns `429` when queue is full) (`runner:execute`).
 - `DELETE /api/runs/{runId}` – stop a run (`runner:cancel`).
 - `GET /api/runs/{runId}` – get status for a run (`runner:read`).
 - `GET /api/runs` – get status for all runs (optional query params: `testId`, `state`, `limit`, `offset`) (`runner:read`).
 - `GET /api/runs/summary` – queue/runtime counters (`total`, `queued`, `running`, `completed`) (`runner:read`).
+
+
+Idempotency behavior for `POST /api/runs`:
+
+- Missing `Idempotency-Key`: unchanged behavior, each request creates a new run.
+- Same key + same payload within `runner.idempotency-window`: returns `202` with the original `runId` and does not schedule a new run.
+- Same key + different payload within window: returns `409 Conflict`.
+- Same key after the window expires: treated as a new run request.
 
 Example `POST /api/runs`:
 
@@ -75,6 +89,7 @@ Environment can be controlled via `sample-app/src/main/resources/application.yam
 - `RUNNER_QUEUE_CAPACITY`
 - `RUNNER_DEFAULT_TIMEOUT`
 - `RUNNER_DEFAULT_RETRIES`
+- `RUNNER_IDEMPOTENCY_WINDOW`
 - `RUNNER_DISCOVERY_PACKAGES`
 - `RUNNER_JWT_ISSUER_URI`
 - `RUNNER_JWT_AUDIENCE`

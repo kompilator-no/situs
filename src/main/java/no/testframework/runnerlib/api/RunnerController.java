@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,8 +44,14 @@ public class RunnerController {
     @PostMapping("/runs")
     @PreAuthorize("hasAuthority('runner:execute')")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public Map<String, UUID> start(@Valid @RequestBody RunRequest request) {
-        UUID runId = runnerService.start(request.testId(), request.retries(), request.timeout(), request.context());
+    public Map<String, UUID> start(@Valid @RequestBody RunRequest request,
+                                   @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        UUID runId = runnerService.start(
+            request.testId(),
+            request.retries(),
+            request.timeout(),
+            request.context(),
+            idempotencyKey);
         return Map.of("runId", runId);
     }
 
