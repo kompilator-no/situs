@@ -1,8 +1,11 @@
 package no.testframework.runnerlib.execution;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -21,11 +24,17 @@ import java.util.concurrent.TimeoutException;
 import no.testframework.runnerlib.config.RunnerProperties;
 import no.testframework.runnerlib.discovery.TestDefinitionRegistry;
 import no.testframework.runnerlib.model.TestDefinition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RunnerService {
+
+    private static final Logger log = LoggerFactory.getLogger(RunnerService.class);
+    private static final String CONTEXT_CORRELATION_ID = "correlationId";
+    private static final String CONTEXT_TRACE_ID = "traceId";
 
     private final ThreadPoolExecutor executor;
     private final ConcurrentMap<UUID, RunRecord> records = new ConcurrentHashMap<>();
@@ -33,13 +42,16 @@ public class RunnerService {
     private final TestDefinitionRegistry registry;
     private final ObjectProvider<TestDefinition> testDefinitions;
     private final RunnerProperties properties;
+    private final ObjectMapper objectMapper;
 
     public RunnerService(TestDefinitionRegistry registry,
                          ObjectProvider<TestDefinition> testDefinitions,
-                         RunnerProperties properties) {
+                         RunnerProperties properties,
+                         ObjectMapper objectMapper) {
         this.registry = registry;
         this.testDefinitions = testDefinitions;
         this.properties = properties;
+        this.objectMapper = objectMapper;
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(properties.getQueueCapacity());
         this.executor = new ThreadPoolExecutor(
             properties.getConcurrency(),
@@ -54,13 +66,20 @@ public class RunnerService {
         registry.requireDefinition(testId);
 
         UUID runId = UUID.randomUUID();
+        Map<String, Object> effectiveContext = context != null ? new HashMap<>(context) : new HashMap<>();
+        String correlationId = String.valueOf(effectiveContext.getOrDefault(CONTEXT_CORRELATION_ID, runId.toString()));
+        String traceId = String.valueOf(effectiveContext.getOrDefault(CONTEXT_TRACE_ID, ""));
+
         RunRecord record = new RunRecord(
             runId,
             testId,
             retries != null ? retries : properties.getDefaultRetries(),
             timeout != null ? timeout : properties.getDefaultTimeout(),
-            context != null ? context : Map.of());
+            Map.copyOf(effectiveContext),
+            correlationId,
+            traceId);
         records.put(runId, record);
+        emitEvent(record, RunState.QUEUED, null);
 
         try {
             Future<?> future = executor.submit(() -> executeWithPolicies(record));
@@ -83,6 +102,7 @@ public class RunnerService {
             record.setState(RunState.CANCELLED);
             record.setDetail("Run cancelled by request");
             record.setFinishedAt(Instant.now());
+            emitEvent(record, RunState.CANCELLED, null);
         }
         return cancelled;
     }
@@ -93,10 +113,6 @@ public class RunnerService {
             throw new IllegalArgumentException("Unknown run id: " + runId);
         }
         return record;
-    }
-
-    public Map<UUID, RunRecord> all() {
-        return Map.copyOf(records);
     }
 
     public List<RunRecord> all(String testId, RunState state) {
@@ -135,36 +151,65 @@ public class RunnerService {
                 run.setState(RunState.CANCELLED);
                 run.setDetail("Interrupted before execution");
                 run.setFinishedAt(Instant.now());
+                emitEvent(run, RunState.CANCELLED, null);
                 return;
             }
 
             run.incrementAttempts();
-            run.setState(attempt == 1 ? RunState.RUNNING : RunState.RETRYING);
+            RunState activeState = attempt == 1 ? RunState.RUNNING : RunState.RETRYING;
+            run.setState(activeState);
+            emitEvent(run, activeState, null);
             try {
                 executeSingleAttempt(run);
-                run.setState(RunState.SUCCEEDED);
+                run.setState(RunState.COMPLETED);
+                run.setErrorType(null);
                 run.setDetail("Completed successfully");
                 run.setFinishedAt(Instant.now());
                 futures.remove(run.getRunId());
+                emitEvent(run, RunState.COMPLETED, null);
                 return;
             } catch (TimeoutException e) {
                 run.setState(RunState.TIMED_OUT);
+                run.setErrorType(e.getClass().getSimpleName());
                 run.setDetail("Attempt " + attempt + " timed out: " + e.getMessage());
+                run.setFinishedAt(Instant.now());
+                emitEvent(run, RunState.TIMED_OUT, e);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 run.setState(RunState.CANCELLED);
+                run.setErrorType(e.getClass().getSimpleName());
                 run.setDetail("Run interrupted and cancelled");
                 run.setFinishedAt(Instant.now());
                 futures.remove(run.getRunId());
+                emitEvent(run, RunState.CANCELLED, e);
                 return;
             } catch (Exception e) {
-                run.setState(RunState.FAILED);
+                run.setErrorType(e.getClass().getSimpleName());
                 run.setDetail("Attempt " + attempt + " failed: " + e.getMessage());
             }
         }
 
         run.setFinishedAt(Instant.now());
         futures.remove(run.getRunId());
+    }
+
+    private void emitEvent(RunRecord run, RunState state, Exception exception) {
+        String errorType = exception != null ? exception.getClass().getSimpleName() : run.getErrorType();
+        RunLifecycleEvent event = new RunLifecycleEvent(
+            run.getRunId(),
+            run.getTestId(),
+            state,
+            run.getAttempts(),
+            run.getCorrelationId(),
+            run.durationMs(),
+            errorType
+        );
+        try {
+            log.info(objectMapper.writeValueAsString(event));
+        } catch (JsonProcessingException e) {
+            log.info("{{\"runId\":\"{}\",\"testId\":\"{}\",\"state\":\"{}\"}}",
+                run.getRunId(), run.getTestId(), state);
+        }
     }
 
     private void executeSingleAttempt(RunRecord run) throws Exception {

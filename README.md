@@ -96,3 +96,35 @@ A small client library for versioned publishing of test results to a GUI backend
 ## Usage
 
 See the Kotlin modules (`framework-core`, `runner-service`, `reporting-client`) for additional usage examples.
+
+
+## Observability quickstart
+
+The sample app emits run lifecycle logs as JSON with the schema:
+`runId`, `testId`, `state`, `attempt`, `correlationId`, `durationMs`, `errorType`.
+
+It also propagates `X-Correlation-Id` and OpenTelemetry trace identifiers through run context,
+transport helper modules, and reporting client calls.
+
+### Required OpenTelemetry exporter config
+
+Set these environment variables before starting the app:
+
+```bash
+export OTEL_SERVICE_NAME=runner-service
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+```
+
+Optional for local debugging:
+
+```bash
+export OTEL_LOG_LEVEL=debug
+```
+
+Then start the sample app and call `POST /api/runs` with a correlation id:
+
+```bash
+curl -X POST http://localhost:8080/api/runs   -H 'Content-Type: application/json'   -H 'X-Correlation-Id: demo-correlation-1'   -d '{"testId":"smoke-test"}'
+```

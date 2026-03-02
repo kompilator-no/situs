@@ -12,6 +12,10 @@ public record RunResponse(
     int maxRetries,
     RunState state,
     String detail,
+    String correlationId,
+    String traceId,
+    Long durationMs,
+    String errorType,
     Instant createdAt,
     Instant startedAt,
     Instant finishedAt
@@ -24,6 +28,10 @@ public record RunResponse(
             run.getMaxRetries(),
             run.getState(),
             run.getDetail(),
+            run.getCorrelationId(),
+            run.getTraceId(),
+            run.durationMs(),
+            run.getErrorType(),
             run.getCreatedAt(),
             run.getStartedAt(),
             run.getFinishedAt());
