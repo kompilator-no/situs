@@ -205,7 +205,7 @@ fi
 DEFAULT_JVM_OPTS='"-Xmx64m" "-Xms64m"'
 
 WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
-WRAPPER_JAR_URL=${GRADLE_WRAPPER_JAR_URL:-"https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar"}
+WRAPPER_JAR_URL=${GRADLE_WRAPPER_JAR_URL:-"https://raw.githubusercontent.com/gradle/gradle/v9.1.0/gradle/wrapper/gradle-wrapper.jar"}
 
 if [ ! -f "$WRAPPER_JAR" ]; then
     mkdir -p "$APP_HOME/gradle/wrapper" || die "Could not create wrapper directory"
