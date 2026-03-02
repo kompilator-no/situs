@@ -1,5 +1,6 @@
 package no.testframework.sampleapp;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,6 +38,26 @@ class RunnerControllerTest {
                     }
                     """))
             .andExpect(status().isAccepted());
+    }
+
+
+    @Test
+    void shouldSupportRunPaginationParameters() throws Exception {
+        mvc.perform(post("/api/runs")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {
+                      "testId": "smoke-test"
+                    }
+                    """))
+            .andExpect(status().isAccepted());
+
+        mvc.perform(get("/api/runs")
+                .queryParam("testId", "smoke-test")
+                .queryParam("limit", "1")
+                .queryParam("offset", "0"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(lessThanOrEqualTo(1)));
     }
 
     @Test

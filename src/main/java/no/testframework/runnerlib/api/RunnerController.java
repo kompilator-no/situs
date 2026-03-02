@@ -58,8 +58,15 @@ public class RunnerController {
 
     @GetMapping("/runs")
     public List<RunResponse> runs(@RequestParam(required = false) String testId,
-                                  @RequestParam(required = false) RunState state) {
-        return runnerService.all(testId, state).stream().map(RunResponse::from).toList();
+                                  @RequestParam(required = false) RunState state,
+                                  @RequestParam(defaultValue = "50") int limit,
+                                  @RequestParam(defaultValue = "0") int offset) {
+        int normalizedLimit = Math.min(Math.max(limit, 1), 500);
+        int normalizedOffset = Math.max(offset, 0);
+        return runnerService.all(testId, state, normalizedLimit, normalizedOffset)
+            .stream()
+            .map(RunResponse::from)
+            .toList();
     }
 
     @GetMapping("/runs/summary")
