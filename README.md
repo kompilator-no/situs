@@ -9,9 +9,9 @@ Spring Boot service that discovers test definitions, exposes execution APIs, and
   - execution/scheduling
   - API DTOs and controller
   - configuration and run model
-- `no.testframework.sampleapp.*`: sample application that uses the library:
-  - `SampleRunnerApplication` (Spring Boot entrypoint)
-  - `SmokeTestDefinition` (sample registered test)
+- `sample-app/`: sample Spring Boot application that uses the runner library:
+  - `sample-app/src/main/java/no/testframework/sampleapp/SampleRunnerApplication.java` (entrypoint)
+  - `sample-app/src/main/java/no/testframework/sampleapp/SmokeTestDefinition.java` (sample registered test)
 
 ## API
 
@@ -36,7 +36,7 @@ Example `POST /api/runs`:
 
 ## Configuration
 
-Environment can be controlled via `application.yaml` or environment variables:
+Environment can be controlled via `sample-app/src/main/resources/application.yaml` or environment variables:
 
 - `KAFKA_BROKERS`
 - `ORCHESTRATOR_BASE_URL`
