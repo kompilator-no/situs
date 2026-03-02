@@ -2,6 +2,7 @@ package no.testframework.runnerlib.api;
 
 import java.util.Map;
 import org.springframework.http.HttpStatus;
+import no.testframework.runnerlib.execution.IdempotencyConflictException;
 import no.testframework.runnerlib.execution.QueueFullException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,6 +22,14 @@ public class ApiExceptionHandler {
     @ExceptionHandler(QueueFullException.class)
     @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
     public Map<String, String> queueFull(QueueFullException e) {
+        return Map.of("error", e.getMessage());
+    }
+
+
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, String> idempotencyConflict(IdempotencyConflictException e) {
         return Map.of("error", e.getMessage());
     }
 
