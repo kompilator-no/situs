@@ -1,0 +1,21 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+runner:
+  discovery-packages:
+    - ${RUNNER_DISCOVERY_PACKAGES:no.testframework.runner.sample}
+  concurrency: ${RUNNER_CONCURRENCY:4}
+  queue-capacity: ${RUNNER_QUEUE_CAPACITY:100}
+  default-timeout: ${RUNNER_DEFAULT_TIMEOUT:PT5M}
+  default-retries: ${RUNNER_DEFAULT_RETRIES:1}
+
+integration:
+  kafka:
+    brokers: ${KAFKA_BROKERS:localhost:9092}
+  services:
+    orchestrator-base-url: ${ORCHESTRATOR_BASE_URL:http://localhost:8081}
+    test-data-base-url: ${TESTDATA_BASE_URL:http://localhost:8082}
+  auth:
+    client-id: ${AUTH_CLIENT_ID:runner-service}
+    client-secret: ${AUTH_CLIENT_SECRET:change-me}
+    token-url: ${AUTH_TOKEN_URL:http://localhost:8083/oauth/token}
