@@ -45,6 +45,8 @@ Bygg og kjør:
 
 ```bash
 docker compose up --build
+```
+
 # reporting-client
 
 Et lite klientbibliotek for versjonert publisering av testresultater mot GUI-backend via HTTP.
@@ -81,25 +83,4 @@ Et lite klientbibliotek for versjonert publisering av testresultater mot GUI-bac
 
 ## Bruk
 
-```python
-from reporting_client import TestResult, StepResult, new_report, ReportPublisher
-
-report = new_report(
-    suite="regression",
-    environment="ci",
-    commit_id="abc123",
-    build_id="build-77",
-    tests=[
-        TestResult(
-            test_id="T-1",
-            name="happy path",
-            status="passed",
-            duration_ms=120,
-            steps=[StepResult(name="open", status="passed", duration_ms=20)],
-        )
-    ],
-)
-
-publisher = ReportPublisher("http://gui-backend.local/api/reports")
-publisher.publish(report)
-```
+Se Kotlin-modulene (`framework-core`, `runner-service`, `reporting-client`) for videre brukseksempler.
