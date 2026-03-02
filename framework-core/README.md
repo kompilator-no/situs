@@ -1,8 +1,8 @@
 # framework-core DSL
 
-`framework-core` definerer sentrale modeller (`TestSuite`, `TestCase`, `TestStep`) og et Kotlin DSL-lag for å beskrive flyt i tester.
+`framework-core` defines core models (`TestSuite`, `TestCase`, `TestStep`) and a Kotlin DSL layer for describing test flow.
 
-## Eksempel
+## Example
 
 ```kotlin
 import framework.core.AssertionResult
@@ -35,7 +35,7 @@ val suite = testSuite(id = "orders") {
             }
         }
 
-        // kjøres først etter at alle parallel branches er ferdige (barrier/join)
+        // runs only after all parallel branches are complete (barrier/join)
         step(id = "final-assert") {
             StepResult.passed(
                 assertions = listOf(AssertionResult("all checks done", success = true)),
@@ -45,12 +45,12 @@ val suite = testSuite(id = "orders") {
 }
 ```
 
-## Designnotater
+## Design notes
 
-- **Tydelig rekkefølge:** `TestCase.blocks` opprettholder deklarert rekkefølge.
-- **Parallelle blokker med barrier:** `ExecutionBlock.Parallel` kapsler branches; runtime kan vente på alle branches før neste blokk.
-- **Avhengigheter:** `TestStep.dependencies` + delt typed state i `StepContext` gjør det enkelt å bruke output fra ett steg i neste.
-- **Bibliotek-vennlig:** DSL-et bygger kun immutable modeller, slik at team kan bruke egne executors/runtimes.
+- **Clear ordering:** `TestCase.blocks` preserves declared execution order.
+- **Parallel blocks with a barrier:** `ExecutionBlock.Parallel` encapsulates branches; the runtime can wait for all branches before the next block.
+- **Dependencies:** `TestStep.dependencies` + shared typed state in `StepContext` make it easy to use output from one step in the next.
+- **Library-friendly:** The DSL builds immutable models only, so teams can use their own executors/runtimes.
 
 ## Transport contract and compatibility
 
