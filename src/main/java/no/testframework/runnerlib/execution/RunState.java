@@ -1,4 +1,4 @@
-package no.testframework.runner.execution;
+package no.testframework.runnerlib.execution;
 
 public enum RunState {
     QUEUED,

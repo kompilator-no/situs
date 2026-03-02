@@ -1,4 +1,4 @@
-package no.testframework.runner.api;
+package no.testframework.runnerlib.api;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

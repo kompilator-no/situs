@@ -1,4 +1,4 @@
-package no.testframework.runner.config;
+package no.testframework.runnerlib.config;
 
 import java.util.ArrayList;
 import java.util.List;

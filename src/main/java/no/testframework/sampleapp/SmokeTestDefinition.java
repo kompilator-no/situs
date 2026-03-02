@@ -1,8 +1,8 @@
-package no.testframework.runner.sample;
+package no.testframework.sampleapp;
 
 import java.util.Map;
-import no.testframework.runner.discovery.TestDefinitionComponent;
-import no.testframework.runner.model.TestDefinition;
+import no.testframework.runnerlib.discovery.TestDefinitionComponent;
+import no.testframework.runnerlib.model.TestDefinition;
 import org.springframework.stereotype.Component;
 
 @Component

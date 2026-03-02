@@ -1,16 +1,27 @@
 # runner-service
 
-Spring Boot-tjeneste som oppdager testdefinisjoner, eksponerer API for kjøringer, og håndterer kø/scheduler med retries, timeout og avbrudd.
+Spring Boot service that discovers test definitions, exposes execution APIs, and handles queue/scheduler behavior with retries, timeouts, and cancellation.
+
+## Structure
+
+- `no.testframework.runnerlib.*`: reusable library containing all core logic for:
+  - test discovery
+  - execution/scheduling
+  - API DTOs and controller
+  - configuration and run model
+- `no.testframework.sampleapp.*`: sample application that uses the library:
+  - `SampleRunnerApplication` (Spring Boot entrypoint)
+  - `SmokeTestDefinition` (sample registered test)
 
 ## API
 
-- `GET /api/tests` – list oppdagede testdefinisjoner.
-- `POST /api/runs` – start kjøring.
-- `DELETE /api/runs/{runId}` – stopp kjøring.
-- `GET /api/runs/{runId}` – status for en kjøring.
-- `GET /api/runs` – status for alle kjøringer.
+- `GET /api/tests` – list discovered test definitions.
+- `POST /api/runs` – start a run.
+- `DELETE /api/runs/{runId}` – stop a run.
+- `GET /api/runs/{runId}` – get status for a run.
+- `GET /api/runs` – get status for all runs.
 
-Eksempel `POST /api/runs`:
+Example `POST /api/runs`:
 
 ```json
 {
@@ -23,9 +34,9 @@ Eksempel `POST /api/runs`:
 }
 ```
 
-## Konfigurasjon
+## Configuration
 
-Miljø kan styres via `application.yaml` eller miljøvariabler:
+Environment can be controlled via `application.yaml` or environment variables:
 
 - `KAFKA_BROKERS`
 - `ORCHESTRATOR_BASE_URL`
@@ -41,7 +52,7 @@ Miljø kan styres via `application.yaml` eller miljøvariabler:
 
 ## Container
 
-Bygg og kjør:
+Build and run:
 
 ```bash
 docker compose up --build
@@ -49,13 +60,13 @@ docker compose up --build
 
 # reporting-client
 
-Et lite klientbibliotek for versjonert publisering av testresultater mot GUI-backend via HTTP.
+A small client library for versioned publishing of test results to a GUI backend over HTTP.
 
-## Skjema (v1)
+## Schema (v1)
 
-`ReportPayload` består av:
+`ReportPayload` contains:
 
-- `schema_version`: versjon av resultatformat (`v1`).
+- `schema_version`: result format version (`v1`).
 - `metadata`:
   - `run_id`
   - `suite`
@@ -65,22 +76,22 @@ Et lite klientbibliotek for versjonert publisering av testresultater mot GUI-bac
   - `started_at`
   - `finished_at`
 - `tests[]`:
-  - testnivå: `test_id`, `name`, `status`, `duration_ms`, `error_message`, `attachments[]`
-  - stegnivå (`steps[]`): `name`, `status`, `duration_ms`, `error_message`, `attachments[]`
-- `summary`: aggregert `passed`, `failed`, `skipped`
+  - test level: `test_id`, `name`, `status`, `duration_ms`, `error_message`, `attachments[]`
+  - step level (`steps[]`): `name`, `status`, `duration_ms`, `error_message`, `attachments[]`
+- `summary`: aggregated `passed`, `failed`, `skipped`
 
-## Robust publisering
+## Reliable publishing
 
-`ReportPublisher` sender payload via HTTP `POST` med:
+`ReportPublisher` sends payload via HTTP `POST` with:
 
-- `Idempotency-Key`: deterministisk nøkkel av `run_id + sha256(payload)`.
-- Retry/backoff med eksponentiell ventetid + jitter ved:
+- `Idempotency-Key`: deterministic key from `run_id + sha256(payload)`.
+- Retry/backoff with exponential delay + jitter on:
   - HTTP `429`
   - HTTP `5xx`
-  - nettverksfeil (`URLError`, timeout)
-- Fallback-kø (`FileBackedQueue`) i JSONL-format ved vedvarende feil.
-- Drenering av kø før ny rapport, for å sende backlog i rekkefølge.
+  - network errors (`URLError`, timeout)
+- Fallback queue (`FileBackedQueue`) in JSONL format on persistent failures.
+- Queue draining before sending a new report, so backlog is delivered in order.
 
-## Bruk
+## Usage
 
-Se Kotlin-modulene (`framework-core`, `runner-service`, `reporting-client`) for videre brukseksempler.
+See the Kotlin modules (`framework-core`, `runner-service`, `reporting-client`) for additional usage examples.
