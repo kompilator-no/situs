@@ -1,0 +1,15 @@
+services:
+  runner-service:
+    build: .
+    image: runner-service:local
+    ports:
+      - "8080:8080"
+    environment:
+      RUNNER_CONCURRENCY: 4
+      RUNNER_QUEUE_CAPACITY: 200
+      KAFKA_BROKERS: kafka:9092
+      ORCHESTRATOR_BASE_URL: http://orchestrator:8081
+      TESTDATA_BASE_URL: http://testdata:8082
+      AUTH_CLIENT_ID: runner-service
+      AUTH_CLIENT_SECRET: runner-secret
+      AUTH_TOKEN_URL: http://auth:8083/oauth/token
