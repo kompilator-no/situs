@@ -4,6 +4,8 @@ public record RunSummary(
     int total,
     int queued,
     int running,
-    int completed
+    int completed,
+    int expiredDeleted,
+    int retainedCount
 ) {
 }

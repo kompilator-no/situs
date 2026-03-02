@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HexFormat;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,6 +55,8 @@ public class RunnerService {
         .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
         .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
     private final Object idempotencyLock = new Object();
+    private volatile int lastExpiredDeleted = 0;
+    private volatile int lastRetainedCount = 0;
 
     public RunnerService(TestDefinitionRegistry registry,
                          ObjectProvider<TestDefinition> testDefinitions,
@@ -118,6 +121,7 @@ public class RunnerService {
         } else {
             records.put(runId, record);
         }
+        compactHistory();
         emitEvent(record, RunState.QUEUED, null);
 
         try {
@@ -199,6 +203,7 @@ public class RunnerService {
             record.setDetail("Run cancelled by request");
             record.setFinishedAt(Instant.now());
             emitEvent(record, RunState.CANCELLED, null);
+            compactHistory();
         }
         return cancelled;
     }
@@ -212,6 +217,7 @@ public class RunnerService {
     }
 
     public List<RunRecord> all(String testId, RunState state) {
+        compactHistory();
         return records.values().stream()
             .filter(run -> testId == null || run.getTestId().equals(testId))
             .filter(run -> state == null || run.getState() == state)
@@ -227,6 +233,7 @@ public class RunnerService {
     }
 
     public RunSummary summary() {
+        compactHistory();
         int queued = 0;
         int running = 0;
         int completed = 0;
@@ -237,7 +244,59 @@ public class RunnerService {
                 default -> completed++;
             }
         }
-        return new RunSummary(records.size(), queued, running, completed);
+        return new RunSummary(records.size(), queued, running, completed, lastExpiredDeleted, lastRetainedCount);
+    }
+
+
+    private void compactHistory() {
+        synchronized (idempotencyLock) {
+            Instant now = Instant.now();
+            Duration ttl = properties.getHistoryTtl();
+            int expiredDeleted = 0;
+
+            Iterator<Map.Entry<UUID, RunRecord>> iterator = records.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<UUID, RunRecord> entry = iterator.next();
+                RunRecord run = entry.getValue();
+                if (!isTerminal(run.getState()) || run.getFinishedAt() == null) {
+                    continue;
+                }
+                if (ttl != null && !ttl.isNegative() && !ttl.isZero()) {
+                    Instant expiresAt = run.getFinishedAt().plus(ttl);
+                    if (!expiresAt.isAfter(now)) {
+                        iterator.remove();
+                        futures.remove(entry.getKey());
+                        if (run.getIdempotencyKey() != null) {
+                            idempotencyIndex.remove(run.getIdempotencyKey(), run.getRunId());
+                        }
+                        expiredDeleted++;
+                    }
+                }
+            }
+
+            int maxRunRecords = properties.getMaxRunRecords();
+            List<RunRecord> terminalRuns = records.values().stream()
+                .filter(run -> isTerminal(run.getState()))
+                .sorted(Comparator.comparing(RunRecord::getFinishedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+            int overage = Math.max(terminalRuns.size() - maxRunRecords, 0);
+            for (int i = 0; i < overage; i++) {
+                RunRecord run = terminalRuns.get(i);
+                records.remove(run.getRunId(), run);
+                futures.remove(run.getRunId());
+                if (run.getIdempotencyKey() != null) {
+                    idempotencyIndex.remove(run.getIdempotencyKey(), run.getRunId());
+                }
+            }
+
+            lastExpiredDeleted = expiredDeleted;
+            lastRetainedCount = Math.max(terminalRuns.size() - overage, 0);
+        }
+    }
+
+    private boolean isTerminal(RunState state) {
+        return state != RunState.QUEUED && state != RunState.RUNNING && state != RunState.RETRYING;
     }
 
     private void executeWithPolicies(RunRecord run) {
@@ -263,6 +322,7 @@ public class RunnerService {
                 run.setFinishedAt(Instant.now());
                 futures.remove(run.getRunId());
                 emitEvent(run, RunState.COMPLETED, null);
+                compactHistory();
                 return;
             } catch (TimeoutException e) {
                 run.setState(RunState.TIMED_OUT);
@@ -278,6 +338,7 @@ public class RunnerService {
                 run.setFinishedAt(Instant.now());
                 futures.remove(run.getRunId());
                 emitEvent(run, RunState.CANCELLED, e);
+                compactHistory();
                 return;
             } catch (Exception e) {
                 run.setErrorType(e.getClass().getSimpleName());
@@ -287,6 +348,7 @@ public class RunnerService {
                     run.setFinishedAt(Instant.now());
                     futures.remove(run.getRunId());
                     emitEvent(run, RunState.COMPLETED, null);
+                    compactHistory();
                     return;
                 }
             }
