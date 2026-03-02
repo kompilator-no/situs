@@ -14,6 +14,8 @@ public class RunRecord {
     private final Map<String, Object> context;
     private final String correlationId;
     private final String traceId;
+    private final String idempotencyKey;
+    private final String idempotencyFingerprint;
     private final Instant createdAt = Instant.now();
     private final AtomicInteger attempts = new AtomicInteger(0);
     private final AtomicReference<RunState> state = new AtomicReference<>(RunState.QUEUED);
@@ -29,6 +31,8 @@ public class RunRecord {
                      Map<String, Object> context,
                      String correlationId,
                      String traceId) {
+                     String idempotencyKey,
+                     String idempotencyFingerprint) {
         this.runId = runId;
         this.testId = testId;
         this.maxRetries = maxRetries;
@@ -36,6 +40,8 @@ public class RunRecord {
         this.context = context;
         this.correlationId = correlationId;
         this.traceId = traceId;
+        this.idempotencyKey = idempotencyKey;
+        this.idempotencyFingerprint = idempotencyFingerprint;
     }
 
     public UUID getRunId() { return runId; }
@@ -45,6 +51,8 @@ public class RunRecord {
     public Map<String, Object> getContext() { return context; }
     public String getCorrelationId() { return correlationId; }
     public String getTraceId() { return traceId; }
+    public String getIdempotencyKey() { return idempotencyKey; }
+    public String getIdempotencyFingerprint() { return idempotencyFingerprint; }
     public Instant getCreatedAt() { return createdAt; }
     public int incrementAttempts() { return attempts.incrementAndGet(); }
     public int getAttempts() { return attempts.get(); }

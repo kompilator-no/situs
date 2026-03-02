@@ -51,3 +51,13 @@ val suite = testSuite(id = "orders") {
 - **Parallelle blokker med barrier:** `ExecutionBlock.Parallel` kapsler branches; runtime kan vente på alle branches før neste blokk.
 - **Avhengigheter:** `TestStep.dependencies` + delt typed state i `StepContext` gjør det enkelt å bruke output fra ett steg i neste.
 - **Bibliotek-vennlig:** DSL-et bygger kun immutable modeller, slik at team kan bruke egne executors/runtimes.
+
+## Transport contract and compatibility
+
+`framework-core` now exposes a shared transport contract in `no.testframework.framework.core.transport` with:
+
+- canonical request/response/error models
+- protocol metadata (`protocolVersion` + capability flags)
+- compatibility guard (`TransportCompatibility.requireCompatible`) used by the runner at startup
+
+Transport modules consume shared contract tests via `TransportContractSuite` from `framework-core` test fixtures.
