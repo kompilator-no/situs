@@ -1,8 +1,0 @@
-[package]
-name = "transport-websocket"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-framework-core = { path = "../framework-core" }
-serde_json = "1"
