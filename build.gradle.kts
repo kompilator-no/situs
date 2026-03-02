@@ -26,6 +26,8 @@ subprojects {
         "testImplementation"(platform("org.junit:junit-bom:5.11.4"))
         "testImplementation"("org.junit.jupiter:junit-jupiter")
         "testImplementation"("io.kotest:kotest-assertions-core:5.9.1")
+
+        "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }
 
     tasks.withType<KotlinCompile>().configureEach {

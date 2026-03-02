@@ -1,12 +1,5 @@
 package no.testframework.transport.kafka
 
-class KafkaTransportClient {
-    fun describe() = "Kafka producer/consumer client"
-
-    fun buildRecordHeaders(correlationId: String, traceId: String): Map<String, String> = mapOf(
-        "correlationId" to correlationId,
-        "traceId" to traceId
-    )
 import no.testframework.framework.core.transport.TRANSPORT_PROTOCOL_V1
 import no.testframework.framework.core.transport.TransportCapability
 import no.testframework.framework.core.transport.TransportClient
