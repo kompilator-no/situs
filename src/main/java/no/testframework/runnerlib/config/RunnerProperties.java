@@ -25,6 +25,13 @@ public class RunnerProperties {
 
     private Duration idempotencyWindow = Duration.ofHours(24);
 
+    private Duration historyTtl = Duration.ofHours(24);
+
+    @Min(0)
+    private int maxRunRecords = 10_000;
+
+    private Duration cleanupInterval = Duration.ofMinutes(5);
+
     private Security security = new Security();
 
     public List<String> getDiscoveryPackages() {
@@ -81,6 +88,30 @@ public class RunnerProperties {
 
     public void setSecurity(Security security) {
         this.security = security;
+    }
+
+    public Duration getHistoryTtl() {
+        return historyTtl;
+    }
+
+    public void setHistoryTtl(Duration historyTtl) {
+        this.historyTtl = historyTtl;
+    }
+
+    public int getMaxRunRecords() {
+        return maxRunRecords;
+    }
+
+    public void setMaxRunRecords(int maxRunRecords) {
+        this.maxRunRecords = maxRunRecords;
+    }
+
+    public Duration getCleanupInterval() {
+        return cleanupInterval;
+    }
+
+    public void setCleanupInterval(Duration cleanupInterval) {
+        this.cleanupInterval = cleanupInterval;
     }
 
     public static class Security {

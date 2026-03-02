@@ -2,9 +2,9 @@
 
 ## Progress Snapshot (as of this update)
 
-- **Overall completion estimate:** **~52%** (MVP delivery completed, hardening and CI baseline partially implemented).
+- **Overall completion estimate:** **~68%** (MVP complete; hardening now includes idempotency, retention, and reliability tests, with persistence/CI still pending).
 - **Current stage:** Phase 2 hardening in progress.
-- **Biggest gap:** Persistent storage + full reporting reliability are still pending.
+- **Biggest gap:** Durable persistence layer + reporting reliability rollout + CI pipeline hardening.
 
 ## Work Completed So Far (Done)
 
@@ -62,18 +62,19 @@
 **Goal:** Make run orchestration reliable under concurrent and failure scenarios.
 
 **Status:** 🟡 **In progress**
-**Completion estimate:** **35%**
+**Completion estimate:** **70%**
 
 ### Checklist
 - [x] Introduce queue/scheduler with configurable concurrency.
 - [x] Add timeout handling.
 - [x] Add retry policy for recoverable failures.
 - [x] Add cancellation flow.
+- [x] Add in-memory history retention controls (TTL + max record cap) with cleanup metrics (`expiredDeleted`, `retainedCount`).
 - [ ] Replace or augment in-memory state with persistent store (PostgreSQL/Redis).
-- [ ] Add structured logging + correlation IDs by run.
-- [ ] Add automated tests for:
+- [x] Add structured logging + correlation IDs by run.
+- [x] Add automated tests for:
   - [ ] concurrency behavior
-  - [ ] timeout/retry/cancel behavior
+  - [x] timeout/retry/cancel behavior
 
 **Exit criteria for Phase 2**
 - [ ] Concurrent runs behave deterministically.
@@ -179,3 +180,20 @@ Use this on each update cycle:
   1. Action A
   2. Action B
   3. Action C
+
+
+### Latest progress update
+
+- **Date:** 2026-03-02
+- **Overall completion:** 68%
+- **Phase in focus:** Phase 2 (Run Engine Hardening)
+- **Completed this cycle:**
+  - [x] Added run history retention controls (`historyTtl`, `maxRunRecords`, `cleanupInterval`) for in-memory records
+  - [x] Exposed retention cleanup metrics through run summary (`expiredDeleted`, `retainedCount`)
+  - [x] Added integration coverage for retention behavior via controller tests
+- **Blocked by:**
+  - Persistent backing store selection/implementation (PostgreSQL/Redis)
+- **Next 3 actions:**
+  1. Add deterministic concurrency-focused tests for queue scheduling semantics
+  2. Implement persistent run state repository and migration strategy
+  3. Add CI workflow for build + test + static checks
