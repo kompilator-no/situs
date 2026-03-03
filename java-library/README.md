@@ -65,6 +65,32 @@ class TestFrameworkConfig {
 
 Then call `runner.run(suite)` from your service layer.
 
+## API helpers for apps
+
+The library now includes app-facing helpers in `no.testframework.javalibrary.api`:
+
+- `TestFrameworkApi`: a small facade for running suites from application code.
+- `TestFrameworkApiHandlers`: predefined handlers (`setContext` and `contextEquals`) that can be reused in APIs.
+- `TestFrameworkController`: a reusable Spring `@RestController` exposing `POST /api/test-framework/suites/run`.
+
+Example Spring Boot wiring:
+
+```java
+@Configuration
+class TestFrameworkApiConfig {
+
+    @Bean
+    TestFrameworkApi testFrameworkApi() {
+        return TestFrameworkApi.withDefaults();
+    }
+
+    @Bean
+    TestFrameworkController testFrameworkController(TestFrameworkApi api) {
+        return new TestFrameworkController(api);
+    }
+}
+```
+
 ## Build
 
 From repository root:
