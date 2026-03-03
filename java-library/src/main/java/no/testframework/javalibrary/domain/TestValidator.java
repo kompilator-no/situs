@@ -9,6 +9,10 @@ public record TestValidator(
         String target,
         Map<String, Object> expected
 ) {
+    public TestValidator(String type, String target) {
+        this(type, target, Map.of());
+    }
+
     public TestValidator {
         type = requireNonBlank(type, "type");
         target = requireNonBlank(target, "target");
@@ -20,6 +24,10 @@ public record TestValidator(
         Map<String, Object> updatedExpected = new LinkedHashMap<>(expected);
         updatedExpected.put(validKey, value);
         return new TestValidator(type, target, updatedExpected);
+    }
+
+    public boolean hasExpectedValues() {
+        return !expected.isEmpty();
     }
 
     private static String requireNonBlank(String value, String fieldName) {

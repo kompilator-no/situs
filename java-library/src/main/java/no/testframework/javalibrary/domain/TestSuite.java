@@ -10,6 +10,14 @@ public record TestSuite(
         String description,
         List<TestStep> steps
 ) {
+    public TestSuite(String id, String name) {
+        this(id, name, "", List.of());
+    }
+
+    public TestSuite(String id, String name, String description) {
+        this(id, name, description, List.of());
+    }
+
     public TestSuite {
         id = requireNonBlank(id, "id");
         name = requireNonBlank(name, "name");
@@ -22,6 +30,22 @@ public record TestSuite(
         List<TestStep> updatedSteps = new ArrayList<>(steps);
         updatedSteps.add(step);
         return new TestSuite(id, name, description, updatedSteps);
+    }
+
+    public TestSuite withName(String updatedName) {
+        return new TestSuite(id, updatedName, description, steps);
+    }
+
+    public TestSuite withDescription(String updatedDescription) {
+        return new TestSuite(id, name, updatedDescription, steps);
+    }
+
+    public boolean isEmpty() {
+        return steps.isEmpty();
+    }
+
+    public int stepCount() {
+        return steps.size();
     }
 
     private static String requireNonBlank(String value, String fieldName) {

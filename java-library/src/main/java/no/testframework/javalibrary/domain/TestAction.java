@@ -9,6 +9,10 @@ public record TestAction(
         String target,
         Map<String, Object> parameters
 ) {
+    public TestAction(String type, String target) {
+        this(type, target, Map.of());
+    }
+
     public TestAction {
         type = requireNonBlank(type, "type");
         target = requireNonBlank(target, "target");
@@ -20,6 +24,10 @@ public record TestAction(
         Map<String, Object> updatedParameters = new LinkedHashMap<>(parameters);
         updatedParameters.put(validKey, value);
         return new TestAction(type, target, updatedParameters);
+    }
+
+    public boolean hasParameters() {
+        return !parameters.isEmpty();
     }
 
     private static String requireNonBlank(String value, String fieldName) {
