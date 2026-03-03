@@ -197,3 +197,36 @@ Use this on each update cycle:
   1. Add deterministic concurrency-focused tests for queue scheduling semantics
   2. Implement persistent run state repository and migration strategy
   3. Add CI workflow for build + test + static checks
+
+---
+
+## One Big Task (Single-PR Execution Plan)
+
+### Task title
+**Deliver Production-Ready Reliability Baseline Across Run Engine + Reporting + CI in One Integrated PR**
+
+### Why one big task
+The main delivery risk is not a single missing feature, but the current gap between in-memory correctness and production reliability. This task combines the three coupled areas that must ship together to meaningfully reduce risk:
+
+1. durable run persistence,
+2. reliable report publishing,
+3. CI enforcement of build/test quality gates.
+
+### Scope (must be completed together)
+- [ ] **Runner state durability:** add persistent repository (PostgreSQL or Redis), migration/bootstrap, and parity behavior with current in-memory lifecycle semantics.
+- [ ] **Deterministic orchestration validation:** add concurrency-focused tests for queueing/scheduler behavior.
+- [ ] **Reporting reliability:** implement `ReportPayload v1`, idempotency keys, exponential backoff retry, and backlog/drain behavior.
+- [ ] **Contract/integration coverage:** add tests validating retry/idempotency/backlog and persistence restart behavior.
+- [ ] **CI hardening:** ensure CI runs full build + tests (including module-level coverage relevant to this task) and blocks regressions.
+
+### Definition of done
+- [ ] Service restart preserves run history and summary semantics.
+- [ ] Concurrent run scheduling behavior is reproducible and covered by automated tests.
+- [ ] Report delivery tolerates transient backend failures without report loss.
+- [ ] Duplicate report submissions are prevented/handled through idempotency.
+- [ ] CI executes and passes required checks on every PR.
+
+### Exit evidence checklist
+- [ ] Green test suites for `runner-service` and `reporting-client` changes.
+- [ ] CI workflow run link or equivalent local command transcript for `build` + `test`.
+- [ ] Updated docs for operational configuration (persistence, retry, backlog, idempotency).
