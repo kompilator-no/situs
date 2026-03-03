@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 
 class TestFrameworkApiTest {
 
@@ -48,5 +49,24 @@ class TestFrameworkApiTest {
         TestSuiteResult result = api.runSuite(suite);
 
         assertEquals(TestStatus.PASSED, result.status());
+    }
+
+    @Test
+    void apiStatusIsUp() {
+        TestFrameworkApi api = TestFrameworkApi.withDefaults();
+
+        assertEquals("UP", api.getStatus());
+    }
+
+    @Test
+    void getTestsReturnsRegisteredSuites() {
+        TestFrameworkApi api = TestFrameworkApi.withDefaults();
+        TestSuite firstSuite = new TestSuite("suite-1", "Suite one", "", List.of());
+        TestSuite secondSuite = new TestSuite("suite-2", "Suite two", "", List.of());
+
+        api.registerSuite(firstSuite);
+        api.registerSuite(secondSuite);
+
+        assertIterableEquals(List.of(firstSuite, secondSuite), api.getTests());
     }
 }

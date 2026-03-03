@@ -72,7 +72,10 @@ The library now includes app-facing helpers in `no.testframework.javalibrary.api
 
 - `TestFrameworkApi`: a small facade for running suites from application code.
 - `TestFrameworkApiHandlers`: predefined handlers (`setContext` and `contextEquals`) that can be reused in APIs.
-- `TestFrameworkController`: a reusable Spring `@RestController` exposing `POST /api/test-framework/suites/run`.
+- `TestFrameworkController`: a reusable Spring `@RestController` exposing:
+  - `GET /api/test-framework/status`
+  - `GET /api/test-framework/tests`
+  - `POST /api/test-framework/suites/run`
 
 Example Spring Boot wiring:
 
