@@ -2,11 +2,13 @@ package no.testframework.javalibrary.api;
 
 import no.testframework.javalibrary.domain.TestSuite;
 import no.testframework.javalibrary.runtime.TestSuiteResult;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -19,6 +21,16 @@ public final class TestFrameworkController {
 
     public TestFrameworkController(TestFrameworkApi api) {
         this.api = Objects.requireNonNull(api, "api cannot be null");
+    }
+
+    @GetMapping("/status")
+    public String getStatus() {
+        return api.getStatus();
+    }
+
+    @GetMapping("/tests")
+    public List<TestSuite> getTests() {
+        return api.getTests();
     }
 
     @PostMapping("/suites/run")

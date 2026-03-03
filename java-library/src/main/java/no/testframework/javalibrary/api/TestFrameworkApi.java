@@ -5,6 +5,8 @@ import no.testframework.javalibrary.runtime.TestRuntimeConfiguration;
 import no.testframework.javalibrary.runtime.TestSuiteResult;
 import no.testframework.javalibrary.runtime.TestSuiteRunner;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -13,6 +15,7 @@ import java.util.function.Consumer;
  */
 public final class TestFrameworkApi {
     private final TestSuiteRunner runner;
+    private final List<TestSuite> registeredSuites = new ArrayList<>();
 
     public TestFrameworkApi(TestSuiteRunner runner) {
         this.runner = Objects.requireNonNull(runner, "runner cannot be null");
@@ -34,6 +37,20 @@ public final class TestFrameworkApi {
     }
 
     public TestSuiteResult runSuite(TestSuite suite) {
-        return runner.run(suite);
+        TestSuite suiteToRun = Objects.requireNonNull(suite, "suite cannot be null");
+        registerSuite(suiteToRun);
+        return runner.run(suiteToRun);
+    }
+
+    public synchronized String getStatus() {
+        return "UP";
+    }
+
+    public synchronized List<TestSuite> getTests() {
+        return List.copyOf(registeredSuites);
+    }
+
+    public synchronized void registerSuite(TestSuite suite) {
+        registeredSuites.add(Objects.requireNonNull(suite, "suite cannot be null"));
     }
 }
