@@ -1,17 +1,20 @@
 # Test Framework
 
-This repository is organized as a multi-language workspace.
+This repository is organized as a multi-module Gradle workspace.
 
-## Language libraries
+## Modules
 
-- `java-library`: Java implementation and domain models.
-
-Additional language-specific libraries can be added as sibling folders (for example `python-library`, `js-library`, and more).
+- `java-library`: Java implementation and domain/runtime models.
+- `sample-app`: Spring Boot sample app showing how to run a test suite with steps using the library.
 
 ## Build from repository root
 
-This repo includes a root Gradle launcher that delegates to the Java library module.
-
 ```bash
 ./gradlew build
+```
+
+## Run sample app tests
+
+```bash
+./gradlew :sample-app:test
 ```
