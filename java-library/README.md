@@ -12,3 +12,11 @@ The library is configured to use Java 21.
 - `TestStep`: a single test step with actions and validators.
 - `TestAction`: a generic action descriptor (`type`, `target`, and dynamic parameters).
 - `TestValidator`: a generic validator descriptor (`type`, `target`, and expected values).
+
+## Build
+
+From repository root:
+
+```bash
+./java-library/gradlew -p java-library build
+```
