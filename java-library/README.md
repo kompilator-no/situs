@@ -1,108 +1,185 @@
 # Java Library (MVP)
 
-This module provides Java domain objects and an execution runtime for defining and running test-framework suites.
+This module provides a test framework with two styles:
+
+1. Domain/runtime model (`TestSuite`, `TestStep`, `TestAction`, `TestValidator`).
+2. Preferred object-oriented model in `no.testframework.javalibrary.suite`.
 
 ## Java version
 
-The library is configured to use Java 21.
+Java 21.
 
-## Domain objects
+## Object-oriented API (preferred)
 
-- `TestSuite`: top-level suite metadata and ordered steps.
-- `TestStep`: a single test step with actions and validators.
-- `TestAction`: a generic action descriptor (`type`, `target`, and dynamic parameters).
-- `TestValidator`: a generic validator descriptor (`type`, `target`, and expected values).
+Main types:
 
-## Runtime objects
+- `TestSuite`
+- `TestCase`
+- `Step`
+- `SuiteApi`
+- `SuiteRunner`
+- `ExecutionStrategy`
+- `StepExecutionCondition`
 
-- `TestSuiteRunner`: executes suites with pluggable action/validator handlers.
-- `TestExecutionContext`: key/value state shared across actions and validators.
-- `TestRuntimeConfiguration`: fluent registration for handlers and runner creation.
-- `TestSuiteResult`/`TestStepResult`: immutable execution report objects.
+HTTP primitives for OO suites:
 
-## Included features
+- `HttpEndpoints`
+- `HttpEndpoint`
+- `HttpBody`
 
-- Constructor validation for required fields (`id`, `name`, `type`, `target`, and list containers).
-- Defensive immutable copies of all lists/maps.
-- Overloaded constructors for convenient defaults on optional collections and description values.
-- Convenience methods for incremental construction and immutable updates:
-  - `TestSuite.withStep(...)`
-  - `TestStep.withAction(...)`
-  - `TestStep.withValidator(...)`
-  - `TestAction.withParameter(...)`
-  - `TestValidator.withExpected(...)`
-- Runtime-safe suite execution with:
-  - handler lookup by action/validator `type`
-  - fail-fast behavior (suite stops on first failing step)
-  - execution context snapshot for later reporting
-
-## Spring Boot quick-start
-
-You can wire this directly in a Spring Boot app by registering handlers as beans and building a runner:
+Example:
 
 ```java
-@Configuration
-class TestFrameworkConfig {
+public final class AdvancedTestSuite implements TestSuite {
+    @Override
+    public String name() {
+        return "Test Suite Name";
+    }
 
-    @Bean
-    TestSuiteRunner testSuiteRunner(MyGateway gateway) {
-        return new TestRuntimeConfiguration()
-                .registerActionHandler("httpGet", (action, context) -> {
-                    String url = (String) action.parameters().get("url");
-                    String body = gateway.get(url);
-                    context.put("lastBody", body);
-                })
-                .registerValidatorHandler("bodyContains", (validator, context) -> {
-                    String expected = (String) validator.expected().get("value");
-                    String body = context.get("lastBody", String.class);
-                    if (body == null || !body.contains(expected)) {
-                        throw new IllegalStateException("Response body did not contain expected value");
-                    }
-                })
-                .buildRunner();
+    @Override
+    public List<TestCase> testCases() {
+        return List.of(new MyHttpTestCase(), new MyKafkaTestCase());
     }
 }
 ```
 
-Then call `runner.run(suite)` from your service layer.
-
-## API helpers for apps
-
-The library now includes app-facing helpers in `no.testframework.javalibrary.api`:
-
-- `TestFrameworkApi`: a small facade for running suites from application code.
-- `TestFrameworkApiHandlers`: predefined handlers (`setContext` and `contextEquals`) that can be reused in APIs.
-- `TestFrameworkController`: a reusable Spring `@RestController` exposing `POST /api/test-framework/suites/run`.
-
-Example Spring Boot wiring:
+Run:
 
 ```java
-@Configuration
-class TestFrameworkApiConfig {
-
-    @Bean
-    TestFrameworkApi testFrameworkApi() {
-        return TestFrameworkApi.withDefaults();
-    }
-
-    @Bean
-    TestFrameworkController testFrameworkController(TestFrameworkApi api) {
-        return new TestFrameworkController(api);
-    }
-}
+SuiteApi api = SuiteApi.create();
+SuiteResult result = api.runSuite(new AdvancedTestSuite());
 ```
+
+
+## ActionStep
+
+`ActionStep` is an OO `Step` that encapsulates an `Action` with optional delay/timeout and lifecycle hooks.
+
+You can create it in two ways:
+
+1. Interface implementation (`implements ActionStep` and provide `action()`).
+2. Builder (`ActionStep.builder(...)`).
+
+Builder example:
+
+```java
+ActionStep actionStep = ActionStep
+        .builder(context -> context.put("state", "ok"))
+        .name("Action step name")
+        .description("Action step description")
+        .delay(Delay.from(10, TimeUnit.SECONDS))
+        .timeout(Timeout.from(1, TimeUnit.MINUTES))
+        .onStarted(() -> { /* log */ })
+        .onFinished(() -> { /* log */ })
+        .build();
+```
+
+
+## ValidatorStep
+
+`ValidatorStep` is an OO `Step` that encapsulates a `Validator` with optional delay/timeout and lifecycle hooks.
+
+You can create it in two ways:
+
+1. Interface implementation (`implements ValidatorStep` and provide `validator()`).
+2. Builder (`ValidatorStep.builder(...)`).
+
+Builder example:
+
+```java
+ValidatorStep validatorStep = ValidatorStep
+        .builder(context -> "ok".equals(context.get("state", String.class)))
+        .name("Validator step name")
+        .description("Validator step description")
+        .delay(Delay.from(10, TimeUnit.SECONDS))
+        .timeout(Timeout.from(1, TimeUnit.MINUTES))
+        .onStarted(() -> { /* log */ })
+        .onFinished(() -> { /* log */ })
+        .build();
+```
+
+
+## GenericAction
+
+`GenericAction` is a less-opinionated action abstraction intended for custom code execution.
+
+Create it by:
+
+1. interface implementation (`implements GenericAction`), or
+2. builder (`GenericAction.builder(...)`).
+
+Builder example:
+
+```java
+GenericAction genericAction = GenericAction
+        .builder(() -> Optional.empty())
+        .iterations(Iterations.from(1))
+        .onStarted(context -> { /* use context.registry() */ })
+        .onFinished(() -> { /* log */ })
+        .onException(exception -> { /* handle */ })
+        .build();
+```
+
+Use it inside a step with:
+
+```java
+Step step = ActionStep.from(genericAction);
+```
+
+## GenericValidator
+
+`GenericValidator` allows custom validation logic with retries/attempts.
+
+Create it by:
+
+1. interface implementation (`implements GenericValidator`), or
+2. builder (`GenericValidator.builder(...)`).
+
+Builder example:
+
+```java
+GenericValidator genericValidator = GenericValidator
+        .builder(() -> Assertion.success())
+        .attempts(Attempts.from(1))
+        .onStarted(context -> { /* use context.registry() */ })
+        .onFinished(() -> { /* log */ })
+        .onException(exception -> { /* handle */ })
+        .build();
+```
+
+Use it inside a step with:
+
+```java
+Step step = ValidatorStep.from(genericValidator);
+```
+
+## App-facing handlers
+
+`TestFrameworkApiHandlers` now provides generic non-HTTP handlers:
+
+- `setContext`
+- `contextEquals`
+- `customAction`
+- `customValidator`
+
+HTTP action/validator are isolated in their own package:
+
+- package: `no.testframework.javalibrary.api.http`
+- class: `HttpHandlers`
+  - `ACTION_HTTP_REQUEST`
+  - `VALIDATOR_HTTP_STATUS_EQUALS`
+  - `CONTEXT_LAST_HTTP_RESPONSE`
+- class: `HttpResponseData`
+
+`TestFrameworkApi.withDefaults()` automatically registers both base handlers and HTTP handlers.
 
 ## Build
-
-From repository root:
 
 ```bash
 ./java-library/gradlew -p java-library build
 ```
 
 ## Test
-
-From repository root:
 
 ```bash
 ./java-library/gradlew -p java-library test

@@ -1,7 +1,7 @@
 package no.testframework.sampleapp;
 
+import no.testframework.javalibrary.suite.SuiteResult;
 import no.testframework.javalibrary.runtime.TestStatus;
-import no.testframework.javalibrary.runtime.TestSuiteResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,14 +15,12 @@ class SampleSuiteServiceTest {
     private SampleSuiteService sampleSuiteService;
 
     @Test
-    void sampleSuiteRunsAllStepsSuccessfully() {
-        TestSuiteResult result = sampleSuiteService.runSampleSuite();
+    void sampleSuiteRunsSuccessfullyWithSuiteApi() {
+        SuiteResult result = sampleSuiteService.runSampleSuite();
 
         assertEquals(TestStatus.PASSED, result.status());
-        assertEquals(2, result.stepResults().size());
-        assertEquals(TestStatus.PASSED, result.stepResults().get(0).status());
-        assertEquals(TestStatus.PASSED, result.stepResults().get(1).status());
-        assertEquals("alice", result.contextSnapshot().get("username"));
-        assertEquals("admin", result.contextSnapshot().get("role"));
+        assertEquals(3, result.testCaseResults().size());
+        assertEquals("endpoint 1 response", result.contextSnapshot().get("sampleHttpBody"));
+        assertEquals("processed", result.contextSnapshot().get("sampleKafkaState"));
     }
 }

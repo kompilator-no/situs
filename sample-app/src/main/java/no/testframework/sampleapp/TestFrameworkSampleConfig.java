@@ -1,6 +1,6 @@
 package no.testframework.sampleapp;
 
-import no.testframework.javalibrary.api.TestFrameworkApi;
+import no.testframework.javalibrary.suite.SuiteApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 public class TestFrameworkSampleConfig {
 
     @Bean
-    TestFrameworkApi testFrameworkApi() {
-        return TestFrameworkApi.withDefaults();
+    SuiteApi suiteApi() {
+        return SuiteApi.create();
     }
 }
