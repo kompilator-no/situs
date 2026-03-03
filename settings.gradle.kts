@@ -6,5 +6,6 @@ include(
     "transport-http",
     "transport-websocket",
     "runner-service",
-    "reporting-client"
+    "reporting-client",
+    "java-library"
 )
