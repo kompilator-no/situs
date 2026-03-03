@@ -17,12 +17,15 @@ The library is configured to use Java 21.
 
 - Constructor validation for required fields (`id`, `name`, `type`, `target`, and list containers).
 - Defensive immutable copies of all lists/maps.
-- Convenience methods for incremental construction:
+- Overloaded constructors for convenient defaults on optional collections and description values.
+- Convenience methods for incremental construction and immutable updates:
   - `TestSuite.withStep(...)`
   - `TestStep.withAction(...)`
   - `TestStep.withValidator(...)`
-  - `TestAction.withParameter(...)`
-  - `TestValidator.withExpected(...)`
+  - `TestAction.withParameter(...)` + `TestAction.hasParameters()`
+  - `TestValidator.withExpected(...)` + `TestValidator.hasExpectedValues()`
+  - `TestStep.withName(...)`, `TestStep.hasActions()`, `TestStep.hasValidators()`
+  - `TestSuite.withName(...)`, `TestSuite.withDescription(...)`, `TestSuite.isEmpty()`, `TestSuite.stepCount()`
 
 ## Build
 

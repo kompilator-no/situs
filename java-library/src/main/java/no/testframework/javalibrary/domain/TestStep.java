@@ -10,6 +10,10 @@ public record TestStep(
         List<TestAction> actions,
         List<TestValidator> validators
 ) {
+    public TestStep(String id, String name) {
+        this(id, name, List.of(), List.of());
+    }
+
     public TestStep {
         id = requireNonBlank(id, "id");
         name = requireNonBlank(name, "name");
@@ -29,6 +33,18 @@ public record TestStep(
         List<TestValidator> updatedValidators = new ArrayList<>(validators);
         updatedValidators.add(validator);
         return new TestStep(id, name, actions, updatedValidators);
+    }
+
+    public TestStep withName(String updatedName) {
+        return new TestStep(id, updatedName, actions, validators);
+    }
+
+    public boolean hasActions() {
+        return !actions.isEmpty();
+    }
+
+    public boolean hasValidators() {
+        return !validators.isEmpty();
     }
 
     private static String requireNonBlank(String value, String fieldName) {
