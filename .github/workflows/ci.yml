@@ -16,4 +16,5 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - name: Build and test
+        working-directory: java-library
         run: ./gradlew build
