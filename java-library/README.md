@@ -4,7 +4,7 @@ This module provides initial Java domain objects for defining and sharing test-f
 
 ## Java version
 
-The library is configured to use Java 25.
+The library is configured to use Java 21.
 
 ## Domain objects
 
