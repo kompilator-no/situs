@@ -1,13 +1,9 @@
 # Test Framework
 
-This repository has been cleaned up to keep only the `java-library` module.
+This repository is organized as a multi-language workspace.
 
-## Modules
+## Language libraries
 
-- `java-library`: Java domain objects for defining and sharing test suites.
+- `java-library`: Java implementation and domain models.
 
-## Build
-
-```bash
-./gradlew :java-library:build
-```
+Additional language-specific libraries can be added as sibling folders (for example `python-library`, `js-library`, and more).
