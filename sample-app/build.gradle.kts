@@ -15,7 +15,8 @@ java {
 
 dependencies {
     implementation(project(":java-library"))
-    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.assertj:assertj-core:3.27.7")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

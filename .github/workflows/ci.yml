@@ -15,8 +15,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build and test
-        working-directory: java-library
-        run: |
-          chmod +x gradlew
-          ./gradlew build
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+      - name: Build and test all subprojects
+        run: ./gradlew build
