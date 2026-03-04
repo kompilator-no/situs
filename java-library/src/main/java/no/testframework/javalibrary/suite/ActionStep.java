@@ -1,7 +1,5 @@
 package no.testframework.javalibrary.suite;
 
-import no.testframework.javalibrary.runtime.TestExecutionContext;
-
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;

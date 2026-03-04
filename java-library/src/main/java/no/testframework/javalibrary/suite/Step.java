@@ -1,7 +1,5 @@
 package no.testframework.javalibrary.suite;
 
-import no.testframework.javalibrary.runtime.TestExecutionContext;
-
 public interface Step {
     String name();
 

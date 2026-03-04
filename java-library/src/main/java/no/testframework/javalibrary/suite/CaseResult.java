@@ -1,7 +1,5 @@
 package no.testframework.javalibrary.suite;
 
-import no.testframework.javalibrary.runtime.TestStatus;
-
 import java.util.List;
 
 public record CaseResult(

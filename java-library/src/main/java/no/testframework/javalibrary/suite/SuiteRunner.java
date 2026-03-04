@@ -1,8 +1,5 @@
 package no.testframework.javalibrary.suite;
 
-import no.testframework.javalibrary.runtime.TestExecutionContext;
-import no.testframework.javalibrary.runtime.TestStatus;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
