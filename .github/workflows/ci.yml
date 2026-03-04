@@ -15,9 +15,12 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Make gradlew executable
-        run: chmod +x java-library/gradlew
-      - name: Generate root Gradle wrapper
-        run: java-library/gradlew wrapper --gradle-version 9.1.0 --project-dir .
+      - name: Set up root Gradle wrapper
+        run: |
+          cp java-library/gradlew ./gradlew
+          cp java-library/gradlew.bat ./gradlew.bat
+          mkdir -p gradle/wrapper
+          cp java-library/gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.jar
+          chmod +x ./gradlew
       - name: Build and test all subprojects
         run: ./gradlew build
