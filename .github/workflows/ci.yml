@@ -16,6 +16,8 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - name: Make gradlew executable
-        run: chmod +x gradlew
+        run: chmod +x java-library/gradlew
+      - name: Generate root Gradle wrapper
+        run: java-library/gradlew wrapper --gradle-version 9.1.0 --project-dir .
       - name: Build and test all subprojects
         run: ./gradlew build
