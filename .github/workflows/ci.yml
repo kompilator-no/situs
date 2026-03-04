@@ -18,16 +18,20 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build and test all subprojects
+      - name: Build and test java-library
+        working-directory: java-library
         run: |
-          chmod +x java-library/gradlew
-          java-library/gradlew -p . build
+          chmod +x gradlew
+          ./gradlew build publishToMavenLocal
 
       - name: Upload java-library artifact
         uses: actions/upload-artifact@v4
         with:
           name: java-library
           path: java-library/build/libs
+
+      - name: Build and test sample-app
+        run: java-library/gradlew -p sample-app build
 
       - name: Upload sample-app artifact
         uses: actions/upload-artifact@v4

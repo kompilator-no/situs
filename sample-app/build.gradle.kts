@@ -13,8 +13,13 @@ java {
     }
 }
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
 dependencies {
-    implementation(project(":java-library"))
+    implementation("no.testframework:java-library:0.1.0")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.assertj:assertj-core:3.27.7")
 
