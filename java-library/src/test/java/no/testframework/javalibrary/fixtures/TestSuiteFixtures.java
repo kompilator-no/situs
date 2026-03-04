@@ -116,13 +116,45 @@ public final class TestSuiteFixtures {
         public void fastTest() { /* instant */ }
     }
 
-    /** No timeout set — sleeps 200 ms and must pass. */
+    /** No timeout set — sleeps 200 ms and must pass. Uses timeoutMs=-1 to explicitly disable. */
     @RuntimeTestSuite(name = "No Timeout Suite", description = "Long test with no timeout")
     public static class NoTimeoutLongRunningSuite {
-        @RunTimeTest(name = "longRunning")
+        @RunTimeTest(name = "longRunning", timeoutMs = -1)
         public void longRunning() throws InterruptedException {
             Thread.sleep(200);
         }
+    }
+
+    /** Verifies the default 10 s timeout is applied when timeoutMs = 0. */
+    @RuntimeTestSuite(name = "Default Timeout Suite", description = "Uses the framework default timeout")
+    public static class DefaultTimeoutSuite {
+        @RunTimeTest(name = "slowTest") // timeoutMs=0 → default 10 s
+        public void slowTest() throws InterruptedException {
+            Thread.sleep(30_000); // exceeds default 10 s
+        }
+    }
+
+    /** Test with a delayMs — starts after 300 ms. */
+    @RuntimeTestSuite(name = "Delayed Suite", description = "Tests with a pre-start delay")
+    public static class DelayedSuite {
+        public static long startedAt = 0;
+
+        @RunTimeTest(name = "delayedTest", delayMs = 300)
+        public void delayedTest() {
+            startedAt = System.currentTimeMillis();
+        }
+    }
+
+    /** Suite with multiple tests, each with different delays. */
+    @RuntimeTestSuite(name = "Multi Delay Suite", description = "Multiple tests with delays")
+    public static class MultiDelaySuite {
+        public static final java.util.List<Long> startTimes = new java.util.ArrayList<>();
+
+        @RunTimeTest(name = "first", delayMs = 0)
+        public void first() { startTimes.add(System.currentTimeMillis()); }
+
+        @RunTimeTest(name = "second", delayMs = 200)
+        public void second() { startTimes.add(System.currentTimeMillis()); }
     }
 
     /** One fast pass, one timeout, one fast pass — verifies suite continues after timeout. */

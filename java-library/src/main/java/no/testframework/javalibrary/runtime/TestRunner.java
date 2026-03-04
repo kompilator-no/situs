@@ -22,6 +22,9 @@ public class TestRunner {
 
     private static final Logger log = LoggerFactory.getLogger(TestRunner.class);
 
+    /** Default timeout applied when {@code @RunTimeTest(timeoutMs = 0)} (the default). */
+    public static final long DEFAULT_TIMEOUT_MS = 10_000;
+
     public List<TestCaseExecutionResult> runTests(Class<?> testClass) {
         log.debug("Preparing tests in: {}", testClass.getSimpleName());
 
@@ -41,8 +44,34 @@ public class TestRunner {
             for (Method method : testMethods) {
                 RunTimeTest annotation = method.getAnnotation(RunTimeTest.class);
                 String testName = annotation.name().isEmpty() ? method.getName() : annotation.name();
-                long timeoutMs = annotation.timeoutMs();
-                log.debug("Executing test: {} (timeout: {}ms)", testName, timeoutMs <= 0 ? "none" : timeoutMs);
+
+                // Resolve effective timeout:
+                //   0  → use DEFAULT_TIMEOUT_MS (10 s)
+                //  -1  → no timeout at all
+                //  >0  → use the value as-is
+                long configuredTimeout = annotation.timeoutMs();
+                long effectiveTimeout = configuredTimeout == 0 ? DEFAULT_TIMEOUT_MS
+                                      : configuredTimeout < 0 ? -1
+                                      : configuredTimeout;
+
+                long delayMs = annotation.delayMs();
+
+                log.debug("Executing test: {} (timeout: {}, delay: {}ms)",
+                        testName,
+                        effectiveTimeout < 0 ? "none" : effectiveTimeout + "ms",
+                        delayMs);
+
+                // Optional pre-test delay
+                if (delayMs > 0) {
+                    log.debug("  Delaying test '{}' for {}ms", testName, delayMs);
+                    try {
+                        Thread.sleep(delayMs);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        results.add(new TestCaseExecutionResult(testName, false, "Interrupted during delay", 0));
+                        continue;
+                    }
+                }
 
                 Object instance = newInstance(testClass);
                 invokeLifecycleMethods(beforeEachMethods, instance, "@BeforeEach");
@@ -59,8 +88,8 @@ public class TestRunner {
                 });
 
                 try {
-                    if (timeoutMs > 0) {
-                        future.get(timeoutMs, TimeUnit.MILLISECONDS);
+                    if (effectiveTimeout > 0) {
+                        future.get(effectiveTimeout, TimeUnit.MILLISECONDS);
                     } else {
                         future.get();
                     }
@@ -70,7 +99,7 @@ public class TestRunner {
                 } catch (TimeoutException e) {
                     future.cancel(true);
                     long duration = System.currentTimeMillis() - start;
-                    String msg = "Test timed out after " + timeoutMs + "ms";
+                    String msg = "Test timed out after " + effectiveTimeout + "ms";
                     log.debug("  [FAILED] {} ({}ms) - {}", testName, duration, msg);
                     results.add(new TestCaseExecutionResult(testName, false, msg, duration));
                 } catch (Throwable t) {
