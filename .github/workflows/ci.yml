@@ -17,9 +17,8 @@ jobs:
           java-version: '21'
 
       - uses: gradle/actions/setup-gradle@v4
-
       - name: Build and test java-library
-        working-directory: java-library
+        working-directory: ./java-library
         run: |
           chmod +x gradlew
           ./gradlew build
@@ -31,7 +30,7 @@ jobs:
           path: java-library/build/libs
 
       - name: Build and test sample-app
-        working-directory: java-library
+        working-directory: /java-library
         run: ./gradlew -p ../sample-app build
 
       - name: Upload sample-app artifact
