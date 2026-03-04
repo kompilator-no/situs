@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 public @interface RunTimeTest {
     String name() default "";
     String description() default "";
+    /** Maximum allowed execution time in milliseconds. 0 means no timeout. */
+    long timeoutMs() default 0;
 }

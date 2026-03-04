@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.testframework.javalibrary.api.TestFrameworkServiceTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-03-04T11:41:13.384Z" hostname="SN6853" time="1.688">
+  <properties/>
+  <testcase name="getAllSuitesSuiteDescriptionIsPreserved()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.002"/>
+  <testcase name="runSuiteReturnsCorrectSuiteName()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.115"/>
+  <testcase name="runSingleFastTestInTimeoutSuitePasses()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.218"/>
+  <testcase name="startSuiteAsyncReturnsRunId()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.003"/>
+  <testcase name="runSingleTestThrowsForUnknownTest()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.003"/>
+  <testcase name="startSuiteAsyncThrowsForUnknownSuite()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.002"/>
+  <testcase name="runSingleTestPassingTestReturnsPassedResult()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.111"/>
+  <testcase name="getRunStatusThrowsForUnknownRunId()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.001"/>
+  <testcase name="runSingleTestFailingTestReturnsFailedResult()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.107"/>
+  <testcase name="getAllSuitesReturnsBothSuites()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.005"/>
+  <testcase name="getAllSuitesIncludesTestCases()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.003"/>
+  <testcase name="startSuiteAsyncInitialStatusIsPendingOrRunning()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.002"/>
+  <testcase name="runSuiteWithTimedOutTestReportsFailure()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.222"/>
+  <testcase name="runSuiteResultsContainExpectedTestCases()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.109"/>
+  <testcase name="runSuiteTimedOutTestDurationIsBoundedByTimeout()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.221"/>
+  <testcase name="runSingleTimedOutTestReturnsFailedResult()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.218"/>
+  <testcase name="runSingleTestThrowsForUnknownSuite()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.001"/>
+  <testcase name="runSuiteReportsPassAndFailCounts()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.108"/>
+  <testcase name="runSuiteTimedOutTestResultHasTimeoutMessage()" classname="no.testframework.javalibrary.api.TestFrameworkServiceTest" time="0.22"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Service Suite                                   ║
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Used by service tests                          ║
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passingTest                            (    1 ms)        ║
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failingTest                            (    0 ms)        ║
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → expected failure                                       ║
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 1 ms            ║
+[pool-25-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Timeout Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 1
+[pool-27-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=c9141e7e-14b0-4148-929c-febdddb14494 suite=Timeout Suite test=fastTest
+[pool-27-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=c9141e7e-14b0-4148-929c-febdddb14494
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Service Suite                                   ║
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Used by service tests                          ║
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passingTest                            (    0 ms)        ║
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failingTest                            (    1 ms)        ║
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → expected failure                                       ║
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 1 ms            ║
+[pool-29-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[pool-31-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=3f12d42f-c5c8-4265-b132-80089e88a6d6 suite=Service Suite test=passingTest
+[pool-31-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=3f12d42f-c5c8-4265-b132-80089e88a6d6
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[pool-33-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=ab62077b-26ee-45a0-b011-dff94cecaad6 suite=Service Suite test=failingTest
+[pool-33-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=ab62077b-26ee-45a0-b011-dff94cecaad6
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Service Suite                                   ║
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Used by service tests                          ║
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Timeout Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 1
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passingTest                            (    1 ms)        ║
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failingTest                            (    0 ms)        ║
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → expected failure                                       ║
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 1 ms            ║
+[pool-35-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Timeout Suite                                   ║
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Suite with long-running tests                  ║
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ⏱  slowTest                               (  109 ms)        ║
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → Test timed out after 100ms                             ║
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  fastTest                               (    0 ms)        ║
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 109 ms          ║
+[pool-37-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Service Suite                                   ║
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Used by service tests                          ║
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passingTest                            (    0 ms)        ║
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failingTest                            (    0 ms)        ║
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → expected failure                                       ║
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 0 ms            ║
+[pool-39-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Timeout Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 1
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Timeout Suite                                   ║
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Suite with long-running tests                  ║
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ⏱  slowTest                               (  109 ms)        ║
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → Test timed out after 100ms                             ║
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  fastTest                               (    0 ms)        ║
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 109 ms          ║
+[pool-41-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Timeout Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 1
+[pool-43-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=26592d91-4ef1-4e45-b38e-89ad02910755 suite=Timeout Suite test=slowTest
+[pool-43-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=26592d91-4ef1-4e45-b38e-89ad02910755
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Other Suite' with 1 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Service Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 2
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Service Suite                                   ║
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Used by service tests                          ║
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passingTest                            (    0 ms)        ║
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failingTest                            (    0 ms)        ║
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → expected failure                                       ║
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 0 ms            ║
+[pool-45-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Timeout Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 1
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Timeout Suite                                   ║
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Suite with long-running tests                  ║
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ⏱  slowTest                               (  109 ms)        ║
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → Test timed out after 100ms                             ║
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  fastTest                               (    0 ms)        ║
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 109 ms          ║
+[pool-47-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+]]></system-err>
+</testsuite>

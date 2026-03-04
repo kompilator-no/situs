@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.testframework.javalibrary.api.TestFrameworkControllerTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-03-04T11:41:05.719Z" hostname="SN6853" time="7.661">
+  <properties/>
+  <testcase name="canObserveRunningStatusWhileLongTestIsExecuting()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="5.909"/>
+  <testcase name="runSuiteByBodyCompletesWithExpectedCounts()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.228"/>
+  <testcase name="statusBecomesCompletedAfterSuiteFinishes()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.342"/>
+  <testcase name="runSuiteByBodyReturnsRunId()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.027"/>
+  <testcase name="runSinglePassingTestReturnsRunId()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.022"/>
+  <testcase name="getSuitesIncludesTestCases()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.025"/>
+  <testcase name="runSingleTimedOutTestCompletesAsFailed()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.141"/>
+  <testcase name="getSuitesReturnsAllSuites()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.035"/>
+  <testcase name="runSingleFailingTestCompletesAsFailed()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.132"/>
+  <testcase name="runSuiteByPathCompletesWithExpectedCounts()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.232"/>
+  <testcase name="statusIsPendingOrRunningShortlyAfterStart()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.014"/>
+  <testcase name="runSuiteByPathReturnsRunId()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.01"/>
+  <testcase name="runSinglePassingTestCompletesAsPassed()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.136"/>
+  <testcase name="unknownRunIdReturns404()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.032"/>
+  <testcase name="statusEndpointReturnsOk()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.01"/>
+  <testcase name="completedStatusContainsAllTestResults()" classname="no.testframework.javalibrary.api.TestFrameworkControllerTest" time="0.347"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 7 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Long Running Suite                              ║
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Guaranteed to be observable while running      ║
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  longTest                               ( 2013 ms)        ║
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  anotherLongTest                        ( 2011 ms)        ║
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 2    FAILED: 0    TOTAL: 2    TIME: 4024 ms         ║
+[pool-1-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Controller Suite                                ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Suite for controller tests                     ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ⏱  timeout                                (  101 ms)        ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → Test timed out after 100ms                             ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failing                                (    1 ms)        ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → boom                                                   ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passing                                (    0 ms)        ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 2    TOTAL: 3    TIME: 102 ms          ║
+[pool-3-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 1 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Slow Suite                                      ║
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Has a long-running test                        ║
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  slowTest                               (  316 ms)        ║
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  fastTest                               (    0 ms)        ║
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 2    FAILED: 0    TOTAL: 2    TIME: 316 ms          ║
+[pool-5-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-9-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=08701c82-5e14-40bc-948e-27db81adff76 suite=Controller Suite test=passing
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-11-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=6d4cce2f-98f1-4b4b-8ee7-e8f779b27dba suite=Controller Suite test=timeout
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Controller Suite                                ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Suite for controller tests                     ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ⏱  timeout                                (  113 ms)        ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → Test timed out after 100ms                             ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failing                                (    0 ms)        ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → boom                                                   ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passing                                (    1 ms)        ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 2    TOTAL: 3    TIME: 114 ms          ║
+[pool-7-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[pool-9-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=08701c82-5e14-40bc-948e-27db81adff76
+[pool-11-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=6d4cce2f-98f1-4b4b-8ee7-e8f779b27dba
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-13-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=3fba4f61-dde0-40f1-9054-ff964a1b345b suite=Controller Suite test=failing
+[pool-13-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=3fba4f61-dde0-40f1-9054-ff964a1b345b
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Controller Suite                                ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Suite for controller tests                     ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ⏱  timeout                                (  107 ms)        ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → Test timed out after 100ms                             ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failing                                (    0 ms)        ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → boom                                                   ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passing                                (    0 ms)        ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 2    TOTAL: 3    TIME: 107 ms          ║
+[pool-15-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 1 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-21-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run started: runId=5b826f95-eaa4-4058-874c-18cc50aafed3 suite=Controller Suite test=passing
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Controller Suite                                ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Suite for controller tests                     ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ⏱  timeout                                (  116 ms)        ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → Test timed out after 100ms                             ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  failing                                (    1 ms)        ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → boom                                                   ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passing                                (    0 ms)        ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 2    TOTAL: 3    TIME: 117 ms          ║
+[pool-19-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[pool-21-thread-1] INFO no.testframework.javalibrary.api.service.TestFrameworkService - Async single-test run completed: runId=5b826f95-eaa4-4058-874c-18cc50aafed3
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO org.springframework.mock.web.MockServletContext - Initializing Spring TestDispatcherServlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Initializing Servlet ''
+[Test worker] INFO org.springframework.test.web.servlet.TestDispatcherServlet - Completed initialization in 0 ms
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Controller Suite' with 3 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Long Running Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Discovered suite: 'Slow Suite' with 2 test(s)
+[Test worker] INFO no.testframework.javalibrary.runtime.TestSuiteRegistry - Total suites discovered: 3
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Slow Suite                                      ║
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Has a long-running test                        ║
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  slowTest                               (  304 ms)        ║
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  fastTest                               (    0 ms)        ║
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 2    FAILED: 0    TOTAL: 2    TIME: 304 ms          ║
+[pool-17-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: Slow Suite                                      ║
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: Has a long-running test                        ║
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  slowTest                               (  304 ms)        ║
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  fastTest                               (    0 ms)        ║
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 2    FAILED: 0    TOTAL: 2    TIME: 304 ms          ║
+[pool-23-thread-1] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+]]></system-err>
+</testsuite>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="no.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-03-04T11:41:15.075Z" hostname="SN6853" time="0.043">
+  <properties/>
+  <testcase name="allPassingTestsResultInAllPassed()" classname="no.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerTest" time="0.03"/>
+  <testcase name="nonAnnotatedClassThrowsIllegalArgumentException()" classname="no.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerTest" time="0.002"/>
+  <testcase name="testCaseResultsAreIncluded()" classname="no.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerTest" time="0.003"/>
+  <testcase name="suiteNameAndDescriptionArePreserved()" classname="no.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerTest" time="0.003"/>
+  <testcase name="failingTestIsReflectedInCounts()" classname="no.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: All Pass                                        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: All tests pass                                 ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  b                                      (    1 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  a                                      (    0 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 2    FAILED: 0    TOTAL: 2    TIME: 1 ms            ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: One Fail                                        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: One test fails                                 ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  fails                                  (    1 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → oops                                                   ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passes                                 (    1 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 2 ms            ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: All Pass                                        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: All tests pass                                 ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  b                                      (    1 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  a                                      (    0 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 2    FAILED: 0    TOTAL: 2    TIME: 1 ms            ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╔══════════════════════════════════════════════════════════════╗
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  TEST SUITE: One Fail                                        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  Description: One test fails                                 ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✘  fails                                  (    1 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║     → oops                                                   ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  ✔  passes                                 (    0 ms)        ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╠══════════════════════════════════════════════════════════════╣
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ║  PASSED: 1    FAILED: 1    TOTAL: 2    TIME: 1 ms            ║
+[Test worker] INFO no.testframework.javalibrary.runtime.SuiteReporter - ╚══════════════════════════════════════════════════════════════╝
+]]></system-err>
+</testsuite>

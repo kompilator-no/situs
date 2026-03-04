@@ -14,18 +14,14 @@ public class RuntimeTestSuiteRunner {
             throw new IllegalArgumentException("Class is not annotated with @RuntimeTestSuite");
         }
         RuntimeTestSuite suiteAnnotation = suiteClass.getAnnotation(RuntimeTestSuite.class);
-        String suiteName = suiteAnnotation.name().isEmpty() ? suiteClass.getSimpleName() : suiteAnnotation.name();
-        String description = suiteAnnotation.description();
+        String suiteName    = suiteAnnotation.name().isEmpty() ? suiteClass.getSimpleName() : suiteAnnotation.name();
+        String description  = suiteAnnotation.description();
 
-        log.info("Starting suite: '{}' - {}", suiteName, description);
-        TestSuiteExecutionResult result = new TestSuiteExecutionResult(suiteName, description,
-                new TestRunner().runTests(suiteClass));
-        log.info("Suite '{}' completed — passed: {}, failed: {}", suiteName,
-                result.getPassedCount(), result.getFailedCount());
+        log.debug("Starting suite: '{}'", suiteName);
+        TestSuiteExecutionResult result = new TestSuiteExecutionResult(
+                suiteName, description, new TestRunner().runTests(suiteClass));
+
+        SuiteReporter.report(suiteName, description, result.getTestCaseResults());
         return result;
     }
 }
-
-
-
-

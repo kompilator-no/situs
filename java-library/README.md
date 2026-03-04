@@ -1,186 +1,218 @@
-# Java Library (MVP)
+# Java Library
 
-This module provides a test framework with two styles:
+Annotation-driven runtime test framework for Java 21.  
+Define test suites as plain Java classes, run them via the engine directly or over HTTP, and poll for live status while long-running tests execute.
 
-1. Domain/runtime model (`TestSuite`, `TestStep`, `TestAction`, `TestValidator`).
-2. Preferred object-oriented model in `no.testframework.javalibrary.suite`.
+---
 
-## Java version
+## Requirements
 
-Java 21.
+| | |
+|---|---|
+| Java | 21 |
+| Build tool | Gradle (wrapper included — no local install needed) |
 
-## Object-oriented API (preferred)
-
-Main types:
-
-- `TestSuite`
-- `TestCase`
-- `Step`
-- `SuiteApi`
-- `SuiteRunner`
-- `ExecutionStrategy`
-- `StepExecutionCondition`
-
-HTTP primitives for OO suites:
-
-- `HttpEndpoints`
-- `HttpEndpoint`
-- `HttpBody`
-
-Example:
-
-```java
-public final class AdvancedTestSuite implements TestSuite {
-    @Override
-    public String name() {
-        return "Test Suite Name";
-    }
-
-    @Override
-    public List<TestCase> testCases() {
-        return List.of(new MyHttpTestCase(), new MyKafkaTestCase());
-    }
-}
-```
-
-Run:
-
-```java
-SuiteApi api = SuiteApi.create();
-SuiteResult result = api.runSuite(new AdvancedTestSuite());
-```
-
-
-## ActionStep
-
-`ActionStep` is an OO `Step` that encapsulates an `Action` with optional delay/timeout and lifecycle hooks.
-
-You can create it in two ways:
-
-1. Interface implementation (`implements ActionStep` and provide `action()`).
-2. Builder (`ActionStep.builder(...)`).
-
-Builder example:
-
-```java
-ActionStep actionStep = ActionStep
-        .builder(context -> context.put("state", "ok"))
-        .name("Action step name")
-        .description("Action step description")
-        .delay(Delay.from(10, TimeUnit.SECONDS))
-        .timeout(Timeout.from(1, TimeUnit.MINUTES))
-        .onStarted(() -> { /* log */ })
-        .onFinished(() -> { /* log */ })
-        .build();
-```
-
-
-## ValidatorStep
-
-`ValidatorStep` is an OO `Step` that encapsulates a `Validator` with optional delay/timeout and lifecycle hooks.
-
-You can create it in two ways:
-
-1. Interface implementation (`implements ValidatorStep` and provide `validator()`).
-2. Builder (`ValidatorStep.builder(...)`).
-
-Builder example:
-
-```java
-ValidatorStep validatorStep = ValidatorStep
-        .builder(context -> "ok".equals(context.get("state", String.class)))
-        .name("Validator step name")
-        .description("Validator step description")
-        .delay(Delay.from(10, TimeUnit.SECONDS))
-        .timeout(Timeout.from(1, TimeUnit.MINUTES))
-        .onStarted(() -> { /* log */ })
-        .onFinished(() -> { /* log */ })
-        .build();
-```
-
-
-## GenericAction
-
-`GenericAction` is a less-opinionated action abstraction intended for custom code execution.
-
-Create it by:
-
-1. interface implementation (`implements GenericAction`), or
-2. builder (`GenericAction.builder(...)`).
-
-Builder example:
-
-```java
-GenericAction genericAction = GenericAction
-        .builder(() -> Optional.empty())
-        .iterations(Iterations.from(1))
-        .onStarted(context -> { /* use context.registry() */ })
-        .onFinished(() -> { /* log */ })
-        .onException(exception -> { /* handle */ })
-        .build();
-```
-
-Use it inside a step with:
-
-```java
-Step step = ActionStep.from(genericAction);
-```
-
-## GenericValidator
-
-`GenericValidator` allows custom validation logic with retries/attempts.
-
-Create it by:
-
-1. interface implementation (`implements GenericValidator`), or
-2. builder (`GenericValidator.builder(...)`).
-
-Builder example:
-
-```java
-GenericValidator genericValidator = GenericValidator
-        .builder(() -> Assertion.success())
-        .attempts(Attempts.from(1))
-        .onStarted(context -> { /* use context.registry() */ })
-        .onFinished(() -> { /* log */ })
-        .onException(exception -> { /* handle */ })
-        .build();
-```
-
-Use it inside a step with:
-
-```java
-Step step = ValidatorStep.from(genericValidator);
-```
-
-## App-facing handlers
-
-`TestFrameworkApiHandlers` now provides generic non-HTTP handlers:
-
-- `setContext`
-- `contextEquals`
-- `customAction`
-- `customValidator`
-
-HTTP action/validator are isolated in their own package:
-
-- package: `no.testframework.javalibrary.api.http`
-- class: `HttpHandlers`
-  - `ACTION_HTTP_REQUEST`
-  - `VALIDATOR_HTTP_STATUS_EQUALS`
-  - `CONTEXT_LAST_HTTP_RESPONSE`
-- class: `HttpResponseData`
-
-`TestFrameworkApi.withDefaults()` automatically registers both base handlers and HTTP handlers.
+---
 
 ## Build
 
 ```bash
-./java-library/gradlew -p java-library build
+# Windows CMD / PowerShell
+.\gradlew.bat build
+
+# WSL / macOS / Linux
+./gradlew build
 ```
 
-## Test
+The `build` task compiles sources, runs all tests, and produces the JAR under `build/libs/`.
+
+## Run tests only
 
 ```bash
-./java-library/gradlew -p java-library test
+.\gradlew.bat test          # Windows
+./gradlew test              # WSL / Linux / macOS
+```
+
+Test reports are written to `build/reports/tests/test/index.html`.
+
+## Run the sample suite manually
+
+```bash
+.\gradlew.bat runSuite      # Windows
+./gradlew runSuite          # WSL / Linux / macOS
+```
+
+This executes `RuntimeTestSuiteRunnerMain` which runs the `SampleTestSuite` and prints the results to the console.
+
+## Publish to local Maven repository
+
+```bash
+./gradlew publishToMavenLocal
+```
+
+---
+
+## Annotations
+
+| Annotation | Target | Description |
+|---|---|---|
+| `@RuntimeTestSuite` | Class | Marks a class as a runtime test suite. Accepts `name` and `description`. |
+| `@RunTimeTest` | Method | Marks a method as a test case. Accepts `name`, `description`, and `timeoutMs` (0 = no timeout). |
+| `@BeforeAll` | Method | Runs **once** before all tests in the suite. |
+| `@BeforeEach` | Method | Runs before **each** individual test. |
+| `@AfterEach` | Method | Runs after **each** individual test (always runs, even on failure or timeout). |
+| `@AfterAll` | Method | Runs **once** after all tests in the suite. |
+
+---
+
+## Domain model
+
+| Class | Description |
+|---|---|
+| `TestSuiteDefinition` | Metadata for a discovered suite (name, description, class, test cases). |
+| `TestCaseDefinition` | Metadata for a discovered test (name, description, method, timeoutMs). |
+| `TestSuiteExecutionResult` | Result of running a suite (suite name, per-case results, pass/fail counts). |
+| `TestCaseExecutionResult` | Result of running a single test (name, passed, error message, duration ms). |
+
+---
+
+## Runtime engine
+
+| Class | Description |
+|---|---|
+| `TestSuiteRegistry` | Scans a set of candidate classes and returns all `TestSuiteDefinition`s. |
+| `TestRunner` | Runs all `@RunTimeTest` methods on a class, enforcing per-test timeouts. |
+| `RuntimeTestSuiteRunner` | Orchestrates `TestRunner` for a `@RuntimeTestSuite` class and prints the report. |
+| `SuiteReporter` | Formats a structured, box-drawing suite report into the SLF4J logger. |
+
+---
+
+## Usage
+
+### 1. Define a test suite
+
+```java
+@RuntimeTestSuite(name = "My Suite", description = "Integration checks")
+public class MyTestSuite {
+
+    @BeforeAll
+    public void setupSuite() { /* runs once before all tests */ }
+
+    @BeforeEach
+    public void setupTest() { /* runs before each test */ }
+
+    @AfterEach
+    public void tearDownTest() { /* runs after each test, even on failure */ }
+
+    @AfterAll
+    public void tearDownSuite() { /* runs once after all tests */ }
+
+    @RunTimeTest(name = "check addition")
+    public void checkAddition() {
+        assert 2 + 2 == 4;
+    }
+
+    @RunTimeTest(name = "check flag")
+    public void checkFlag() {
+        assert Boolean.TRUE;
+    }
+
+    @RunTimeTest(name = "check remote call", timeoutMs = 3000)
+    public void checkRemoteCall() {
+        // fails (and is cancelled) if it takes longer than 3 seconds
+    }
+}
+```
+
+### 2. Run a suite directly
+
+```java
+RuntimeTestSuiteRunner runner = new RuntimeTestSuiteRunner();
+TestSuiteExecutionResult result = runner.runSuite(MyTestSuite.class);
+// SuiteReporter automatically prints a formatted report to the log
+```
+
+### 3. Discover suites from a set of classes
+
+```java
+Set<Class<?>> candidates = Set.of(MyTestSuite.class, AnotherSuite.class);
+List<TestSuiteDefinition> suites = new TestSuiteRegistry().getAllSuites(candidates);
+```
+
+---
+
+## Log output
+
+After each suite run `SuiteReporter` prints a structured banner:
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║  TEST SUITE: My Suite                                        ║
+║  Description: Integration checks                            ║
+╠══════════════════════════════════════════════════════════════╣
+║  ✔  check addition                            (   12 ms)    ║
+║  ✘  check flag                                (    4 ms)    ║
+║     → expected <true> but was <false>                        ║
+║  ⏱  check remote call                         ( 3001 ms)    ║
+║     → Test timed out after 3000ms                            ║
+╠══════════════════════════════════════════════════════════════╣
+║  PASSED: 1   FAILED: 2   TOTAL: 3   TIME: 3017 ms           ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+Icons: `✔` passed · `✘` failed · `⏱` timed out
+
+---
+
+## Spring HTTP API (optional)
+
+Spring Web and Spring Context are **compile-only** dependencies.  
+Add them to your application's classpath to enable the HTTP layer.
+
+### Endpoints
+
+All run endpoints are **async by default** — they return a `runId` immediately and you poll for results.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/test-framework/status` | Health check — returns `"OK"`. |
+| `GET` | `/api/test-framework/suites` | Lists all registered suites and their test cases. |
+| `POST` | `/api/test-framework/suites/run` | Start a suite run (suite name in request body). Returns `{"runId":"..."}`. |
+| `POST` | `/api/test-framework/suites/{suiteName}/run` | Start a suite run by path. Returns `{"runId":"..."}`. |
+| `POST` | `/api/test-framework/suites/{suiteName}/tests/{testName}/run` | Start a single-test run. Returns `{"runId":"..."}`. |
+| `GET` | `/api/test-framework/runs/{runId}/status` | Poll live status (`PENDING` → `RUNNING` → `COMPLETED`) and results. |
+
+### Status response
+
+```json
+{
+  "runId": "550e8400-...",
+  "suiteName": "My Suite",
+  "status": "RUNNING",
+  "completedResults": [
+    { "name": "check addition", "passed": true,  "errorMessage": null, "durationMs": 12 }
+  ],
+  "passedCount": 1,
+  "failedCount": 0
+}
+```
+
+`status` progresses through: `PENDING` → `RUNNING` → `COMPLETED`
+
+### Spring wiring
+
+```java
+@Configuration
+public class TestFrameworkConfig {
+
+    @Bean
+    public TestFrameworkService testFrameworkService() {
+        return new TestFrameworkService(Set.of(MyTestSuite.class, AnotherSuite.class));
+    }
+
+    @Bean
+    public TestFrameworkController testFrameworkController(TestFrameworkService service) {
+        return new TestFrameworkController(service);
+    }
+}
 ```
