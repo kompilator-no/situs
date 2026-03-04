@@ -10,17 +10,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+
       - uses: gradle/actions/setup-gradle@v4
-      - name: Set up root Gradle wrapper
-        run: |
-          cp java-library/gradlew ./gradlew
-          cp java-library/gradlew.bat ./gradlew.bat
-          mkdir -p gradle/wrapper
-          cp java-library/gradle/wrapper/gradle-wrapper.jar gradle/wrapper/gradle-wrapper.jar
-          chmod +x ./gradlew
+
       - name: Build and test all subprojects
-        run: ./gradlew build
+        run: |
+          chmod +x java-library/gradlew
+          java-library/gradlew -p . build
+
+      - name: Upload java-library artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-library
+          path: java-library/build/libs
+
+      - name: Upload sample-app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-app
+          path: sample-app/build/libs
