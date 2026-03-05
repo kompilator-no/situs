@@ -1,5 +1,6 @@
 package no.testframework.javalibrary.spring;
 
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,7 +22,9 @@ import org.springframework.context.annotation.Configuration;
  * <p>Beans registered:
  * <ul>
  *   <li>{@link TestFrameworkService} — scans the entire classpath for
- *       {@code @RuntimeTestSuite} classes automatically.</li>
+ *       {@code @RuntimeTestSuite} classes automatically. Injects the
+ *       {@link ApplicationContext} so suite classes that are Spring beans
+ *       receive full dependency injection via {@link SpringInstanceFactory}.</li>
  *   <li>{@link TestFrameworkController} — exposes the REST API under
  *       {@code /api/test-framework/...}.</li>
  * </ul>
@@ -29,19 +32,22 @@ import org.springframework.context.annotation.Configuration;
  * @see EnableRuntimeTests
  * @see TestFrameworkService
  * @see TestFrameworkController
+ * @see SpringInstanceFactory
  */
 @Configuration
 public class RuntimeTestAutoConfiguration {
 
     /**
-     * Creates a {@link TestFrameworkService} that discovers all
-     * {@code @RuntimeTestSuite} classes on the classpath automatically.
+     * Creates a {@link TestFrameworkService} that discovers all {@code @RuntimeTestSuite}
+     * classes on the classpath automatically and wires Spring DI into suite instances
+     * via {@link SpringInstanceFactory}.
      *
+     * @param applicationContext the Spring application context, injected automatically
      * @return the fully initialised service
      */
     @Bean
-    public TestFrameworkService testFrameworkService() {
-        return new TestFrameworkService();
+    public TestFrameworkService testFrameworkService(ApplicationContext applicationContext) {
+        return new TestFrameworkService(applicationContext);
     }
 
     /**

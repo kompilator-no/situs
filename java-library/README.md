@@ -116,6 +116,13 @@ These classes live in `no.testframework.javalibrary.model` and have no Spring de
 | `TestRunner` | Runs all `@RunTimeTest` methods on a class, enforcing per-test timeouts (sequential or parallel). |
 | `RuntimeTestSuiteRunner` | Convenience facade — runs a `@RuntimeTestSuite` class end-to-end and prints the report. |
 | `SuiteReporter` | Formats a structured, box-drawing suite report into the SLF4J logger. |
+| `InstanceFactory` | Strategy interface for creating suite instances. Default: reflection. Swap for DI support. |
+
+## Spring engine
+
+| Class | Description |
+|---|---|
+| `SpringInstanceFactory` | Resolves suite instances from the Spring `ApplicationContext`; falls back to reflection for non-beans. |
 
 ---
 
@@ -184,6 +191,40 @@ public class MyParallelSuite {
 }
 ```
 
+### 5. Dependency injection in test suite classes
+
+When running inside Spring, annotate your suite class with `@Component` (or any Spring stereotype). The framework will resolve it from the `ApplicationContext` instead of calling `new`, so all constructor and field dependencies are injected automatically.
+
+```java
+@Component
+@RuntimeTestSuite(name = "Payment Suite", description = "Live payment checks")
+public class PaymentTestSuite {
+
+    private final PaymentService paymentService;
+    private final NotificationService notificationService;
+
+    public PaymentTestSuite(PaymentService paymentService,
+                            NotificationService notificationService) {
+        this.paymentService = paymentService;
+        this.notificationService = notificationService;
+    }
+
+    @RunTimeTest(name = "process payment")
+    public void processPayment() {
+        assertThat(paymentService.process(100)).isTrue();
+    }
+
+    @RunTimeTest(name = "send notification")
+    public void sendNotification() {
+        assertThat(notificationService.send("test")).isNotNull();
+    }
+}
+```
+
+> **Non-bean suites continue to work unchanged.** If the suite class is not a Spring bean the framework falls back to plain reflection instantiation (`new SuiteClass()`), so you do not have to annotate every suite.
+
+This is handled transparently by `SpringInstanceFactory` — no extra configuration is needed. It is wired automatically by `RuntimeTestAutoConfiguration` and `@EnableRuntimeTests`.
+
 ---
 
 ## Log output
@@ -245,14 +286,17 @@ public class AppConfig {
 public class TestFrameworkConfig {
 
     @Bean
-    public TestFrameworkService testFrameworkService() {
-        // full classpath scan (default)
-        return new TestFrameworkService();
+    public TestFrameworkService testFrameworkService(ApplicationContext ctx) {
+        // full classpath scan + Spring DI in suite classes (recommended)
+        return new TestFrameworkService(ctx);
 
-        // or package-scoped scan
-        // return new TestFrameworkService("com.example.tests");
+        // or package-scoped scan + Spring DI
+        // return new TestFrameworkService(ctx, "com.example.tests");
 
-        // or explicit set
+        // or explicit set + Spring DI
+        // return new TestFrameworkService(ctx, Set.of(MyTestSuite.class));
+
+        // or without Spring DI (suite classes must have a no-arg constructor)
         // return new TestFrameworkService(Set.of(MyTestSuite.class));
     }
 

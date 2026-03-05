@@ -7,7 +7,6 @@ import no.testframework.javalibrary.annotations.BeforeEach;
 import no.testframework.javalibrary.annotations.RunTimeTest;
 import no.testframework.javalibrary.annotations.RuntimeTestSuite;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -329,5 +328,54 @@ public final class TestSuiteFixtures {
 
         @RunTimeTest(name = "a") public void a() throws InterruptedException { Thread.sleep(100); }
         @RunTimeTest(name = "b") public void b() throws InterruptedException { Thread.sleep(100); }
+    }
+
+    // -------------------------------------------------------------------------
+    // Dependency injection fixtures
+    // -------------------------------------------------------------------------
+
+    /**
+     * A simple collaborator that can be injected into a suite to verify DI works.
+     * In real use this would be a Spring-managed service bean.
+     */
+    public static class GreetingService {
+        private final String greeting;
+        public GreetingService(String greeting) { this.greeting = greeting; }
+        public String greet(String name) { return greeting + ", " + name + "!"; }
+    }
+
+    /**
+     * Suite that requires a {@link GreetingService} via constructor injection.
+     * Has no no-arg constructor — can only be instantiated via DI or explicit factory.
+     */
+    @RuntimeTestSuite(name = "DI Suite", description = "Requires constructor injection")
+    public static class DiSuite {
+        private final GreetingService greetingService;
+
+        public DiSuite(GreetingService greetingService) {
+            this.greetingService = greetingService;
+        }
+
+        @RunTimeTest(name = "greetingReturnsExpectedValue")
+        public void greetingReturnsExpectedValue() {
+            String result = greetingService.greet("World");
+            if (!"Hello, World!".equals(result)) {
+                throw new AssertionError("Expected 'Hello, World!' but got: " + result);
+            }
+        }
+    }
+
+    /**
+     * Suite with a no-arg constructor — used to verify the reflective fallback works
+     * when the suite class is NOT registered as a Spring bean.
+     */
+    @RuntimeTestSuite(name = "Non-Bean Suite", description = "Not a Spring bean — uses reflective fallback")
+    public static class NonBeanSuite {
+        public static boolean wasInstantiated = false;
+
+        public NonBeanSuite() { wasInstantiated = true; }
+
+        @RunTimeTest(name = "alwaysPasses")
+        public void alwaysPasses() { /* passes */ }
     }
 }

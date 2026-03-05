@@ -7,12 +7,14 @@ import no.testframework.javalibrary.model.TestCase;
 import no.testframework.javalibrary.model.TestCaseResult;
 import no.testframework.javalibrary.model.TestSuite;
 import no.testframework.javalibrary.runtime.ClasspathScanner;
+import no.testframework.javalibrary.runtime.InstanceFactory;
 import no.testframework.javalibrary.runtime.SuiteReporter;
 import no.testframework.javalibrary.runtime.TestRunner;
 import no.testframework.javalibrary.runtime.TestSuiteRegistry;
 import no.testframework.javalibrary.spring.model.SuiteRunStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,16 +46,21 @@ import java.util.stream.Collectors;
  *
  * <p>Suite discovery supports three modes:
  * <ol>
- *   <li><b>Automatic (full classpath)</b> — {@link #TestFrameworkService()} scans
+ *   <li><b>Automatic (full classpath)</b> — {@link #TestFrameworkService(ApplicationContext)} scans
  *       every {@code @RuntimeTestSuite} on the classpath automatically.</li>
- *   <li><b>Automatic (by package)</b> — {@link #TestFrameworkService(String)} scans
+ *   <li><b>Automatic (by package)</b> — {@link #TestFrameworkService(ApplicationContext, String)} scans
  *       only the given package and its sub-packages.</li>
- *   <li><b>Manual</b> — {@link #TestFrameworkService(java.util.Set)} accepts an
+ *   <li><b>Manual</b> — {@link #TestFrameworkService(ApplicationContext, java.util.Set)} accepts an
  *       explicit set of suite classes.</li>
  * </ol>
  *
+ * <p>All constructors accept an {@link ApplicationContext} so that
+ * {@code @RuntimeTestSuite} classes registered as Spring beans receive full
+ * dependency injection via {@link SpringInstanceFactory}.
+ *
  * @see RuntimeTestAutoConfiguration
  * @see TestFrameworkController
+ * @see SpringInstanceFactory
  */
 public class TestFrameworkService {
 
@@ -74,32 +81,72 @@ public class TestFrameworkService {
 
     /**
      * Creates the service with an explicit set of suite classes.
+     * Suite classes that are Spring beans receive full dependency injection.
      *
-     * @param registeredSuites the suite classes to register
+     * @param applicationContext the Spring application context used for DI
+     * @param registeredSuites   the suite classes to register
      */
-    public TestFrameworkService(Set<Class<?>> registeredSuites) {
+    public TestFrameworkService(ApplicationContext applicationContext, Set<Class<?>> registeredSuites) {
         this.registry = new TestSuiteRegistry();
-        this.testRunner = new TestRunner();
+        this.testRunner = new TestRunner(new SpringInstanceFactory(applicationContext));
         this.registeredSuites = registeredSuites;
-        log.info("TestFrameworkService initialised with {} suite(s)", registeredSuites.size());
+        log.info("TestFrameworkService initialised with {} suite(s) [DI enabled]", registeredSuites.size());
     }
 
     /**
      * Creates the service by scanning the <b>entire application classpath</b> for
      * classes annotated with {@code @RuntimeTestSuite}.
+     * Suite classes that are Spring beans receive full dependency injection.
      * <pre>{@code
-     * new TestFrameworkService()
+     * new TestFrameworkService(applicationContext)
      * }</pre>
+     *
+     * @param applicationContext the Spring application context used for DI
+     */
+    public TestFrameworkService(ApplicationContext applicationContext) {
+        this(applicationContext, ClasspathScanner.findAllRuntimeTestSuites());
+    }
+
+    /**
+     * Creates the service by scanning {@code basePackage} and all sub-packages.
+     * Suite classes that are Spring beans receive full dependency injection.
+     * <pre>{@code
+     * new TestFrameworkService(applicationContext, "com.example.tests")
+     * }</pre>
+     *
+     * @param applicationContext the Spring application context used for DI
+     * @param basePackage        the package to scan, e.g. {@code "com.example.tests"}
+     */
+    public TestFrameworkService(ApplicationContext applicationContext, String basePackage) {
+        this(applicationContext, ClasspathScanner.findRuntimeTestSuites(basePackage));
+    }
+
+    /**
+     * Creates the service with an explicit set of suite classes and no DI container.
+     * All suite classes are instantiated via reflection (no-arg constructor).
+     * Prefer the {@link #TestFrameworkService(ApplicationContext, Set)} constructor
+     * when running inside Spring.
+     *
+     * @param registeredSuites the suite classes to register
+     */
+    public TestFrameworkService(Set<Class<?>> registeredSuites) {
+        this.registry = new TestSuiteRegistry();
+        this.testRunner = new TestRunner(InstanceFactory.reflective());
+        this.registeredSuites = registeredSuites;
+        log.info("TestFrameworkService initialised with {} suite(s) [reflection only]", registeredSuites.size());
+    }
+
+    /**
+     * Creates the service by scanning the entire classpath with no DI container.
+     * Prefer {@link #TestFrameworkService(ApplicationContext)} when inside Spring.
      */
     public TestFrameworkService() {
         this(ClasspathScanner.findAllRuntimeTestSuites());
     }
 
     /**
-     * Creates the service by scanning {@code basePackage} and all sub-packages.
-     * <pre>{@code
-     * new TestFrameworkService("com.example.tests")
-     * }</pre>
+     * Creates the service by scanning {@code basePackage} with no DI container.
+     * Prefer {@link #TestFrameworkService(ApplicationContext, String)} when inside Spring.
      *
      * @param basePackage the package to scan, e.g. {@code "com.example.tests"}
      */

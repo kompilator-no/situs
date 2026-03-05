@@ -55,6 +55,27 @@ public class TestRunner {
      */
     public static final long DEFAULT_TIMEOUT_MS = 10_000;
 
+    private final InstanceFactory instanceFactory;
+
+    /**
+     * Creates a {@code TestRunner} that instantiates suite classes via reflection
+     * (no-arg constructor). Suitable for use without a DI container.
+     */
+    public TestRunner() {
+        this(InstanceFactory.reflective());
+    }
+
+    /**
+     * Creates a {@code TestRunner} that uses the supplied {@link InstanceFactory}
+     * to create suite instances. Use this constructor to enable dependency injection
+     * (e.g. pass a {@link no.testframework.javalibrary.spring.SpringInstanceFactory}).
+     *
+     * @param instanceFactory the factory used to create suite class instances
+     */
+    public TestRunner(InstanceFactory instanceFactory) {
+        this.instanceFactory = instanceFactory;
+    }
+
     /**
      * Runs all {@code @RunTimeTest} methods in {@code testClass} sequentially.
      * Convenience overload — equivalent to {@code runTests(testClass, false)}.
@@ -94,7 +115,7 @@ public class TestRunner {
         List<Method> testMethods       = findMethods(testClass, RunTimeTest.class);
 
         // @BeforeAll — invoked once on a shared instance before all tests
-        Object suiteInstance = newInstance(testClass);
+        Object suiteInstance = instanceFactory.createInstance(testClass);
         invokeLifecycleMethods(beforeAllMethods, suiteInstance, "@BeforeAll");
 
         List<TestCaseExecutionResult> results;
@@ -254,7 +275,7 @@ public class TestRunner {
             }
         }
 
-        Object instance = newInstance(testClass);
+        Object instance = instanceFactory.createInstance(testClass);
         invokeLifecycleMethods(beforeEachMethods, instance, "@BeforeEach");
 
         long start = System.currentTimeMillis();
@@ -326,20 +347,6 @@ public class TestRunner {
         return methods;
     }
 
-    /**
-     * Creates a new instance of {@code clazz} using its no-arg constructor.
-     *
-     * @param clazz the class to instantiate
-     * @return a fresh instance
-     * @throws RuntimeException if the class has no accessible no-arg constructor or instantiation fails
-     */
-    private Object newInstance(Class<?> clazz) {
-        try {
-            return clazz.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to instantiate " + clazz.getName(), e);
-        }
-    }
 
     /**
      * Invokes each method in {@code methods} on {@code instance} in list order.

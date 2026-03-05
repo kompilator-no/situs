@@ -8,6 +8,10 @@ import no.testframework.javalibrary.fixtures.AsyncTestHelper;
 import no.testframework.javalibrary.fixtures.TestSuiteFixtures;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 import java.util.Set;
@@ -209,5 +213,66 @@ class TestFrameworkServiceTest {
         SuiteRunStatus result = AsyncTestHelper.awaitCompleted(serviceWithTimeout, runId);
 
         assertThat(result.getCompletedResults().get(0).isPassed()).isTrue();
+    }
+
+    // -------------------------------------------------------------------------
+    // Dependency injection via ApplicationContext constructor
+    // -------------------------------------------------------------------------
+
+    @Configuration
+    static class DiTestConfig {
+        @Bean
+        public TestSuiteFixtures.GreetingService greetingService() {
+            return new TestSuiteFixtures.GreetingService("Hello");
+        }
+
+        @Bean
+        public TestSuiteFixtures.DiSuite diSuite(TestSuiteFixtures.GreetingService svc) {
+            return new TestSuiteFixtures.DiSuite(svc);
+        }
+    }
+
+    @Test
+    void serviceWithApplicationContextResolvesBeansAndInjectsDependencies() throws InterruptedException {
+        ApplicationContext ctx = new AnnotationConfigApplicationContext(DiTestConfig.class);
+        TestFrameworkService diService = new TestFrameworkService(ctx,
+                Set.of(TestSuiteFixtures.DiSuite.class));
+
+        String runId = diService.startSuiteAsync("DI Suite");
+        SuiteRunStatus result = AsyncTestHelper.awaitCompleted(diService, runId);
+
+        assertThat(result.getPassedCount())
+                .as("DiSuite test should pass when GreetingService is injected via Spring context")
+                .isEqualTo(1L);
+        assertThat(result.getFailedCount()).isEqualTo(0L);
+    }
+
+    @Test
+    void serviceWithApplicationContextNonBeanFallsBackToReflection() throws InterruptedException {
+        ApplicationContext ctx = new AnnotationConfigApplicationContext(DiTestConfig.class);
+        TestSuiteFixtures.NonBeanSuite.wasInstantiated = false;
+
+        TestFrameworkService diService = new TestFrameworkService(ctx,
+                Set.of(TestSuiteFixtures.NonBeanSuite.class));
+
+        String runId = diService.startSuiteAsync("Non-Bean Suite");
+        SuiteRunStatus result = AsyncTestHelper.awaitCompleted(diService, runId);
+
+        assertThat(TestSuiteFixtures.NonBeanSuite.wasInstantiated)
+                .as("Non-bean suite must be instantiated via reflection fallback")
+                .isTrue();
+        assertThat(result.getPassedCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void serviceWithApplicationContextSuiteAppearsInGetAllSuites() {
+        ApplicationContext ctx = new AnnotationConfigApplicationContext(DiTestConfig.class);
+        TestFrameworkService diService = new TestFrameworkService(ctx,
+                Set.of(TestSuiteFixtures.DiSuite.class));
+
+        List<TestSuite> suites = diService.getAllSuites();
+
+        assertThat(suites).hasSize(1);
+        assertThat(suites.get(0).getName()).isEqualTo("DI Suite");
     }
 }
