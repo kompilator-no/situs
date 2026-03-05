@@ -31,8 +31,14 @@ jobs:
           name: java-library
           path: java-library/build/libs
 
-      - name: Upload sample-app artifact
+      - name: Upload java-spring-boot-sample-app artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sample-app
-          path: sample-app/build/libs
+          name: java-spring-boot-sample-app
+          path: java-spring-boot-sample-app/build/libs
+
+      - name: Upload kotlin-spring-boot-sample-app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-spring-boot-sample-app
+          path: kotlin-spring-boot-sample-app/build/libs

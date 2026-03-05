@@ -35,15 +35,6 @@ The `build` task compiles sources, runs all tests, and produces the JAR under `b
 
 Test reports are written to `build/reports/tests/test/index.html`.
 
-## Run the sample suite manually
-
-```bash
-.\gradlew.bat runSuite      # Windows
-./gradlew runSuite          # WSL / Linux / macOS
-```
-
-This executes `RuntimeTestSuiteRunnerMain` which runs the `SampleTestSuite` and prints the results to the console.
-
 ## Publish to local Maven repository
 
 ```bash
@@ -75,11 +66,30 @@ no.testframework.javalibrary
 | Annotation | Target | Description |
 |---|---|---|
 | `@RuntimeTestSuite` | Class | Marks a class as a runtime test suite. Accepts `name`, `description`, and `parallel`. |
-| `@RunTimeTest` | Method | Marks a method as a test case. Accepts `name`, `description`, `timeoutMs` (0 = framework default 10 s, -1 = no timeout), and `delayMs`. |
+| `@RunTimeTest` | Method | Marks a method as a test case. Accepts `name`, `description`, `timeoutMs` (0 = framework default 10 s, -1 = no timeout), `delayMs`, and `retries`. |
 | `@BeforeAll` | Method | Runs **once** before all tests in the suite. |
 | `@BeforeEach` | Method | Runs before **each** individual test. |
 | `@AfterEach` | Method | Runs after **each** individual test (always runs, even on failure or timeout). |
 | `@AfterAll` | Method | Runs **once** after all tests in the suite. |
+
+### `retries`
+
+The `retries` attribute on `@RunTimeTest` re-runs a failing test up to `retries` additional times before recording it as failed.
+
+| Value | Behaviour |
+|---|---|
+| `0` (default) | No retries — a single failure is recorded immediately. |
+| `n > 0` | Up to `n + 1` total attempts. Returns as soon as one attempt passes. If all fail, the last failure is recorded. |
+
+Each retry runs the full per-test lifecycle (`@BeforeEach` → test body → `@AfterEach`).  
+The `attempts` field in the result shows how many attempts were actually made.
+
+```java
+@RunTimeTest(name = "flaky check", retries = 2)   // up to 3 attempts
+public void checkExternalService() {
+    assertThat(externalService.isReady()).isTrue();
+}
+```
 
 ---
 
@@ -90,9 +100,9 @@ These classes are used internally by the runtime engine and are not part of the 
 | Class | Description |
 |---|---|
 | `TestSuiteDefinition` | Metadata for a discovered suite (name, description, class, test cases, parallel flag). |
-| `TestCaseDefinition` | Metadata for a discovered test (name, description, method, timeoutMs, delayMs). |
+| `TestCaseDefinition` | Metadata for a discovered test (name, description, method, timeoutMs, delayMs, retries). |
 | `TestSuiteExecutionResult` | Result of running a suite (suite name, per-case results, pass/fail counts). |
-| `TestCaseExecutionResult` | Result of running a single test (name, passed, error message, exception type, stack trace, duration ms). |
+| `TestCaseExecutionResult` | Result of running a single test (name, passed, error message, exception type, stack trace, duration ms, attempts). |
 
 ## Shared model (public API)
 
@@ -102,7 +112,7 @@ These classes live in `no.testframework.javalibrary.model` and have no Spring de
 |---|---|
 | `TestSuite` | Suite descriptor returned by the service and accepted as a JSON request body. |
 | `TestCase` | Test case descriptor nested inside `TestSuite`. |
-| `TestCaseResult` | Result of a single test — name, passed, error message, exception type, stack trace, duration ms. |
+| `TestCaseResult` | Result of a single test — name, passed, error message, exception type, stack trace, duration ms, **attempts**. |
 | `TestSuiteResult` | Aggregate suite result — individual `TestCaseResult`s plus pass/fail counts. |
 
 ---
@@ -113,7 +123,7 @@ These classes live in `no.testframework.javalibrary.model` and have no Spring de
 |---|---|
 | `ClasspathScanner` | Scans the classpath (or a specific package) for classes annotated with `@RuntimeTestSuite`. |
 | `TestSuiteRegistry` | Inspects a set of candidate classes and builds `TestSuiteDefinition`s. |
-| `TestRunner` | Runs all `@RunTimeTest` methods on a class, enforcing per-test timeouts (sequential or parallel). |
+| `TestRunner` | Runs all `@RunTimeTest` methods on a class, enforcing per-test timeouts and retries (sequential or parallel). |
 | `RuntimeTestSuiteRunner` | Convenience facade — runs a `@RuntimeTestSuite` class end-to-end and prints the report. |
 | `SuiteReporter` | Formats a structured, box-drawing suite report into the SLF4J logger. |
 | `InstanceFactory` | Strategy interface for creating suite instances. Default: reflection. Swap for DI support. |
@@ -151,9 +161,15 @@ public class MyTestSuite {
         assertThat(2 + 2).isEqualTo(4);
     }
 
-    @RunTimeTest(name = "check remote call", timeoutMs = 3000)
+    @RunTimeTest(name = "check remote call", timeoutMs = 3_000)
     public void checkRemoteCall() {
         // cancelled and recorded as failed if it takes longer than 3 seconds
+    }
+
+    @RunTimeTest(name = "flaky check", retries = 2)
+    public void checkFlakyService() {
+        // retried up to 2 extra times on failure (3 total attempts)
+        assertThat(externalService.isReady()).isTrue();
     }
 }
 ```
@@ -191,9 +207,35 @@ public class MyParallelSuite {
 }
 ```
 
-### 5. Dependency injection in test suite classes
+### 5. Retries
 
-When running inside Spring, annotate your suite class with `@Component` (or any Spring stereotype). The framework will resolve it from the `ApplicationContext` instead of calling `new`, so all constructor and field dependencies are injected automatically.
+```java
+@RuntimeTestSuite(name = "Resilience Suite")
+public class ResilienceSuite {
+
+    // passes as soon as one attempt succeeds — result shows attempts = 1
+    @RunTimeTest(name = "stable check", retries = 3)
+    public void stableCheck() {
+        assertThat(1 + 1).isEqualTo(2);
+    }
+
+    // fails twice, passes on attempt 3 — result shows attempts = 3
+    @RunTimeTest(name = "flaky check", retries = 2)
+    public void flakyCheck() {
+        assertThat(externalService.isReady()).isTrue();
+    }
+
+    // all 3 attempts fail — result shows passed = false, attempts = 3
+    @RunTimeTest(name = "always fails", retries = 2)
+    public void alwaysFails() {
+        assertThat(false).isTrue();
+    }
+}
+```
+
+### 6. Dependency injection in test suite classes
+
+When running inside Spring, annotate your suite class with `@Component` (or any Spring stereotype). The framework will resolve it from the `ApplicationContext` instead of calling `new`, so all constructor dependencies are injected automatically.
 
 ```java
 @Component
@@ -214,7 +256,7 @@ public class PaymentTestSuite {
         assertThat(paymentService.process(100)).isTrue();
     }
 
-    @RunTimeTest(name = "send notification")
+    @RunTimeTest(name = "send notification", retries = 1)
     public void sendNotification() {
         assertThat(notificationService.send("test")).isNotNull();
     }
@@ -223,7 +265,39 @@ public class PaymentTestSuite {
 
 > **Non-bean suites continue to work unchanged.** If the suite class is not a Spring bean the framework falls back to plain reflection instantiation (`new SuiteClass()`), so you do not have to annotate every suite.
 
-This is handled transparently by `SpringInstanceFactory` — no extra configuration is needed. It is wired automatically by `RuntimeTestAutoConfiguration` and `@EnableRuntimeTests`.
+This is handled transparently by `SpringInstanceFactory` — wired automatically by `RuntimeTestAutoConfiguration` and `@EnableRuntimeTests`.
+
+---
+
+## Kotlin support
+
+The library works with Kotlin without any changes. A Kotlin consumer needs two things in `build.gradle.kts`:
+
+```kotlin
+plugins {
+    kotlin("jvm") version "2.1.20"
+    kotlin("plugin.spring") version "2.1.20"   // makes @Component classes open automatically
+}
+
+dependencies {
+    implementation("no.testframework:java-library:<version>")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")  // for Jackson
+}
+```
+
+```kotlin
+@Component
+@RuntimeTestSuite(name = "My Suite")
+class MyTestSuite(private val myService: MyService) {   // constructor injection works as-is
+
+    @RunTimeTest(name = "check something", retries = 2)
+    fun checkSomething() {
+        assertThat(myService.doSomething()).isEqualTo("expected")
+    }
+}
+```
+
+See [`kotlin-spring-boot-sample-app`](../kotlin-spring-boot-sample-app) for a full working example.
 
 ---
 
@@ -241,12 +315,14 @@ After each suite run `SuiteReporter` prints a structured banner:
 ║     → expected <true> but was <false>                        ║
 ║  ⏱  check remote call                         ( 3001 ms)    ║
 ║     → Test timed out after 3000ms                            ║
+║  ✔  flaky check                               (  340 ms)    ║
+║     ↻ passed on attempt 3                                    ║
 ╠══════════════════════════════════════════════════════════════╣
-║  PASSED: 1   FAILED: 2   TOTAL: 3   TIME: 3017 ms           ║
+║  PASSED: 2   FAILED: 2   TOTAL: 4   TIME: 3357 ms           ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-Icons: `✔` passed · `✘` failed · `⏱` timed out
+Icons: `✔` passed · `✘` failed · `⏱` timed out · `↻` retried
 
 ---
 
@@ -341,14 +417,36 @@ All run endpoints are **asynchronous** — they return a `runId` immediately; po
       "errorMessage": null,
       "exceptionType": null,
       "stackTrace": null,
-      "durationMs": 12
+      "durationMs": 12,
+      "attempts": 1
+    },
+    {
+      "name": "flaky check",
+      "passed": true,
+      "errorMessage": null,
+      "exceptionType": null,
+      "stackTrace": null,
+      "durationMs": 340,
+      "attempts": 3
     }
   ],
-  "passedCount": 1,
+  "passedCount": 2,
   "failedCount": 0
 }
 ```
 
 `status` progresses: `PENDING` → `RUNNING` → `COMPLETED`
 
+`attempts` is `1` when the test passed or failed on the first try with no retries used.  
 On failure, `errorMessage`, `exceptionType`, and `stackTrace` are populated so you can diagnose the problem without needing server log access.
+
+---
+
+## Sample applications
+
+| App | Language | Location |
+|---|---|---|
+| Java Spring Boot sample | Java 21 | [`java-spring-boot-sample-app`](../java-spring-boot-sample-app) |
+| Kotlin Spring Boot sample | Kotlin 2.x | [`kotlin-spring-boot-sample-app`](../kotlin-spring-boot-sample-app) |
+
+Both apps demonstrate auto-discovery, Spring DI injection, parallel execution, timeouts, delays, and retries.
