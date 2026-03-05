@@ -43,7 +43,7 @@ dependencies {
     testImplementation("org.springframework:spring-webmvc:6.2.10")
     testImplementation("org.springframework:spring-context:6.2.10")
     testImplementation("org.springframework:spring-test:6.2.10")
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.6")
     testImplementation("jakarta.servlet:jakarta.servlet-api:6.1.0")
     testImplementation("com.jayway.jsonpath:json-path:2.9.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
@@ -65,6 +65,27 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.javadoc {
+    (options as StandardJavadocDocletOptions).apply {
+        encoding = "UTF-8"
+        // Check HTML structure, broken @links and syntax — but not missing docs on private members
+        addStringOption("Xdoclint:html,reference,syntax", "-quiet")
+        // Treat all doclint warnings as errors so the build fails on any issue
+        addBooleanOption("Werror", true)
+    }
+}
+
+tasks.register<Delete>("cleanupOldApi") {
+    group = "build"
+    description = "Deletes the deprecated api/ package and duplicate spring/model/ classes"
+    val base = "src/main/java/no/testframework/javalibrary"
+    delete("$base/api")
+    delete("$base/spring/model/TestCase.java")
+    delete("$base/spring/model/TestCaseResult.java")
+    delete("$base/spring/model/TestSuite.java")
+    delete("$base/spring/model/TestSuiteResult.java")
 }
 
 tasks.register<JavaExec>("runSuite") {

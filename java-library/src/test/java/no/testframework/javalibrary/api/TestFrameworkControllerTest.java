@@ -1,11 +1,11 @@
 package no.testframework.javalibrary.api;
 
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import no.testframework.javalibrary.api.model.SuiteRunStatus;
-import no.testframework.javalibrary.api.model.TestSuite;
-import no.testframework.javalibrary.api.service.TestFrameworkService;
+import no.testframework.javalibrary.model.TestSuite;
+import no.testframework.javalibrary.spring.TestFrameworkController;
+import no.testframework.javalibrary.spring.TestFrameworkService;
+import no.testframework.javalibrary.spring.model.SuiteRunStatus;
 import no.testframework.javalibrary.fixtures.AsyncTestHelper;
 import no.testframework.javalibrary.fixtures.TestSuiteFixtures;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +53,7 @@ class TestFrameworkControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.runId", notNullValue()))
                 .andReturn();
+
         return objectMapper.readTree(r.getResponse().getContentAsString()).get("runId").asText();
     }
 

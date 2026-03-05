@@ -7,23 +7,30 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * Formats structured, human-readable suite reports into the SLF4J logger.
+ * Formats and writes structured, human-readable suite reports to the SLF4J logger.
  *
- * Example output:
- * <pre>
+ * <p>Called automatically by {@link RuntimeTestSuiteRunner} and
+ * {@link no.testframework.javalibrary.spring.TestFrameworkService} after a suite
+ * finishes. Can also be called directly for standalone (non-Spring) usage.
+ *
+ * <p>Example output:
+ * <pre>{@code
  * ╔══════════════════════════════════════════════════════════╗
  * ║  TEST SUITE: My Suite                                    ║
  * ║  Description: Checks the payment flow                   ║
  * ╠══════════════════════════════════════════════════════════╣
  * ║  ✔  passingTest                               (   12 ms) ║
  * ║  ✘  failingTest                               (    4 ms) ║
- * ║     → expected {@code <foo>} but was {@code <bar>}       ║
+ * ║     -> expected <foo> but was <bar>                      ║
  * ║  ⏱  slowTest                                  (  101 ms) ║
- * ║     → Test timed out after 100ms                         ║
+ * ║     -> Test timed out after 100ms                        ║
  * ╠══════════════════════════════════════════════════════════╣
  * ║  PASSED: 1   FAILED: 2   TOTAL: 3   TIME: 117 ms         ║
  * ╚══════════════════════════════════════════════════════════╝
- * </pre>
+ * }</pre>
+ *
+ * @see RuntimeTestSuiteRunner
+ * @see no.testframework.javalibrary.domain.TestCaseExecutionResult
  */
 public class SuiteReporter {
 

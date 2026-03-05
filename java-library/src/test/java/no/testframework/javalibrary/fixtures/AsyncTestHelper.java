@@ -1,7 +1,7 @@
 package no.testframework.javalibrary.fixtures;
 
-import no.testframework.javalibrary.api.model.SuiteRunStatus;
-import no.testframework.javalibrary.api.service.TestFrameworkService;
+import no.testframework.javalibrary.spring.model.SuiteRunStatus;
+import no.testframework.javalibrary.spring.TestFrameworkService;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 

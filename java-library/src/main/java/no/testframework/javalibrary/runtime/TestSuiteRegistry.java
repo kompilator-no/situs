@@ -12,10 +12,35 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Discovers and registers runtime test suites from a set of candidate classes.
+ *
+ * <p>Scans each candidate class for the {@link no.testframework.javalibrary.annotations.RuntimeTestSuite @RuntimeTestSuite}
+ * annotation. For every annotated class it reads all methods carrying
+ * {@link no.testframework.javalibrary.annotations.RunTimeTest @RunTimeTest}
+ * and builds a {@link TestSuiteDefinition} describing the suite and its test cases.
+ *
+ * <p>This class is stateless — the same instance can be reused across calls.
+ *
+ * @see ClasspathScanner
+ * @see no.testframework.javalibrary.spring.TestFrameworkService
+ */
 public class TestSuiteRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(TestSuiteRegistry.class);
 
+    /**
+     * Scans {@code candidateClasses} and returns a {@link TestSuiteDefinition} for every
+     * class annotated with {@code @RuntimeTestSuite}.
+     *
+     * <p>Classes that do not carry the annotation are silently ignored.
+     * The order of the returned list matches the iteration order of {@code candidateClasses}.
+     *
+     * @param candidateClasses the set of classes to inspect — typically the result of
+     *                         {@link ClasspathScanner#findAllRuntimeTestSuites()} or
+     *                         {@link ClasspathScanner#findRuntimeTestSuites(String)}
+     * @return a list of discovered suite definitions; empty if no annotated classes are found
+     */
     public List<TestSuiteDefinition> getAllSuites(Set<Class<?>> candidateClasses) {
         log.debug("Scanning {} candidate classes for @RuntimeTestSuite", candidateClasses.size());
         List<TestSuiteDefinition> suites = new ArrayList<>();
@@ -40,7 +65,3 @@ public class TestSuiteRegistry {
         return suites;
     }
 }
-
-
-
-

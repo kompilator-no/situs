@@ -1,9 +1,9 @@
 package no.testframework.javalibrary.api;
 
-import no.testframework.javalibrary.api.model.SuiteRunStatus;
-import no.testframework.javalibrary.api.model.TestCase;
-import no.testframework.javalibrary.api.model.TestSuite;
-import no.testframework.javalibrary.api.service.TestFrameworkService;
+import no.testframework.javalibrary.model.TestCase;
+import no.testframework.javalibrary.model.TestSuite;
+import no.testframework.javalibrary.spring.TestFrameworkService;
+import no.testframework.javalibrary.spring.model.SuiteRunStatus;
 import no.testframework.javalibrary.fixtures.AsyncTestHelper;
 import no.testframework.javalibrary.fixtures.TestSuiteFixtures;
 import org.junit.jupiter.api.BeforeEach;

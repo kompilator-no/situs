@@ -6,8 +6,23 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marks a method to be executed after each individual test in the suite.
- * The method must be non-static and have no parameters.
+ * Marks a method to be executed <b>after each individual test</b> in the suite.
+ *
+ * <p>The annotated method is invoked on the same instance that ran the test,
+ * and is <em>always</em> called — even when the test failed or timed out.
+ * Use it to clean up per-test state (closing connections, resetting mocks, etc.).
+ *
+ * <p>In parallel mode, {@code @AfterEach} methods for different tests run
+ * concurrently on their respective instances.
+ *
+ * <p>Requirements:
+ * <ul>
+ *   <li>Must be {@code public} and have no parameters.</li>
+ *   <li>Guaranteed to run after the test body, regardless of outcome.</li>
+ * </ul>
+ *
+ * @see BeforeEach
+ * @see AfterAll
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
