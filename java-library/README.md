@@ -52,12 +52,30 @@ This executes `RuntimeTestSuiteRunnerMain` which runs the `SampleTestSuite` and 
 
 ---
 
+## Package structure
+
+```
+no.testframework.javalibrary
+├── annotations/     Pure-Java annotations — no Spring dependency
+├── domain/          Internal domain objects (not part of the public API)
+├── model/           Shared public models — no Spring dependency (TestSuite, TestCase, …)
+├── runtime/         Pure-Java execution engine (TestRunner, ClasspathScanner, …)
+└── spring/          Spring integration layer (optional)
+    └── model/       Spring/Jackson-specific models (SuiteRunStatus)
+```
+
+> **No Spring required for core usage.**  
+> `annotations/`, `domain/`, `model/`, and `runtime/` have no Spring dependency.  
+> Add `spring-context` and `spring-web` to your classpath only when you need the HTTP API.
+
+---
+
 ## Annotations
 
 | Annotation | Target | Description |
 |---|---|---|
-| `@RuntimeTestSuite` | Class | Marks a class as a runtime test suite. Accepts `name` and `description`. |
-| `@RunTimeTest` | Method | Marks a method as a test case. Accepts `name`, `description`, and `timeoutMs` (0 = no timeout). |
+| `@RuntimeTestSuite` | Class | Marks a class as a runtime test suite. Accepts `name`, `description`, and `parallel`. |
+| `@RunTimeTest` | Method | Marks a method as a test case. Accepts `name`, `description`, `timeoutMs` (0 = framework default 10 s, -1 = no timeout), and `delayMs`. |
 | `@BeforeAll` | Method | Runs **once** before all tests in the suite. |
 | `@BeforeEach` | Method | Runs before **each** individual test. |
 | `@AfterEach` | Method | Runs after **each** individual test (always runs, even on failure or timeout). |
@@ -65,14 +83,27 @@ This executes `RuntimeTestSuiteRunnerMain` which runs the `SampleTestSuite` and 
 
 ---
 
-## Domain model
+## Domain model (internal)
+
+These classes are used internally by the runtime engine and are not part of the public API.
 
 | Class | Description |
 |---|---|
-| `TestSuiteDefinition` | Metadata for a discovered suite (name, description, class, test cases). |
-| `TestCaseDefinition` | Metadata for a discovered test (name, description, method, timeoutMs). |
+| `TestSuiteDefinition` | Metadata for a discovered suite (name, description, class, test cases, parallel flag). |
+| `TestCaseDefinition` | Metadata for a discovered test (name, description, method, timeoutMs, delayMs). |
 | `TestSuiteExecutionResult` | Result of running a suite (suite name, per-case results, pass/fail counts). |
-| `TestCaseExecutionResult` | Result of running a single test (name, passed, error message, duration ms). |
+| `TestCaseExecutionResult` | Result of running a single test (name, passed, error message, exception type, stack trace, duration ms). |
+
+## Shared model (public API)
+
+These classes live in `no.testframework.javalibrary.model` and have no Spring dependency.
+
+| Class | Description |
+|---|---|
+| `TestSuite` | Suite descriptor returned by the service and accepted as a JSON request body. |
+| `TestCase` | Test case descriptor nested inside `TestSuite`. |
+| `TestCaseResult` | Result of a single test — name, passed, error message, exception type, stack trace, duration ms. |
+| `TestSuiteResult` | Aggregate suite result — individual `TestCaseResult`s plus pass/fail counts. |
 
 ---
 
@@ -80,9 +111,10 @@ This executes `RuntimeTestSuiteRunnerMain` which runs the `SampleTestSuite` and 
 
 | Class | Description |
 |---|---|
-| `TestSuiteRegistry` | Scans a set of candidate classes and returns all `TestSuiteDefinition`s. |
-| `TestRunner` | Runs all `@RunTimeTest` methods on a class, enforcing per-test timeouts. |
-| `RuntimeTestSuiteRunner` | Orchestrates `TestRunner` for a `@RuntimeTestSuite` class and prints the report. |
+| `ClasspathScanner` | Scans the classpath (or a specific package) for classes annotated with `@RuntimeTestSuite`. |
+| `TestSuiteRegistry` | Inspects a set of candidate classes and builds `TestSuiteDefinition`s. |
+| `TestRunner` | Runs all `@RunTimeTest` methods on a class, enforcing per-test timeouts (sequential or parallel). |
+| `RuntimeTestSuiteRunner` | Convenience facade — runs a `@RuntimeTestSuite` class end-to-end and prints the report. |
 | `SuiteReporter` | Formats a structured, box-drawing suite report into the SLF4J logger. |
 
 ---
@@ -92,7 +124,7 @@ This executes `RuntimeTestSuiteRunnerMain` which runs the `SampleTestSuite` and 
 ### 1. Define a test suite
 
 ```java
-@RuntimeTestSuite(name = "My Suite", description = "Integration checks")
+@RuntimeTestSuite(name = "My Suite", description = "Integration checks", parallel = false)
 public class MyTestSuite {
 
     @BeforeAll
@@ -109,22 +141,17 @@ public class MyTestSuite {
 
     @RunTimeTest(name = "check addition")
     public void checkAddition() {
-        assert 2 + 2 == 4;
-    }
-
-    @RunTimeTest(name = "check flag")
-    public void checkFlag() {
-        assert Boolean.TRUE;
+        assertThat(2 + 2).isEqualTo(4);
     }
 
     @RunTimeTest(name = "check remote call", timeoutMs = 3000)
     public void checkRemoteCall() {
-        // fails (and is cancelled) if it takes longer than 3 seconds
+        // cancelled and recorded as failed if it takes longer than 3 seconds
     }
 }
 ```
 
-### 2. Run a suite directly
+### 2. Run a suite directly (no Spring needed)
 
 ```java
 RuntimeTestSuiteRunner runner = new RuntimeTestSuiteRunner();
@@ -132,11 +159,29 @@ TestSuiteExecutionResult result = runner.runSuite(MyTestSuite.class);
 // SuiteReporter automatically prints a formatted report to the log
 ```
 
-### 3. Discover suites from a set of classes
+### 3. Scan and run from a set of classes
 
 ```java
+// Explicit set
 Set<Class<?>> candidates = Set.of(MyTestSuite.class, AnotherSuite.class);
 List<TestSuiteDefinition> suites = new TestSuiteRegistry().getAllSuites(candidates);
+
+// Full classpath scan (finds all @RuntimeTestSuite classes automatically)
+Set<Class<?>> all = ClasspathScanner.findAllRuntimeTestSuites();
+
+// Package-scoped scan
+Set<Class<?>> scoped = ClasspathScanner.findRuntimeTestSuites("com.example.tests");
+```
+
+### 4. Parallel execution
+
+Set `parallel = true` on `@RuntimeTestSuite` to run all tests concurrently:
+
+```java
+@RuntimeTestSuite(name = "Parallel Suite", parallel = true)
+public class MyParallelSuite {
+    // each test gets its own instance — must not share mutable state
+}
 ```
 
 ---
@@ -166,48 +211,49 @@ Icons: `✔` passed · `✘` failed · `⏱` timed out
 
 ## Spring HTTP API (optional)
 
-Spring Web and Spring Context are **compile-only** dependencies.  
+Spring Web and Spring Context are **compile-only** dependencies in this library.  
 Add them to your application's classpath to enable the HTTP layer.
 
-### Endpoints
+### Activation
 
-All run endpoints are **async by default** — they return a `runId` immediately and you poll for results.
+#### Spring Boot (zero configuration)
+Just add the library JAR to your classpath. Spring Boot auto-configuration activates the framework automatically via `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/test-framework/status` | Health check — returns `"OK"`. |
-| `GET` | `/api/test-framework/suites` | Lists all registered suites and their test cases. |
-| `POST` | `/api/test-framework/suites/run` | Start a suite run (suite name in request body). Returns `{"runId":"..."}`. |
-| `POST` | `/api/test-framework/suites/{suiteName}/run` | Start a suite run by path. Returns `{"runId":"..."}`. |
-| `POST` | `/api/test-framework/suites/{suiteName}/tests/{testName}/run` | Start a single-test run. Returns `{"runId":"..."}`. |
-| `GET` | `/api/test-framework/runs/{runId}/status` | Poll live status (`PENDING` → `RUNNING` → `COMPLETED`) and results. |
-
-### Status response
-
-```json
-{
-  "runId": "550e8400-...",
-  "suiteName": "My Suite",
-  "status": "RUNNING",
-  "completedResults": [
-    { "name": "check addition", "passed": true,  "errorMessage": null, "durationMs": 12 }
-  ],
-  "passedCount": 1,
-  "failedCount": 0
+#### Spring Boot (explicit opt-in)
+```java
+@SpringBootApplication
+@EnableRuntimeTests
+public class MyApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
 }
 ```
 
-`status` progresses through: `PENDING` → `RUNNING` → `COMPLETED`
+#### Plain Spring (non-Boot)
+```java
+@Configuration
+@EnableRuntimeTests
+public class AppConfig {
+    // no extra beans needed — suites are discovered automatically
+}
+```
 
-### Spring wiring
-
+#### Manual wiring (custom suite set)
 ```java
 @Configuration
 public class TestFrameworkConfig {
 
     @Bean
     public TestFrameworkService testFrameworkService() {
-        return new TestFrameworkService(Set.of(MyTestSuite.class, AnotherSuite.class));
+        // full classpath scan (default)
+        return new TestFrameworkService();
+
+        // or package-scoped scan
+        // return new TestFrameworkService("com.example.tests");
+
+        // or explicit set
+        // return new TestFrameworkService(Set.of(MyTestSuite.class));
     }
 
     @Bean
@@ -216,3 +262,49 @@ public class TestFrameworkConfig {
     }
 }
 ```
+
+### Endpoints
+
+All run endpoints are **asynchronous** — they return a `runId` immediately; poll `/runs/{runId}/status` until `status == "COMPLETED"`.
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/test-framework/status` | Health check — returns `"OK"`. |
+| `GET` | `/api/test-framework/suites` | Lists all registered suites and their test cases. |
+| `POST` | `/api/test-framework/suites/run` | Start a suite run (suite name in JSON body). Returns `{"runId":"…"}`. |
+| `POST` | `/api/test-framework/suites/{suiteName}/run` | Start a suite run by path parameter. Returns `{"runId":"…"}`. |
+| `POST` | `/api/test-framework/suites/{suiteName}/tests/{testName}/run` | Start a single-test run. Returns `{"runId":"…"}`. |
+| `GET` | `/api/test-framework/runs/{runId}/status` | Poll live status and results. |
+
+### Error responses
+
+| Status | Condition |
+|---|---|
+| `404 Not Found` | Suite or test name not recognised. |
+| `409 Conflict` | Suite or test is already `PENDING` or `RUNNING`. |
+
+### Status response
+
+```json
+{
+  "runId": "550e8400-e29b-41d4-a716-446655440000",
+  "suiteName": "My Suite",
+  "status": "RUNNING",
+  "completedResults": [
+    {
+      "name": "check addition",
+      "passed": true,
+      "errorMessage": null,
+      "exceptionType": null,
+      "stackTrace": null,
+      "durationMs": 12
+    }
+  ],
+  "passedCount": 1,
+  "failedCount": 0
+}
+```
+
+`status` progresses: `PENDING` → `RUNNING` → `COMPLETED`
+
+On failure, `errorMessage`, `exceptionType`, and `stackTrace` are populated so you can diagnose the problem without needing server log access.
