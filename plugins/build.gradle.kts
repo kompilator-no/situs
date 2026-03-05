@@ -1,0 +1,65 @@
+plugins {
+    `java-library`
+    `maven-publish`
+}
+
+group = "no.testframework"
+version = "0.1.0"
+
+repositories {
+    mavenCentral()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            pom {
+                name.set("Test Framework Plugins")
+                description.set("Ready-made runtime test suite plugins for the test framework")
+                url.set("https://github.com/magnusag/test-framework")
+                licenses {
+                    license {
+                        name.set("MIT License")
+                        url.set("https://opensource.org/licenses/MIT")
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
+}
+
+dependencies {
+    // Core library — annotations, model, runtime engine
+    api(project(":java-library"))
+
+    // HTTP plugin needs an HTTP client
+    implementation("org.apache.httpcomponents.client5:httpclient5:5.4.4")
+
+    api("org.slf4j:slf4j-api:2.0.17")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.13.0")
+    testImplementation("org.assertj:assertj-core:3.27.7")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
+    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(21)
+    options.compilerArgs.add("-parameters")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}

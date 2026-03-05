@@ -31,6 +31,12 @@ jobs:
           name: java-library
           path: java-library/build/libs
 
+      - name: Upload plugins artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugins
+          path: plugins/build/libs
+
       - name: Upload java-spring-boot-sample-app artifact
         uses: actions/upload-artifact@v4
         with:

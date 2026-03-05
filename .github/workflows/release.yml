@@ -43,3 +43,5 @@ jobs:
             java-library/build/libs/java-library-${{ steps.version.outputs.VERSION }}.jar
             java-library/build/libs/java-library-${{ steps.version.outputs.VERSION }}-sources.jar
             java-library/build/libs/java-library-${{ steps.version.outputs.VERSION }}-javadoc.jar
+            plugins/build/libs/plugins-${{ steps.version.outputs.VERSION }}.jar
+            plugins/build/libs/plugins-${{ steps.version.outputs.VERSION }}-sources.jar
