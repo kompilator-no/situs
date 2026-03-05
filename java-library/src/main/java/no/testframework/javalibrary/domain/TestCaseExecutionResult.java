@@ -19,21 +19,22 @@ public class TestCaseExecutionResult {
     private final String exceptionType;
     private final String stackTrace;
     private final long durationMs;
+    private final int attempts;
 
     /**
-     * Convenience constructor for passing tests (no error information needed).
+     * Convenience constructor for passing tests with a single attempt.
      *
-     * @param name       the test case display name
-     * @param passed     {@code true} if the test passed
+     * @param name         the test case display name
+     * @param passed       {@code true} if the test passed
      * @param errorMessage failure message, or {@code null} for passing tests
-     * @param durationMs wall-clock execution time in milliseconds
+     * @param durationMs   wall-clock execution time in milliseconds
      */
     public TestCaseExecutionResult(String name, boolean passed, String errorMessage, long durationMs) {
-        this(name, passed, errorMessage, null, null, durationMs);
+        this(name, passed, errorMessage, null, null, durationMs, 1);
     }
 
     /**
-     * Full constructor including exception details for failed tests.
+     * Full constructor including exception details for failed tests, with single attempt.
      *
      * @param name          the test case display name
      * @param passed        {@code true} if the test passed
@@ -45,12 +46,30 @@ public class TestCaseExecutionResult {
      */
     public TestCaseExecutionResult(String name, boolean passed, String errorMessage,
                                    String exceptionType, String stackTrace, long durationMs) {
+        this(name, passed, errorMessage, exceptionType, stackTrace, durationMs, 1);
+    }
+
+    /**
+     * Full constructor including attempt count — used when retries are configured.
+     *
+     * @param name          the test case display name
+     * @param passed        {@code true} if the test passed
+     * @param errorMessage  the root exception message, or {@code null} for passing tests
+     * @param exceptionType fully-qualified class name of the root exception, or {@code null}
+     * @param stackTrace    the full stack trace as a string, or {@code null} for timeouts/passes
+     * @param durationMs    total wall-clock time across all attempts in milliseconds
+     * @param attempts      total number of attempts made (1 = no retries occurred)
+     */
+    public TestCaseExecutionResult(String name, boolean passed, String errorMessage,
+                                   String exceptionType, String stackTrace,
+                                   long durationMs, int attempts) {
         this.name = name;
         this.passed = passed;
         this.errorMessage = errorMessage;
         this.exceptionType = exceptionType;
         this.stackTrace = stackTrace;
         this.durationMs = durationMs;
+        this.attempts = attempts;
     }
 
     /** @return the display name of the test case */
@@ -74,6 +93,12 @@ public class TestCaseExecutionResult {
      */
     public String getStackTrace() { return stackTrace; }
 
-    /** @return wall-clock execution time from test start to completion/failure/timeout */
+    /** @return total wall-clock execution time across all attempts in milliseconds */
     public long getDurationMs() { return durationMs; }
+
+    /**
+     * @return total number of execution attempts made; {@code 1} means the test
+     *         passed or failed on the first try with no retries
+     */
+    public int getAttempts() { return attempts; }
 }

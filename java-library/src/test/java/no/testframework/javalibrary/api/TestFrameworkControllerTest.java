@@ -36,10 +36,12 @@ class TestFrameworkControllerTest {
 
     @BeforeEach
     void setUp() {
+        TestSuiteFixtures.RetryControllerSuite.callCount.set(0);
         TestFrameworkService service = new TestFrameworkService(Set.of(
                 TestSuiteFixtures.ControllerSuite.class,
                 TestSuiteFixtures.SlowSuite.class,
-                TestSuiteFixtures.LongRunningSuite.class));
+                TestSuiteFixtures.LongRunningSuite.class,
+                TestSuiteFixtures.RetryControllerSuite.class));
         mockMvc = MockMvcBuilders.standaloneSetup(new TestFrameworkController(service)).build();
     }
 
@@ -275,5 +277,39 @@ class TestFrameworkControllerTest {
         assertThat(finalResult.get("completedResults")).hasSize(2);
         assertThat(finalResult.get("passedCount").asInt()).isEqualTo(2);
         assertThat(finalResult.get("failedCount").asInt()).isEqualTo(0);
+    }
+
+    // -------------------------------------------------------------------------
+    // Retries — attempts field in JSON response
+    // -------------------------------------------------------------------------
+
+    @Test
+    void retryPassSuiteResultContainsAttemptsField() throws Exception {
+        TestSuiteFixtures.RetryControllerSuite.callCount.set(0);
+        String runId = startRun("/api/test-framework/suites/Retry Controller Suite/run");
+        JsonNode result = awaitCompleted(runId);
+
+        assertThat(result.get("passedCount").asInt()).isEqualTo(1);
+        assertThat(result.get("failedCount").asInt()).isEqualTo(0);
+        assertThat(result.get("completedResults").get(0).get("attempts").asInt())
+                .as("Should have taken 3 attempts (retries = 2)")
+                .isEqualTo(3);
+    }
+
+    @Test
+    void retryPassSuiteTestIsPassedInResponse() throws Exception {
+        TestSuiteFixtures.RetryControllerSuite.callCount.set(0);
+        String runId = startRun("/api/test-framework/suites/Retry Controller Suite/run");
+        JsonNode result = awaitCompleted(runId);
+
+        assertThat(result.get("completedResults").get(0).get("passed").asBoolean()).isTrue();
+        assertThat(result.get("completedResults").get(0).get("errorMessage").isNull()).isTrue();
+    }
+
+    @Test
+    void getSuitesIncludesRetryControllerSuite() throws Exception {
+        mockMvc.perform(get("/api/test-framework/suites"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name == 'Retry Controller Suite')]").exists());
     }
 }

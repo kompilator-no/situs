@@ -21,13 +21,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Verifies:
  * <ul>
  *   <li>The framework activates automatically via Spring Boot auto-configuration.</li>
- *   <li>Both {@link no.testframework.sampleapp.tests.CalculatorTestSuite} and
- *       {@link no.testframework.sampleapp.tests.LongRunningTestSuite} are discovered
+ *   <li>{@link no.testframework.sampleapp.tests.CalculatorTestSuite},
+ *       {@link no.testframework.sampleapp.tests.LongRunningTestSuite}, and
+ *       {@link no.testframework.sampleapp.tests.RetryTestSuite} are all discovered
  *       automatically via classpath scanning.</li>
  *   <li>{@code CalculatorTestSuite} is resolved from the Spring context and receives
  *       its {@link no.testframework.sampleapp.tests.Calculator} dependency via injection.</li>
  *   <li>Suite runs can be started by name (path variable) or by JSON body.</li>
  *   <li>Unknown suite names return {@code 404 Not Found}.</li>
+ *   <li>The {@code RetryTestSuite} is discovered and can be started — demonstrating
+ *       the retries feature end-to-end.</li>
  * </ul>
  */
 @SpringBootTest
@@ -49,15 +52,15 @@ class TestFrameworkIntegrationTest {
     }
 
     /**
-     * Verifies that {@code GET /api/test-framework/suites} lists both suites
-     * discovered automatically from the classpath.
+     * Verifies that all three suites are discovered automatically from the classpath.
      */
     @Test
-    void getSuitesReturnsBothSuites() throws Exception {
+    void getSuitesReturnsAllThreeSuites() throws Exception {
         mockMvc.perform(get("/api/test-framework/suites"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.name == 'CalculatorTestSuite')]").exists())
-                .andExpect(jsonPath("$[?(@.name == 'LongRunningTestSuite')]").exists());
+                .andExpect(jsonPath("$[?(@.name == 'LongRunningTestSuite')]").exists())
+                .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')]").exists());
     }
 
     /**
@@ -75,6 +78,18 @@ class TestFrameworkIntegrationTest {
                 .andExpect(jsonPath("$[?(@.name == 'CalculatorTestSuite')].tests[?(@.name == 'multiplication')]").exists())
                 .andExpect(jsonPath("$[?(@.name == 'CalculatorTestSuite')].tests[?(@.name == 'division')]").exists())
                 .andExpect(jsonPath("$[?(@.name == 'CalculatorTestSuite')].tests[?(@.name == 'divisionByZero')]").exists());
+    }
+
+    /**
+     * Verifies that {@code RetryTestSuite} is discovered and exposes all three test cases.
+     */
+    @Test
+    void retrySuiteHasExpectedTestCases() throws Exception {
+        mockMvc.perform(get("/api/test-framework/suites"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')].tests[?(@.name == 'flakyExternalCheck')]").exists())
+                .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')].tests[?(@.name == 'alwaysFailingCheck')]").exists())
+                .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')].tests[?(@.name == 'stableCheck')]").exists());
     }
 
     /**
@@ -97,6 +112,16 @@ class TestFrameworkIntegrationTest {
         mockMvc.perform(post("/api/test-framework/suites/run")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"CalculatorTestSuite\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.runId").isNotEmpty());
+    }
+
+    /**
+     * Verifies that the retry suite run can be started, returning a valid {@code runId}.
+     */
+    @Test
+    void runRetrySuiteReturnsRunId() throws Exception {
+        mockMvc.perform(post("/api/test-framework/suites/RetryTestSuite/run"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.runId").isNotEmpty());
     }

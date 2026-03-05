@@ -2,7 +2,6 @@ package no.testframework.javalibrary.runtime;
 
 import no.testframework.javalibrary.domain.TestCaseExecutionResult;
 import no.testframework.javalibrary.fixtures.TestSuiteFixtures;
-import no.testframework.javalibrary.runtime.TestSuiteRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -24,8 +23,8 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.PassingSuite.class);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).isPassed()).isTrue();
-        assertThat(results.get(0).getErrorMessage()).isNull();
+        assertThat(results.getFirst().isPassed()).isTrue();
+        assertThat(results.getFirst().getErrorMessage()).isNull();
     }
 
     @Test
@@ -33,15 +32,15 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.FailingSuite.class);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).isPassed()).isFalse();
-        assertThat(results.get(0).getErrorMessage()).isEqualTo("intentional failure");
+        assertThat(results.getFirst().isPassed()).isFalse();
+        assertThat(results.getFirst().getErrorMessage()).isEqualTo("intentional failure");
     }
 
     @Test
     void durationIsRecorded() {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.PassingSuite.class);
 
-        assertThat(results.get(0).getDurationMs()).isGreaterThanOrEqualTo(0);
+        assertThat(results.getFirst().getDurationMs()).isGreaterThanOrEqualTo(0);
     }
 
     @Test
@@ -67,7 +66,7 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.NameFallbackSuite.class);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).getName()).isEqualTo("myMethodName");
+        assertThat(results.getFirst().getName()).isEqualTo("myMethodName");
     }
 
     // -------------------------------------------------------------------------
@@ -117,7 +116,7 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.TimeoutExceedsSuite.class);
 
         assertThat(results).hasSize(1);
-        TestCaseExecutionResult result = results.get(0);
+        TestCaseExecutionResult result = results.getFirst();
         assertThat(result.isPassed()).isFalse();
         assertThat(result.getErrorMessage()).contains("timed out");
         assertThat(result.getDurationMs()).isLessThan(2_000);
@@ -128,14 +127,14 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.TimeoutNotExceedsSuite.class);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).isPassed()).isTrue();
+        assertThat(results.getFirst().isPassed()).isTrue();
     }
 
     @Test
     void timedOutTestDurationReflectsConfiguredTimeout() {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.TimeoutExceedsSuite.class);
 
-        TestCaseExecutionResult result = results.get(0);
+        TestCaseExecutionResult result = results.getFirst();
         assertThat(result.getDurationMs()).isGreaterThanOrEqualTo(100);
         assertThat(result.getDurationMs()).isLessThan(2_000);
     }
@@ -144,7 +143,7 @@ class TestRunnerTest {
     void timeoutErrorMessageContainsConfiguredLimit() {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.TimeoutMessageSuite.class);
 
-        assertThat(results.get(0).getErrorMessage()).contains("50ms");
+        assertThat(results.getFirst().getErrorMessage()).contains("50ms");
     }
 
     @Test
@@ -180,8 +179,8 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.NoTimeoutLongRunningSuite.class);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).isPassed()).isTrue();
-        assertThat(results.get(0).getDurationMs()).isGreaterThanOrEqualTo(200);
+        assertThat(results.getFirst().isPassed()).isTrue();
+        assertThat(results.getFirst().getDurationMs()).isGreaterThanOrEqualTo(200);
     }
 
     @Test
@@ -190,10 +189,10 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.DefaultTimeoutSuite.class);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).isPassed()).isFalse();
-        assertThat(results.get(0).getErrorMessage()).contains("timed out");
-        assertThat(results.get(0).getErrorMessage()).contains(TestRunner.DEFAULT_TIMEOUT_MS + "ms");
-        assertThat(results.get(0).getDurationMs()).isLessThan(15_000);
+        assertThat(results.getFirst().isPassed()).isFalse();
+        assertThat(results.getFirst().getErrorMessage()).contains("timed out");
+        assertThat(results.getFirst().getErrorMessage()).contains(TestRunner.DEFAULT_TIMEOUT_MS + "ms");
+        assertThat(results.getFirst().getDurationMs()).isLessThan(15_000);
     }
 
     // -------------------------------------------------------------------------
@@ -215,8 +214,8 @@ class TestRunnerTest {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.DelayedSuite.class);
 
         assertThat(results).hasSize(1);
-        assertThat(results.get(0).isPassed()).isTrue();
-        assertThat(results.get(0).getName()).isEqualTo("delayedTest");
+        assertThat(results.getFirst().isPassed()).isTrue();
+        assertThat(results.getFirst().getName()).isEqualTo("delayedTest");
     }
 
     @Test
@@ -372,5 +371,80 @@ class TestRunnerTest {
 
         assertThat(parallel.isParallel()).isTrue();
         assertThat(sequential.isParallel()).isFalse();
+    }
+
+    // -------------------------------------------------------------------------
+    // Retry
+    // -------------------------------------------------------------------------
+
+    @Test
+    void testPassesAfterRetries() {
+        TestSuiteFixtures.RetryPassSuite.callCount.set(0);
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.RetryPassSuite.class);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().isPassed()).isTrue();
+    }
+
+    @Test
+    void testPassedAfterRetriesRecordsCorrectAttemptCount() {
+        TestSuiteFixtures.RetryPassSuite.callCount.set(0);
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.RetryPassSuite.class);
+
+        // fails on attempt 1 and 2, passes on attempt 3
+        assertThat(results.getFirst().getAttempts()).isEqualTo(3);
+    }
+
+    @Test
+    void testPassedAfterRetriesInvokesMethodExactNumberOfTimes() {
+        TestSuiteFixtures.RetryPassSuite.callCount.set(0);
+
+        runner.runTests(TestSuiteFixtures.RetryPassSuite.class);
+
+        assertThat(TestSuiteFixtures.RetryPassSuite.callCount.get()).isEqualTo(3);
+    }
+
+    @Test
+    void testFailsAfterAllRetriesExhausted() {
+        TestSuiteFixtures.RetryExhaustedSuite.callCount.set(0);
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.RetryExhaustedSuite.class);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().isPassed()).isFalse();
+        assertThat(results.getFirst().getErrorMessage()).isEqualTo("always fails");
+    }
+
+    @Test
+    void testExhaustedRetriesRecordsAllAttempts() {
+        TestSuiteFixtures.RetryExhaustedSuite.callCount.set(0);
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.RetryExhaustedSuite.class);
+
+        // retries = 2 means 3 total attempts
+        assertThat(results.getFirst().getAttempts()).isEqualTo(3);
+        assertThat(TestSuiteFixtures.RetryExhaustedSuite.callCount.get()).isEqualTo(3);
+    }
+
+    @Test
+    void testWithRetriesPassesFirstTimeRecordsOneAttempt() {
+        TestSuiteFixtures.RetryNotNeededSuite.callCount.set(0);
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.RetryNotNeededSuite.class);
+
+        assertThat(results.getFirst().isPassed()).isTrue();
+        assertThat(results.getFirst().getAttempts()).isEqualTo(1);
+        assertThat(TestSuiteFixtures.RetryNotNeededSuite.callCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    void defaultRetryIsZeroSoNoRetryOnFailure() {
+        // FailingSuite has no retries configured — should fail with 1 attempt
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.FailingSuite.class);
+
+        assertThat(results.getFirst().isPassed()).isFalse();
+        assertThat(results.getFirst().getAttempts()).isEqualTo(1);
     }
 }

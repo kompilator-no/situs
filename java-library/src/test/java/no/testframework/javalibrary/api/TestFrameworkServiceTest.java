@@ -275,4 +275,65 @@ class TestFrameworkServiceTest {
         assertThat(suites).hasSize(1);
         assertThat(suites.get(0).getName()).isEqualTo("DI Suite");
     }
+
+    // -------------------------------------------------------------------------
+    // Retries via service layer
+    // -------------------------------------------------------------------------
+
+    @Test
+    void retryPassSuiteIsRecordedAsPassedInService() throws InterruptedException {
+        TestSuiteFixtures.RetryPassSuite.callCount.set(0);
+        TestFrameworkService retryService = new TestFrameworkService(
+                Set.of(TestSuiteFixtures.RetryPassSuite.class));
+
+        String runId = retryService.startSuiteAsync("Retry Pass Suite");
+        SuiteRunStatus result = AsyncTestHelper.awaitCompleted(retryService, runId);
+
+        assertThat(result.getPassedCount()).isEqualTo(1L);
+        assertThat(result.getFailedCount()).isEqualTo(0L);
+    }
+
+    @Test
+    void retryPassSuiteResultHasCorrectAttemptCount() throws InterruptedException {
+        TestSuiteFixtures.RetryPassSuite.callCount.set(0);
+        TestFrameworkService retryService = new TestFrameworkService(
+                Set.of(TestSuiteFixtures.RetryPassSuite.class));
+
+        String runId = retryService.startSuiteAsync("Retry Pass Suite");
+        SuiteRunStatus result = AsyncTestHelper.awaitCompleted(retryService, runId);
+
+        assertThat(result.getCompletedResults()).hasSize(1);
+        assertThat(result.getCompletedResults().get(0).getAttempts())
+                .as("Should have taken 3 attempts (fails on 1 and 2, passes on 3)")
+                .isEqualTo(3);
+    }
+
+    @Test
+    void retryExhaustedSuiteIsRecordedAsFailedInService() throws InterruptedException {
+        TestSuiteFixtures.RetryExhaustedSuite.callCount.set(0);
+        TestFrameworkService retryService = new TestFrameworkService(
+                Set.of(TestSuiteFixtures.RetryExhaustedSuite.class));
+
+        String runId = retryService.startSuiteAsync("Retry Exhausted Suite");
+        SuiteRunStatus result = AsyncTestHelper.awaitCompleted(retryService, runId);
+
+        assertThat(result.getPassedCount()).isEqualTo(0L);
+        assertThat(result.getFailedCount()).isEqualTo(1L);
+        assertThat(result.getCompletedResults().get(0).getAttempts()).isEqualTo(3);
+    }
+
+    @Test
+    void retryNotNeededSuiteHasOneAttemptInResult() throws InterruptedException {
+        TestSuiteFixtures.RetryNotNeededSuite.callCount.set(0);
+        TestFrameworkService retryService = new TestFrameworkService(
+                Set.of(TestSuiteFixtures.RetryNotNeededSuite.class));
+
+        String runId = retryService.startSuiteAsync("Retry Not Needed Suite");
+        SuiteRunStatus result = AsyncTestHelper.awaitCompleted(retryService, runId);
+
+        assertThat(result.getPassedCount()).isEqualTo(1L);
+        assertThat(result.getCompletedResults().get(0).getAttempts())
+                .as("Passed first time — attempts should be 1")
+                .isEqualTo(1);
+    }
 }

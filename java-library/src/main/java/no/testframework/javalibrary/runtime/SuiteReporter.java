@@ -66,11 +66,16 @@ public class SuiteReporter {
 
         for (TestCaseExecutionResult r : results) {
             String icon   = icon(r);
-            String name   = truncate(r.getName(), NAME_COL - 4); // 4 = icon + spaces
+            String name   = truncate(r.getName(), NAME_COL - 4);
             String dur    = String.format("(%5d ms)", r.getDurationMs());
-            // name column left-padded, duration right-aligned
             String line   = icon + "  " + padRight(name, NAME_COL - 4) + " " + dur;
             log.info(row(line));
+            if (r.getAttempts() > 1) {
+                String retryLabel = r.isPassed()
+                        ? "   ↻ passed on attempt " + r.getAttempts()
+                        : "   ↻ failed after " + r.getAttempts() + " attempt(s)";
+                log.info(row(retryLabel));
+            }
             if (!r.isPassed() && r.getErrorMessage() != null) {
                 log.info(row("   → " + truncate(r.getErrorMessage(), WIDTH - 6)));
             }

@@ -53,7 +53,8 @@ public class TestSuiteRegistry {
                         RunTimeTest testAnn = m.getAnnotation(RunTimeTest.class);
                         String testName = testAnn.name().isEmpty() ? m.getName() : testAnn.name();
                         log.debug("  Discovered test: '{}' in suite '{}'", testName, clazz.getSimpleName());
-                        tests.add(new TestCaseDefinition(testName, testAnn.description(), m, testAnn.timeoutMs(), testAnn.delayMs()));
+                        tests.add(new TestCaseDefinition(testName, testAnn.description(), m,
+                                testAnn.timeoutMs(), testAnn.delayMs(), testAnn.retries()));
                     }
                 }
                 String suiteName = suiteAnn.name().isEmpty() ? clazz.getSimpleName() : suiteAnn.name();

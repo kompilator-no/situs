@@ -18,12 +18,13 @@ public class TestCaseResult {
     private String exceptionType;
     private String stackTrace;
     private long durationMs;
+    private int attempts;
 
     /** No-arg constructor required by Jackson for deserialisation. */
     public TestCaseResult() {}
 
     /**
-     * Convenience constructor for passing tests.
+     * Convenience constructor for passing tests with a single attempt.
      *
      * @param name         display name of the test
      * @param passed       {@code true} if the test passed
@@ -31,7 +32,7 @@ public class TestCaseResult {
      * @param durationMs   wall-clock execution time in milliseconds
      */
     public TestCaseResult(String name, boolean passed, String errorMessage, long durationMs) {
-        this(name, passed, errorMessage, null, null, durationMs);
+        this(name, passed, errorMessage, null, null, durationMs, 1);
     }
 
     /**
@@ -46,12 +47,29 @@ public class TestCaseResult {
      */
     public TestCaseResult(String name, boolean passed, String errorMessage,
                           String exceptionType, String stackTrace, long durationMs) {
+        this(name, passed, errorMessage, exceptionType, stackTrace, durationMs, 1);
+    }
+
+    /**
+     * Full constructor including attempt count — used when retries are configured.
+     *
+     * @param name          display name of the test
+     * @param passed        {@code true} if the test passed
+     * @param errorMessage  root exception message, or {@code null}
+     * @param exceptionType fully-qualified class name of the root exception, or {@code null}
+     * @param stackTrace    full stack trace as a string, or {@code null}
+     * @param durationMs    total wall-clock time across all attempts in milliseconds
+     * @param attempts      total number of attempts made (1 = no retries occurred)
+     */
+    public TestCaseResult(String name, boolean passed, String errorMessage,
+                          String exceptionType, String stackTrace, long durationMs, int attempts) {
         this.name = name;
         this.passed = passed;
         this.errorMessage = errorMessage;
         this.exceptionType = exceptionType;
         this.stackTrace = stackTrace;
         this.durationMs = durationMs;
+        this.attempts = attempts;
     }
 
     /** @return the display name of the test case */
@@ -77,4 +95,12 @@ public class TestCaseResult {
 
     /** @return wall-clock execution time from test start to completion/failure/timeout */
     public long getDurationMs() { return durationMs; }
+    public void setDurationMs(long durationMs) { this.durationMs = durationMs; }
+
+    /**
+     * @return total number of execution attempts made; {@code 1} means the test
+     *         passed or failed on the first try with no retries
+     */
+    public int getAttempts() { return attempts; }
+    public void setAttempts(int attempts) { this.attempts = attempts; }
 }

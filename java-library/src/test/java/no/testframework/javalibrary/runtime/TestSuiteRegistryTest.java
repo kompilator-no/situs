@@ -2,6 +2,7 @@ package no.testframework.javalibrary.runtime;
 
 import no.testframework.javalibrary.annotations.RunTimeTest;
 import no.testframework.javalibrary.annotations.RuntimeTestSuite;
+import no.testframework.javalibrary.domain.TestCaseDefinition;
 import no.testframework.javalibrary.domain.TestSuiteDefinition;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,12 @@ class TestSuiteRegistryTest {
     @RuntimeTestSuite   // no name — should fall back to simple class name
     static class UnnamedSuite {
         @RunTimeTest public void aTest() {}
+    }
+
+    @RuntimeTestSuite(name = "Retry Suite", description = "Has retries configured")
+    static class RetrySuite {
+        @RunTimeTest(name = "noRetry")           public void noRetry() {}
+        @RunTimeTest(name = "withRetry", retries = 3) public void withRetry() {}
     }
 
     // -------------------------------------------------------------------------
@@ -94,5 +101,27 @@ class TestSuiteRegistryTest {
         List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of());
 
         assertThat(suites).isEmpty();
+    }
+
+    // -------------------------------------------------------------------------
+    // Retries
+    // -------------------------------------------------------------------------
+
+    @Test
+    void retriesDefaultIsZeroWhenNotSet() {
+        List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of(RetrySuite.class));
+        TestCaseDefinition noRetry = suites.get(0).getTestCases().stream()
+                .filter(t -> t.getName().equals("noRetry")).findFirst().orElseThrow();
+
+        assertThat(noRetry.getRetries()).isEqualTo(0);
+    }
+
+    @Test
+    void retriesValueIsReadFromAnnotation() {
+        List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of(RetrySuite.class));
+        TestCaseDefinition withRetry = suites.get(0).getTestCases().stream()
+                .filter(t -> t.getName().equals("withRetry")).findFirst().orElseThrow();
+
+        assertThat(withRetry.getRetries()).isEqualTo(3);
     }
 }

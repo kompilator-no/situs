@@ -51,4 +51,24 @@ public @interface RunTimeTest {
      * {@code 0} (default) means start immediately.
      */
     long delayMs() default 0;
+
+    /**
+     * Number of times to retry the test after an initial failure before recording it as failed.
+     *
+     * <ul>
+     *   <li>{@code 0} (default) — no retries; a single failure is recorded immediately.</li>
+     *   <li>{@code n > 0}       — retry up to {@code n} additional times.
+     *       The test passes as soon as one attempt succeeds.
+     *       If all {@code n + 1} attempts fail, the <em>last</em> failure is recorded.</li>
+     * </ul>
+     *
+     * <p>Each retry runs the full per-test lifecycle:
+     * {@code @BeforeEach} → test body → {@code @AfterEach}.
+     * The {@link no.testframework.javalibrary.domain.TestCaseExecutionResult#getAttempts()}
+     * field in the result shows how many attempts were made.
+     *
+     * <p>Retries are useful for tests that interact with flaky external systems.
+     * Do <b>not</b> use retries to mask real bugs in the code under test.
+     */
+    int retries() default 0;
 }

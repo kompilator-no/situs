@@ -216,15 +216,53 @@ public class TestRunner {
     // -------------------------------------------------------------------------
 
     /**
-     * Executes a single test method and returns its result.
+     * Executes a single test method with retry support and returns the final result.
+     *
+     * <p>The test is attempted up to {@code retries + 1} times. As soon as one attempt
+     * passes the result is returned immediately. If every attempt fails, the result of
+     * the <em>last</em> attempt is returned with {@code attempts} set to the total
+     * number of tries.
+     *
+     * @param testClass         the suite class — a new instance is created for each attempt
+     * @param method            the test method to invoke
+     * @param beforeEachMethods lifecycle methods to run before each attempt
+     * @param afterEachMethods  lifecycle methods to run after each attempt
+     * @param executor          the executor to submit the test body to
+     * @return the final {@link TestCaseExecutionResult} (pass on first success, last failure otherwise)
+     */
+    private TestCaseExecutionResult runSingleTest(Class<?> testClass, Method method,
+                                                   List<Method> beforeEachMethods,
+                                                   List<Method> afterEachMethods,
+                                                   ExecutorService executor) {
+        RunTimeTest annotation = method.getAnnotation(RunTimeTest.class);
+        int maxRetries = Math.max(0, annotation.retries());
+        long totalStart = System.currentTimeMillis();
+
+        TestCaseExecutionResult lastResult = null;
+        for (int attempt = 1; attempt <= maxRetries + 1; attempt++) {
+            if (attempt > 1) {
+                log.info("  Retrying test '{}' (attempt {}/{})",
+                        annotation.name().isEmpty() ? method.getName() : annotation.name(),
+                        attempt, maxRetries + 1);
+            }
+            lastResult = runAttempt(testClass, method, beforeEachMethods, afterEachMethods,
+                    executor, attempt, totalStart);
+            if (lastResult.isPassed()) {
+                return lastResult;
+            }
+        }
+        return lastResult;
+    }
+
+    /**
+     * Executes a single attempt of a test method.
      *
      * <p>Execution flow:
      * <ol>
-     *   <li>Apply optional {@code delayMs} pre-start delay.</li>
+     *   <li>On the first attempt only: apply optional {@code delayMs} pre-start delay.</li>
      *   <li>Create a fresh instance of the suite class.</li>
      *   <li>Invoke all {@code @BeforeEach} methods on that instance.</li>
-     *   <li>Submit the test method to {@code executor} and wait for it with the
-     *       effective timeout.</li>
+     *   <li>Submit the test method to {@code executor} and wait with the effective timeout.</li>
      *   <li>Invoke all {@code @AfterEach} methods — always, even on failure or timeout.</li>
      * </ol>
      *
@@ -235,22 +273,20 @@ public class TestRunner {
      *   <li>{@code timeoutMs > 0}   → use that value exactly</li>
      * </ul>
      *
-     * <p>Exception unwrapping: {@code future.get()} wraps exceptions as
-     * {@code ExecutionException → RuntimeException → original cause}.
-     * This method walks the full cause chain to record the root exception type,
-     * message, and stack trace.
-     *
-     * @param testClass         the suite class — a new instance is created for each call
+     * @param testClass         the suite class
      * @param method            the test method to invoke
      * @param beforeEachMethods lifecycle methods to run before the test
      * @param afterEachMethods  lifecycle methods to run after the test
      * @param executor          the executor to submit the test body to
-     * @return a {@link no.testframework.javalibrary.domain.TestCaseExecutionResult} describing pass/fail, duration, and error details
+     * @param attempt           current attempt number (1-based), used for logging
+     * @param totalStart        wall-clock start time of the first attempt, for cumulative duration
+     * @return the {@link TestCaseExecutionResult} for this attempt
      */
-    private TestCaseExecutionResult runSingleTest(Class<?> testClass, Method method,
-                                                   List<Method> beforeEachMethods,
-                                                   List<Method> afterEachMethods,
-                                                   ExecutorService executor) {
+    private TestCaseExecutionResult runAttempt(Class<?> testClass, Method method,
+                                               List<Method> beforeEachMethods,
+                                               List<Method> afterEachMethods,
+                                               ExecutorService executor,
+                                               int attempt, long totalStart) {
         RunTimeTest annotation = method.getAnnotation(RunTimeTest.class);
         String testName = annotation.name().isEmpty() ? method.getName() : annotation.name();
 
@@ -259,32 +295,33 @@ public class TestRunner {
                               : configuredTimeout <  0 ? -1
                               : configuredTimeout;
         long delayMs = annotation.delayMs();
+        int maxRetries = Math.max(0, annotation.retries());
 
-        log.debug("Executing test: {} (timeout: {}, delay: {}ms)",
-                testName,
+        log.debug("Executing test: {} (attempt: {}/{}, timeout: {}, delay: {}ms)",
+                testName, attempt, maxRetries + 1,
                 effectiveTimeout < 0 ? "none" : effectiveTimeout + "ms",
-                delayMs);
+                attempt == 1 ? delayMs : 0);
 
-        if (delayMs > 0) {
+        // delayMs only applies on the first attempt
+        if (attempt == 1 && delayMs > 0) {
             try {
                 Thread.sleep(delayMs);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return new TestCaseExecutionResult(testName, false, "Interrupted during delay",
-                        InterruptedException.class.getName(), null, 0);
+                        InterruptedException.class.getName(), null,
+                        System.currentTimeMillis() - totalStart, attempt);
             }
         }
 
         Object instance = instanceFactory.createInstance(testClass);
         invokeLifecycleMethods(beforeEachMethods, instance, "@BeforeEach");
 
-        long start = System.currentTimeMillis();
         Future<?> future = executor.submit(() -> {
             try {
                 method.setAccessible(true);
                 method.invoke(instance);
             } catch (Throwable t) {
-                // Unwrap InvocationTargetException so the original exception propagates
                 Throwable cause = t.getCause() != null ? t.getCause() : t;
                 throw new RuntimeException(cause.getMessage(), cause);
             }
@@ -297,27 +334,23 @@ public class TestRunner {
             } else {
                 future.get();
             }
-            long duration = System.currentTimeMillis() - start;
-            log.debug("  [PASSED] {} ({}ms)", testName, duration);
-            result = new TestCaseExecutionResult(testName, true, null, duration);
+            long duration = System.currentTimeMillis() - totalStart;
+            log.debug("  [PASSED] {} ({}ms, attempt {})", testName, duration, attempt);
+            result = new TestCaseExecutionResult(testName, true, null, null, null, duration, attempt);
         } catch (TimeoutException e) {
             future.cancel(true);
-            long duration = System.currentTimeMillis() - start;
+            long duration = System.currentTimeMillis() - totalStart;
             String msg = "Test timed out after " + effectiveTimeout + "ms";
-            log.debug("  [FAILED] {} ({}ms) - {}", testName, duration, msg);
+            log.debug("  [FAILED] {} ({}ms, attempt {}) - {}", testName, duration, attempt, msg);
             result = new TestCaseExecutionResult(testName, false, msg,
-                    TimeoutException.class.getName(), null, duration);
+                    TimeoutException.class.getName(), null, duration, attempt);
         } catch (Throwable t) {
-            long duration = System.currentTimeMillis() - start;
-            // future.get() wraps in ExecutionException → RuntimeException → original cause
-            // keep unwrapping until we reach the root
+            long duration = System.currentTimeMillis() - totalStart;
             Throwable root = t;
-            while (root.getCause() != null) {
-                root = root.getCause();
-            }
-            log.debug("  [FAILED] {} ({}ms) - {}", testName, duration, root.getMessage());
+            while (root.getCause() != null) { root = root.getCause(); }
+            log.debug("  [FAILED] {} ({}ms, attempt {}) - {}", testName, duration, attempt, root.getMessage());
             result = new TestCaseExecutionResult(testName, false, root.getMessage(),
-                    root.getClass().getName(), stackTraceOf(root), duration);
+                    root.getClass().getName(), stackTraceOf(root), duration, attempt);
         } finally {
             invokeLifecycleMethods(afterEachMethods, instance, "@AfterEach");
         }

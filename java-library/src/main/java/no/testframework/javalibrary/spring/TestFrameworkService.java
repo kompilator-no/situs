@@ -248,7 +248,7 @@ public class TestFrameworkService {
                 List<TestCaseResult> matched = allResults.stream()
                         .filter(r -> r.getName().equals(testCase.getName()))
                         .map(r -> new TestCaseResult(r.getName(), r.isPassed(), r.getErrorMessage(),
-                                r.getExceptionType(), r.getStackTrace(), r.getDurationMs()))
+                                r.getExceptionType(), r.getStackTrace(), r.getDurationMs(), r.getAttempts()))
                         .collect(Collectors.toList());
                 updateStatus(runId, SuiteRunStatus.Status.COMPLETED, matched);
             } catch (Exception e) {
@@ -309,7 +309,7 @@ public class TestFrameworkService {
     private List<TestCaseResult> toTestCaseResults(List<TestCaseExecutionResult> results) {
         return results.stream()
                 .map(r -> new TestCaseResult(r.getName(), r.isPassed(), r.getErrorMessage(),
-                        r.getExceptionType(), r.getStackTrace(), r.getDurationMs()))
+                        r.getExceptionType(), r.getStackTrace(), r.getDurationMs(), r.getAttempts()))
                 .collect(Collectors.toList());
     }
 

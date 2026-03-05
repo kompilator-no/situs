@@ -96,4 +96,43 @@ class SuiteReporterTest {
         assertThatCode(() -> SuiteReporter.report("Big Suite", "50 tests", results))
                 .doesNotThrowAnyException();
     }
+
+    // -------------------------------------------------------------------------
+    // Retry display
+    // -------------------------------------------------------------------------
+
+    @Test
+    void reportDoesNotThrowWhenTestPassedAfterRetries() {
+        // attempts = 3 means it failed twice then passed
+        List<TestCaseExecutionResult> results = List.of(
+                new TestCaseExecutionResult("flaky", true, null, null, null, 340, 3)
+        );
+
+        assertThatCode(() -> SuiteReporter.report("Retry Suite", "Eventual pass", results))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void reportDoesNotThrowWhenTestFailedAfterAllRetries() {
+        // attempts = 3, still failed
+        List<TestCaseExecutionResult> results = List.of(
+                new TestCaseExecutionResult("alwaysBad", false, "always fails",
+                        AssertionError.class.getName(), null, 300, 3)
+        );
+
+        assertThatCode(() -> SuiteReporter.report("Retry Suite", "Exhausted retries", results))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void reportDoesNotThrowWithMixedRetryAndNoRetryTests() {
+        List<TestCaseExecutionResult> results = List.of(
+                new TestCaseExecutionResult("noRetry", true, null, 10),          // attempts = 1
+                new TestCaseExecutionResult("retried", true, null, null, null, 200, 2), // attempts = 2
+                new TestCaseExecutionResult("failed",  false, "boom", 5)          // attempts = 1
+        );
+
+        assertThatCode(() -> SuiteReporter.report("Mixed Retry Suite", "Mix", results))
+                .doesNotThrowAnyException();
+    }
 }

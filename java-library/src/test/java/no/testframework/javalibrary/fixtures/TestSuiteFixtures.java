@@ -331,6 +331,59 @@ public final class TestSuiteFixtures {
     }
 
     // -------------------------------------------------------------------------
+    // Retry fixtures
+    // -------------------------------------------------------------------------
+
+    /**
+     * Fails the first 2 attempts then passes on the 3rd.
+     * With {@code retries = 2} the test should ultimately pass.
+     */
+    @RuntimeTestSuite(name = "Retry Pass Suite", description = "Passes on the 3rd attempt")
+    public static class RetryPassSuite {
+        public static final java.util.concurrent.atomic.AtomicInteger callCount =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+
+        @RunTimeTest(name = "eventuallyPasses", retries = 2)
+        public void eventuallyPasses() {
+            int call = callCount.incrementAndGet();
+            if (call < 3) {
+                throw new AssertionError("Not ready yet (attempt " + call + ")");
+            }
+        }
+    }
+
+    /**
+     * Always fails — even with {@code retries = 2} all 3 attempts fail.
+     * The result should be failed with {@code attempts == 3}.
+     */
+    @RuntimeTestSuite(name = "Retry Exhausted Suite", description = "Fails all retry attempts")
+    public static class RetryExhaustedSuite {
+        public static final java.util.concurrent.atomic.AtomicInteger callCount =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+
+        @RunTimeTest(name = "alwaysFails", retries = 2)
+        public void alwaysFails() {
+            callCount.incrementAndGet();
+            throw new AssertionError("always fails");
+        }
+    }
+
+    /**
+     * Passes on the first attempt with {@code retries = 3} configured.
+     * The result should be passed with {@code attempts == 1}.
+     */
+    @RuntimeTestSuite(name = "Retry Not Needed Suite", description = "Passes first time — retries never used")
+    public static class RetryNotNeededSuite {
+        public static final java.util.concurrent.atomic.AtomicInteger callCount =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+
+        @RunTimeTest(name = "passesFirstTime", retries = 3)
+        public void passesFirstTime() {
+            callCount.incrementAndGet();
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Dependency injection fixtures
     // -------------------------------------------------------------------------
 
@@ -362,6 +415,22 @@ public final class TestSuiteFixtures {
             if (!"Hello, World!".equals(result)) {
                 throw new AssertionError("Expected 'Hello, World!' but got: " + result);
             }
+        }
+    }
+
+    /**
+     * Fails on attempts 1 and 2, passes on attempt 3.
+     * Used by controller tests to verify {@code attempts} appears in the JSON response.
+     */
+    @RuntimeTestSuite(name = "Retry Controller Suite", description = "Passes after 2 retries")
+    public static class RetryControllerSuite {
+        public static final java.util.concurrent.atomic.AtomicInteger callCount =
+                new java.util.concurrent.atomic.AtomicInteger(0);
+
+        @RunTimeTest(name = "eventuallyPasses", retries = 2)
+        public void eventuallyPasses() {
+            int call = callCount.incrementAndGet();
+            if (call < 3) throw new AssertionError("Not ready yet (attempt " + call + ")");
         }
     }
 

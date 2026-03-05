@@ -2,8 +2,11 @@ package no.testframework.javalibrary.runtime;
 
 import no.testframework.javalibrary.annotations.RunTimeTest;
 import no.testframework.javalibrary.annotations.RuntimeTestSuite;
+import no.testframework.javalibrary.domain.TestCaseExecutionResult;
 import no.testframework.javalibrary.domain.TestSuiteExecutionResult;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,8 +33,32 @@ class RuntimeTestSuiteRunnerTest {
 
     static class NotAnnotated {}
 
+    @RuntimeTestSuite(name = "Retry Runner Suite", description = "Tests retries end-to-end")
+    static class RetryRunnerSuite {
+        static final AtomicInteger callCount = new AtomicInteger(0);
+
+        /** Fails on first attempt, passes on second — retries = 1 */
+        @RunTimeTest(name = "eventualPass", retries = 1)
+        public void eventualPass() {
+            if (callCount.incrementAndGet() < 2) {
+                throw new AssertionError("not ready yet");
+            }
+        }
+    }
+
+    @RuntimeTestSuite(name = "Retry Exhausted Runner Suite", description = "All retries fail")
+    static class RetryExhaustedRunnerSuite {
+        static final AtomicInteger callCount = new AtomicInteger(0);
+
+        @RunTimeTest(name = "neverPasses", retries = 2)
+        public void neverPasses() {
+            callCount.incrementAndGet();
+            throw new AssertionError("always broken");
+        }
+    }
+
     // -------------------------------------------------------------------------
-    // Tests
+    // Basic tests
     // -------------------------------------------------------------------------
 
     @Test
@@ -72,5 +99,51 @@ class RuntimeTestSuiteRunnerTest {
         assertThatThrownBy(() -> runner.runSuite(NotAnnotated.class))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("@RuntimeTestSuite");
+    }
+
+    // -------------------------------------------------------------------------
+    // Retries end-to-end
+    // -------------------------------------------------------------------------
+
+    @Test
+    void eventuallyPassingTestIsRecordedAsPassed() {
+        RetryRunnerSuite.callCount.set(0);
+
+        TestSuiteExecutionResult result = runner.runSuite(RetryRunnerSuite.class);
+
+        assertThat(result.isAllPassed()).isTrue();
+        assertThat(result.getPassedCount()).isEqualTo(1);
+        assertThat(result.getFailedCount()).isEqualTo(0);
+    }
+
+    @Test
+    void eventuallyPassingTestRecordsCorrectAttemptCount() {
+        RetryRunnerSuite.callCount.set(0);
+
+        TestSuiteExecutionResult result = runner.runSuite(RetryRunnerSuite.class);
+        TestCaseExecutionResult testResult = result.getTestCaseResults().get(0);
+
+        assertThat(testResult.getAttempts()).isEqualTo(2);
+    }
+
+    @Test
+    void exhaustedRetriesTestIsRecordedAsFailed() {
+        RetryExhaustedRunnerSuite.callCount.set(0);
+
+        TestSuiteExecutionResult result = runner.runSuite(RetryExhaustedRunnerSuite.class);
+
+        assertThat(result.isAllPassed()).isFalse();
+        assertThat(result.getFailedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void exhaustedRetriesRecordsAllThreeAttempts() {
+        RetryExhaustedRunnerSuite.callCount.set(0);
+
+        TestSuiteExecutionResult result = runner.runSuite(RetryExhaustedRunnerSuite.class);
+        TestCaseExecutionResult testResult = result.getTestCaseResults().get(0);
+
+        assertThat(testResult.getAttempts()).isEqualTo(3);
+        assertThat(RetryExhaustedRunnerSuite.callCount.get()).isEqualTo(3);
     }
 }

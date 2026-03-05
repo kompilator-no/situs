@@ -21,6 +21,7 @@ public class TestCaseDefinition {
     private final Method method;
     private final long timeoutMs;
     private final long delayMs;
+    private final int retries;
 
     /**
      * Creates a new test case descriptor.
@@ -31,13 +32,16 @@ public class TestCaseDefinition {
      * @param timeoutMs   maximum execution time in ms; {@code 0} = use framework default,
      *                    {@code -1} = no timeout
      * @param delayMs     milliseconds to wait before starting this test; {@code 0} = no delay
+     * @param retries     number of additional attempts after an initial failure; {@code 0} = no retries
      */
-    public TestCaseDefinition(String name, String description, Method method, long timeoutMs, long delayMs) {
+    public TestCaseDefinition(String name, String description, Method method,
+                              long timeoutMs, long delayMs, int retries) {
         this.name = name;
         this.description = description;
         this.method = method;
         this.timeoutMs = timeoutMs;
         this.delayMs = delayMs;
+        this.retries = retries;
     }
 
     /** @return the display name of this test case */
@@ -64,4 +68,11 @@ public class TestCaseDefinition {
      * @return {@code 0} for no delay, or a positive number of milliseconds
      */
     public long getDelayMs() { return delayMs; }
+
+    /**
+     * Returns the number of retry attempts after an initial failure.
+     *
+     * @return {@code 0} for no retries, or a positive number of additional attempts
+     */
+    public int getRetries() { return retries; }
 }
