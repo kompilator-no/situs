@@ -23,6 +23,7 @@ jobs:
         run: |
           echo "=== PWD ===" && pwd
           echo "=== LS ===" && ls -la
+          sed -i 's/\r//' gradlew
           chmod +x gradlew
           ./gradlew build publishToMavenLocal
 
@@ -35,6 +36,9 @@ jobs:
       - name: Build and test sample-app
         working-directory: sample-app
         run: |
+          echo "=== PWD ===" && pwd
+          echo "=== LS ===" && ls -la
+          echo "=== JAVA-LIB WRAPPER ===" && ls -la ../java-library/gradlew
           chmod +x ../java-library/gradlew
           ../java-library/gradlew -p . build
 
