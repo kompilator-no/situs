@@ -16,10 +16,29 @@ import static org.assertj.core.api.Assertions.assertThat;
  * A suite of intentionally long-running tests that simulate slow I/O,
  * retries, and time-sensitive operations.
  *
- * Demonstrates:
- * - {@code timeoutMs} — framework will fail the test if it exceeds the limit
- * - {@code delayMs}   — framework waits before starting the test
- * - Multi-second work inside a test body
+ * <h2>Suite discovery</h2>
+ * <p>Discovered automatically at startup via the {@code @RuntimeTestSuite} annotation —
+ * no manual registration needed.
+ *
+ * <h2>Parallel execution</h2>
+ * <p>This suite runs with {@code parallel = true}, so all tests execute concurrently
+ * in separate threads. Each test gets its own suite instance. Tests must not share
+ * mutable state (the static {@code suiteRunCount} uses {@link java.util.concurrent.atomic.AtomicInteger}
+ * for thread safety).
+ *
+ * <h2>Demonstrates</h2>
+ * <ul>
+ *   <li>{@code timeoutMs} — the framework cancels the test if it exceeds the limit</li>
+ *   <li>{@code delayMs}   — the framework waits before starting the test</li>
+ *   <li>Intentional timeout failure — shows how timeout errors appear in the run status</li>
+ *   <li>Intentional assertion failure — shows how failure messages appear in the run status</li>
+ * </ul>
+ *
+ * <h2>Running via HTTP</h2>
+ * <pre>
+ * POST /api/test-framework/suites/LongRunningTestSuite/run
+ * GET  /api/test-framework/runs/{runId}/status
+ * </pre>
  */
 @RuntimeTestSuite(
         name = "LongRunningTestSuite",
@@ -36,17 +55,28 @@ public class LongRunningTestSuite {
     // Lifecycle
     // -------------------------------------------------------------------------
 
+    /**
+     * Called once before any test in the suite starts.
+     * Increments the run counter and logs the run number.
+     */
     @BeforeAll
     public void initSuite() {
         suiteRunCount.incrementAndGet();
         log.info("LongRunningTestSuite starting (run #{})", suiteRunCount.get());
     }
 
+    /**
+     * Called before each individual test. In parallel mode this runs concurrently
+     * on each test's own instance.
+     */
     @BeforeEach
     public void beforeEachTest() {
         log.debug("Preparing long-running test...");
     }
 
+    /**
+     * Called after each individual test — always, even on failure or timeout.
+     */
     @AfterEach
     public void afterEachTest() {
         log.debug("Long-running test finished.");
@@ -57,8 +87,9 @@ public class LongRunningTestSuite {
     // -------------------------------------------------------------------------
 
     /**
-     * Simulates a slow database query that takes ~1 second.
-     * Timeout is set generously to 5 s so it should always pass.
+     * Simulates a slow database query (~5 seconds).
+     * The timeout is set to 15 s so the test always passes.
+     * Demonstrates a long-running but successful test.
      */
     @RunTimeTest(
             name = "slowDatabaseQuery",
@@ -75,8 +106,10 @@ public class LongRunningTestSuite {
     }
 
     /**
-     * Simulates polling an external service with retries.
-     * Starts after a 500 ms delay, then retries up to 3 times with 300 ms pauses.
+     * Simulates polling an external service with up to 5 retries (1 second apart).
+     * Starts after a 2-second delay ({@code delayMs = 2000}) — the framework waits
+     * before submitting the test to the executor.
+     * Succeeds on the 4th attempt, total duration ~6 seconds.
      */
     @RunTimeTest(
             name = "externalServicePoll",
@@ -104,8 +137,8 @@ public class LongRunningTestSuite {
     }
 
     /**
-     * Simulates a batch job processing 5 items with a small delay each.
-     * Total expected duration: ~750 ms.
+     * Simulates a batch job processing 10 items with 1 second per item (~10 seconds total).
+     * The timeout is set to 30 s so the test always passes.
      */
     @RunTimeTest(
             name = "batchProcessing",
@@ -127,9 +160,10 @@ public class LongRunningTestSuite {
     }
 
     /**
-     * Simulates a test that is expected to FAIL the timeout — it sleeps for
-     * 3 seconds but the timeout is only 1 second.
-     * The framework should report this as a failure with a timeout message.
+     * Intentionally exceeds its 3-second timeout by sleeping for 10 seconds.
+     * The framework cancels the test after 3 s and records it as
+     * <em>failed</em> with a timeout message — demonstrating how timeout
+     * failures appear in the run status response.
      */
     @RunTimeTest(
             name = "timeoutExceeded",
@@ -143,8 +177,10 @@ public class LongRunningTestSuite {
     }
 
     /**
-     * Sleeps for 3 seconds then fails with a clear assertion message.
-     * Useful for verifying that failure messages appear correctly in the run status.
+     * Sleeps for 3 seconds then deliberately fails an assertion.
+     * Demonstrates how long-running assertion failures appear in the run status:
+     * the {@code errorMessage}, {@code exceptionType}, and {@code stackTrace}
+     * fields of the result are all populated.
      */
     @RunTimeTest(
             name = "longRunningFailure",
