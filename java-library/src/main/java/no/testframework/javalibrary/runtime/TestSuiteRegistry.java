@@ -32,8 +32,8 @@ public class TestSuiteRegistry {
                     }
                 }
                 String suiteName = suiteAnn.name().isEmpty() ? clazz.getSimpleName() : suiteAnn.name();
-                log.info("Discovered suite: '{}' with {} test(s)", suiteName, tests.size());
-                suites.add(new TestSuiteDefinition(suiteName, suiteAnn.description(), clazz, tests));
+                log.info("Discovered suite: '{}' with {} test(s) [parallel={}]", suiteName, tests.size(), suiteAnn.parallel());
+                suites.add(new TestSuiteDefinition(suiteName, suiteAnn.description(), clazz, tests, suiteAnn.parallel()));
             }
         }
         log.info("Total suites discovered: {}", suites.size());

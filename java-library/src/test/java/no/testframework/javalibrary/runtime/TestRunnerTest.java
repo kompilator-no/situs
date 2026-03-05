@@ -2,9 +2,11 @@ package no.testframework.javalibrary.runtime;
 
 import no.testframework.javalibrary.domain.TestCaseExecutionResult;
 import no.testframework.javalibrary.fixtures.TestSuiteFixtures;
+import no.testframework.javalibrary.runtime.TestSuiteRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -228,5 +230,147 @@ class TestRunnerTest {
                    - TestSuiteFixtures.MultiDelaySuite.startTimes.get(0);
         // second test has a 200 ms delay so it must start at least 200 ms after first
         assertThat(delta).isGreaterThanOrEqualTo(200);
+    }
+
+    // -------------------------------------------------------------------------
+    // Parallel execution
+    // -------------------------------------------------------------------------
+
+    @Test
+    void parallelSuiteRunsFasterThanSequential() {
+        // Sequential baseline: 3 × 300 ms ≈ 900 ms
+        long seqStart = System.currentTimeMillis();
+        runner.runTests(TestSuiteFixtures.SequentialSuite.class, false);
+        long seqDuration = System.currentTimeMillis() - seqStart;
+
+        // Parallel: all 3 tests at once ≈ 300 ms
+        long parStart = System.currentTimeMillis();
+        runner.runTests(TestSuiteFixtures.ParallelSuite.class, true);
+        long parDuration = System.currentTimeMillis() - parStart;
+
+        assertThat(parDuration).isLessThan(seqDuration);
+    }
+
+    @Test
+    void parallelSuiteReturnsAllResults() {
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParallelSuite.class, true);
+
+        assertThat(results).hasSize(3);
+        assertThat(results).extracting(TestCaseExecutionResult::getName)
+                .containsExactlyInAnyOrder("first", "second", "third");
+    }
+
+    @Test
+    void parallelSuiteAllTestsPass() {
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParallelSuite.class, true);
+
+        assertThat(results).allMatch(TestCaseExecutionResult::isPassed);
+    }
+
+    @Test
+    void parallelMixedSuiteCollectsAllPassAndFailResults() {
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParallelMixedSuite.class, true);
+
+        assertThat(results).hasSize(3);
+        long passed = results.stream().filter(TestCaseExecutionResult::isPassed).count();
+        long failed = results.stream().filter(r -> !r.isPassed()).count();
+        assertThat(passed).isEqualTo(2);
+        assertThat(failed).isEqualTo(1);
+    }
+
+    @Test
+    void parallelMixedSuiteFailureHasCorrectMessage() {
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParallelMixedSuite.class, true);
+
+        List<TestCaseExecutionResult> failures = results.stream()
+                .filter(r -> !r.isPassed())
+                .toList();
+        assertThat(failures).hasSize(1);
+
+        TestCaseExecutionResult failure = failures.get(0);
+        assertThat(failure.getName()).isEqualTo("fail1");
+        assertThat(failure.getErrorMessage()).isEqualTo("intentional parallel failure");
+        assertThat(failure.getExceptionType()).isEqualTo(AssertionError.class.getName());
+        assertThat(failure.getStackTrace()).isNotBlank();
+    }
+
+    @Test
+    void parallelTimeoutSuiteTimesOutOneAndPassesOthers() {
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParallelTimeoutSuite.class, true);
+
+        assertThat(results).hasSize(3);
+        assertThat(results).extracting(TestCaseExecutionResult::getName)
+                .containsExactlyInAnyOrder("fast", "timedOut", "alsoFast");
+
+        TestCaseExecutionResult timedOut = results.stream()
+                .filter(r -> r.getName().equals("timedOut")).findFirst().orElseThrow();
+        assertThat(timedOut.isPassed()).isFalse();
+        assertThat(timedOut.getErrorMessage()).contains("timed out");
+
+        results.stream().filter(r -> !r.getName().equals("timedOut"))
+                .forEach(r -> assertThat(r.isPassed()).isTrue());
+    }
+
+    @Test
+    void parallelTimeoutDoesNotSlowDownOtherTests() {
+        // timedOut sleeps 5 s but has a 200 ms timeout — parallel mode must not wait for it
+        long start = System.currentTimeMillis();
+        runner.runTests(TestSuiteFixtures.ParallelTimeoutSuite.class, true);
+        long duration = System.currentTimeMillis() - start;
+
+        // Should complete well under 1 s — not 5 s
+        assertThat(duration).isLessThan(1_500);
+    }
+
+    @Test
+    void parallelSuiteBeforeAllAndAfterAllAreCalledOnce() {
+        TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.clear();
+
+        runner.runTests(TestSuiteFixtures.ParallelLifecycleSuite.class, true);
+
+        assertThat(TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.stream()
+                .filter("beforeAll"::equals).count()).isEqualTo(1);
+        assertThat(TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.stream()
+                .filter("afterAll"::equals).count()).isEqualTo(1);
+    }
+
+    @Test
+    void parallelSuiteBeforeAllIsFirstAndAfterAllIsLast() {
+        TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.clear();
+
+        runner.runTests(TestSuiteFixtures.ParallelLifecycleSuite.class, true);
+
+        assertThat(TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.get(0)).isEqualTo("beforeAll");
+        assertThat(TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.get(
+                TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.size() - 1)).isEqualTo("afterAll");
+    }
+
+    @Test
+    void parallelSuiteBeforeEachAndAfterEachCalledForEachTest() {
+        TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.clear();
+
+        runner.runTests(TestSuiteFixtures.ParallelLifecycleSuite.class, true);
+
+        long beforeEachCount = TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.stream()
+                .filter("beforeEach"::equals).count();
+        long afterEachCount = TestSuiteFixtures.ParallelLifecycleSuite.EVENTS.stream()
+                .filter("afterEach"::equals).count();
+        assertThat(beforeEachCount).isEqualTo(2);
+        assertThat(afterEachCount).isEqualTo(2);
+    }
+
+    @Test
+    void parallelFlagIsReadFromAnnotationViaRegistry() {
+        TestSuiteRegistry registry = new TestSuiteRegistry();
+
+        var suites = registry.getAllSuites(Set.of(
+                TestSuiteFixtures.ParallelSuite.class,
+                TestSuiteFixtures.SequentialSuite.class));
+
+        var parallel   = suites.stream().filter(s -> s.getName().equals("Parallel Suite")).findFirst().orElseThrow();
+        var sequential = suites.stream().filter(s -> s.getName().equals("Sequential Suite")).findFirst().orElseThrow();
+
+        assertThat(parallel.isParallel()).isTrue();
+        assertThat(sequential.isParallel()).isFalse();
     }
 }

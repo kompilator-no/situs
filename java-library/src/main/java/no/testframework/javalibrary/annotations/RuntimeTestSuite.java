@@ -10,4 +10,9 @@ import java.lang.annotation.Target;
 public @interface RuntimeTestSuite {
     String name() default "";
     String description() default "";
+    /**
+     * When {@code true} all tests in this suite are executed in parallel.
+     * When {@code false} (default) tests run sequentially in declaration order.
+     */
+    boolean parallel() default false;
 }

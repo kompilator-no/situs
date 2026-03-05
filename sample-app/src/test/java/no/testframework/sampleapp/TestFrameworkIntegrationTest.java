@@ -29,7 +29,8 @@ class TestFrameworkIntegrationTest {
     void getSuitesReturnCalculatorSuite() throws Exception {
         mockMvc.perform(get("/api/test-framework/suites"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("CalculatorTestSuite"));
+                .andExpect(jsonPath("$[?(@.name == 'CalculatorTestSuite')]").exists())
+                .andExpect(jsonPath("$[?(@.name == 'LongRunningTestSuite')]").exists());
     }
 
     @Test

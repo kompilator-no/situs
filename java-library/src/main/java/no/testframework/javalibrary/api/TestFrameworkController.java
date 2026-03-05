@@ -2,6 +2,7 @@ package no.testframework.javalibrary.api;
 
 import no.testframework.javalibrary.api.model.SuiteRunStatus;
 import no.testframework.javalibrary.api.model.TestSuite;
+import no.testframework.javalibrary.api.service.AlreadyRunningException;
 import no.testframework.javalibrary.api.service.TestFrameworkService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,6 +69,12 @@ public final class TestFrameworkController {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AlreadyRunningException.class)
+    public ResponseEntity<Map<String, String>> handleAlreadyRunning(AlreadyRunningException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", ex.getMessage()));
     }
 }

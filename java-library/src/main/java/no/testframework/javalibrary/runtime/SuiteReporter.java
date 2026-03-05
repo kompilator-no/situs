@@ -17,7 +17,7 @@ import java.util.List;
  * ╠══════════════════════════════════════════════════════════╣
  * ║  ✔  passingTest                               (   12 ms) ║
  * ║  ✘  failingTest                               (    4 ms) ║
- * ║     → expected <foo> but was <bar>                       ║
+ * ║     → expected {@code <foo>} but was {@code <bar>}       ║
  * ║  ⏱  slowTest                                  (  101 ms) ║
  * ║     → Test timed out after 100ms                         ║
  * ╠══════════════════════════════════════════════════════════╣
@@ -37,6 +37,13 @@ public class SuiteReporter {
 
     private SuiteReporter() {}
 
+    /**
+     * Formats and logs a structured report for the given suite execution results.
+     *
+     * @param suiteName   the display name of the suite
+     * @param description optional description shown under the suite name (may be null or blank)
+     * @param results     the individual test case results to include in the report
+     */
     public static void report(String suiteName, String description,
                               List<TestCaseExecutionResult> results) {
         long totalMs = results.stream().mapToLong(TestCaseExecutionResult::getDurationMs).sum();

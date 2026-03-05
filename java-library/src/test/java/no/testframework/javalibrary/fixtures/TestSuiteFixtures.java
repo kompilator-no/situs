@@ -54,7 +54,7 @@ public final class TestSuiteFixtures {
 
     @RuntimeTestSuite(name = "Lifecycle Suite", description = "Verifies lifecycle ordering")
     public static class LifecycleOrderSuite {
-        public static final List<String> ORDER = new ArrayList<>();
+        public static final List<String> ORDER = new java.util.concurrent.CopyOnWriteArrayList<>();
 
         @BeforeAll  public void beforeAll()  { ORDER.add("beforeAll"); }
         @BeforeEach public void beforeEach() { ORDER.add("beforeEach"); }
@@ -252,5 +252,82 @@ public final class TestSuiteFixtures {
 
         @RunTimeTest(name = "anotherLongTest")
         public void anotherLongTest() throws InterruptedException { Thread.sleep(2_000); }
+    }
+
+    // -------------------------------------------------------------------------
+    // Parallel execution fixtures
+    // -------------------------------------------------------------------------
+
+    /**
+     * 3 tests each sleeping 300 ms.
+     * Sequential total: ~900 ms.
+     * Parallel total:   ~300 ms.
+     */
+    @RuntimeTestSuite(name = "Parallel Suite", description = "All tests run in parallel", parallel = true)
+    public static class ParallelSuite {
+        @RunTimeTest(name = "first")
+        public void first() throws InterruptedException { Thread.sleep(300); }
+
+        @RunTimeTest(name = "second")
+        public void second() throws InterruptedException { Thread.sleep(300); }
+
+        @RunTimeTest(name = "third")
+        public void third() throws InterruptedException { Thread.sleep(300); }
+    }
+
+    /** Same 3 tests but sequential — used as the timing baseline for ParallelSuite. */
+    @RuntimeTestSuite(name = "Sequential Suite", description = "All tests run sequentially", parallel = false)
+    public static class SequentialSuite {
+        @RunTimeTest(name = "first")
+        public void first() throws InterruptedException { Thread.sleep(300); }
+
+        @RunTimeTest(name = "second")
+        public void second() throws InterruptedException { Thread.sleep(300); }
+
+        @RunTimeTest(name = "third")
+        public void third() throws InterruptedException { Thread.sleep(300); }
+    }
+
+    /** Parallel suite with a mix of pass and fail — all results must still be collected. */
+    @RuntimeTestSuite(name = "Parallel Mixed Suite", description = "Parallel with pass and fail", parallel = true)
+    public static class ParallelMixedSuite {
+        @RunTimeTest(name = "pass1")
+        public void pass1() throws InterruptedException { Thread.sleep(100); }
+
+        @RunTimeTest(name = "fail1")
+        public void fail1() throws InterruptedException {
+            Thread.sleep(100);
+            throw new AssertionError("intentional parallel failure");
+        }
+
+        @RunTimeTest(name = "pass2")
+        public void pass2() throws InterruptedException { Thread.sleep(100); }
+    }
+
+    /** Parallel suite where one test times out — others must still complete. */
+    @RuntimeTestSuite(name = "Parallel Timeout Suite", description = "Parallel with one timeout", parallel = true)
+    public static class ParallelTimeoutSuite {
+        @RunTimeTest(name = "fast")
+        public void fast() throws InterruptedException { Thread.sleep(100); }
+
+        @RunTimeTest(name = "timedOut", timeoutMs = 200)
+        public void timedOut() throws InterruptedException { Thread.sleep(5_000); }
+
+        @RunTimeTest(name = "alsoFast")
+        public void alsoFast() throws InterruptedException { Thread.sleep(100); }
+    }
+
+    /** Verifies that @BeforeAll and @AfterAll are still invoked in parallel mode. */
+    @RuntimeTestSuite(name = "Parallel Lifecycle Suite", description = "Lifecycle in parallel mode", parallel = true)
+    public static class ParallelLifecycleSuite {
+        public static final List<String> EVENTS = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @BeforeAll  public void beforeAll()  { EVENTS.add("beforeAll"); }
+        @AfterAll   public void afterAll()   { EVENTS.add("afterAll"); }
+        @BeforeEach public void beforeEach() { EVENTS.add("beforeEach"); }
+        @AfterEach  public void afterEach()  { EVENTS.add("afterEach"); }
+
+        @RunTimeTest(name = "a") public void a() throws InterruptedException { Thread.sleep(100); }
+        @RunTimeTest(name = "b") public void b() throws InterruptedException { Thread.sleep(100); }
     }
 }

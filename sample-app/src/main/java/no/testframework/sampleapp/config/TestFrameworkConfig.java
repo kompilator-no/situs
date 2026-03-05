@@ -3,6 +3,7 @@ package no.testframework.sampleapp.config;
 import no.testframework.javalibrary.api.TestFrameworkController;
 import no.testframework.javalibrary.api.service.TestFrameworkService;
 import no.testframework.sampleapp.tests.CalculatorTestSuite;
+import no.testframework.sampleapp.tests.LongRunningTestSuite;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -28,7 +29,8 @@ public class TestFrameworkConfig {
     @Bean
     public Set<Class<?>> registeredTestSuites() {
         return Set.of(
-                CalculatorTestSuite.class
+                CalculatorTestSuite.class,
+                LongRunningTestSuite.class
         );
     }
 
