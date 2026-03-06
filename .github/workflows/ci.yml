@@ -26,25 +26,25 @@ jobs:
           ./gradlew -p .. build
 
       - name: Upload java-library artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java-library
           path: java-library/build/libs
 
       - name: Upload plugins artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: plugins
           path: plugins/build/libs
 
       - name: Upload java-spring-boot-sample-app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java-spring-boot-sample-app
           path: java-spring-boot-sample-app/build/libs
 
       - name: Upload kotlin-spring-boot-sample-app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kotlin-spring-boot-sample-app
           path: kotlin-spring-boot-sample-app/build/libs
