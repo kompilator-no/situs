@@ -46,7 +46,7 @@ dependencies {
     testImplementation("org.springframework:spring-test:7.0.5")
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.6")
     testImplementation("jakarta.servlet:jakarta.servlet-api:6.1.0")
-    testImplementation("com.jayway.jsonpath:json-path:2.9.0")
+    testImplementation("com.jayway.jsonpath:json-path:3.0.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
 }
