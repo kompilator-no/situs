@@ -33,17 +33,17 @@ publishing {
 }
 
 dependencies {
-    compileOnly("org.springframework:spring-web:6.2.10")
-    compileOnly("org.springframework:spring-context:6.2.10")
+    compileOnly("org.springframework:spring-web:7.0.5")
+    compileOnly("org.springframework:spring-context:7.0.5")
     compileOnly("org.springframework.boot:spring-boot:3.4.2")
     api("org.slf4j:slf4j-api:2.0.17")
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.0")
     testImplementation("org.hamcrest:hamcrest:3.0")
     testImplementation("org.assertj:assertj-core:3.27.7")
-    testImplementation("org.springframework:spring-web:6.2.10")
-    testImplementation("org.springframework:spring-webmvc:6.2.10")
-    testImplementation("org.springframework:spring-context:6.2.10")
-    testImplementation("org.springframework:spring-test:6.2.10")
+    testImplementation("org.springframework:spring-web:7.0.5")
+    testImplementation("org.springframework:spring-webmvc:7.0.5")
+    testImplementation("org.springframework:spring-context:7.0.5")
+    testImplementation("org.springframework:spring-test:7.0.5")
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.6")
     testImplementation("jakarta.servlet:jakarta.servlet-api:6.1.0")
     testImplementation("com.jayway.jsonpath:json-path:2.9.0")
