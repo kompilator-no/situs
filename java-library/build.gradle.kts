@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "no.testframework"
-version = "0.1.0"
+version = project.findProperty("version")?.takeIf { it != "unspecified" } ?: "0.1.0"
 
 repositories {
     mavenCentral()

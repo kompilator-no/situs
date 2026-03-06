@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "no.testframework"
-version = "0.1.0"
+version = project.findProperty("version")?.takeIf { it != "unspecified" } ?: "0.1.0"
 
 repositories {
     mavenCentral()
@@ -44,12 +44,9 @@ dependencies {
     compileOnly("org.springframework.boot:spring-boot:4.0.3")
     compileOnly("org.springframework.boot:spring-boot-autoconfigure:4.0.3")
     compileOnly("org.springframework:spring-context:6.2.10")
-    compileOnly("org.springframework.boot:spring-boot:3.4.2")
-    compileOnly("org.springframework.boot:spring-boot-autoconfigure:3.4.2")
-    compileOnly("org.springframework.boot:spring-boot:4.0.3")
-    compileOnly("org.springframework.boot:spring-boot-autoconfigure:4.0.3")
-    compileOnly("org.springframework:spring-context:7.0.5")
+    implementation("org.assertj:assertj-core:3.27.7")
 
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java {

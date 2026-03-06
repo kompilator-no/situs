@@ -8,7 +8,7 @@ updates:
     directory: "/java-library"
     schedule:
       interval: "weekly"
-    automerge: true
+
     groups:
       all-dependencies:
         update-types: ["minor", "patch"]
@@ -20,7 +20,7 @@ updates:
     directory: "/plugins"
     schedule:
       interval: "weekly"
-    automerge: true
+
     groups:
       all-dependencies:
         update-types: ["minor", "patch"]
@@ -32,7 +32,7 @@ updates:
     directory: "/java-spring-boot-sample-app"
     schedule:
       interval: "weekly"
-    automerge: true
+
     groups:
       all-dependencies:
         update-types: ["minor", "patch"]
@@ -44,7 +44,7 @@ updates:
     directory: "/kotlin-spring-boot-sample-app"
     schedule:
       interval: "weekly"
-    automerge: true
+
     groups:
       all-dependencies:
         update-types: ["minor", "patch"]
@@ -56,7 +56,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    automerge: true
+
     groups:
       all-actions:
         update-types: ["minor", "patch"]

@@ -22,7 +22,7 @@ dependencies {
     implementation(project(":plugins"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.assertj:assertj-core:3.27.7")
-
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

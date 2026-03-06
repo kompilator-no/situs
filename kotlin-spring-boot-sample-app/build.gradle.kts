@@ -1,6 +1,6 @@
 plugins {
     kotlin("jvm") version "2.1.20"
-    kotlin("plugin.spring") version "2.3.10"   // makes @Component classes open automatically
+    kotlin("plugin.spring") version "2.1.20"   // makes @Component classes open automatically
     id("org.springframework.boot") version "4.0.3"
     id("io.spring.dependency-management") version "1.1.7"
 }
@@ -22,8 +22,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.assertj:assertj-core:3.27.7")
-
+    implementation("org.assertj:assertj-core")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

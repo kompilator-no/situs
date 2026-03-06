@@ -119,20 +119,18 @@ class TestFrameworkControllerTest {
 
     @Test
     void runSuiteByBodyReturnsRunId() throws Exception {
-        TestSuite body = new TestSuite("Controller Suite", null, null, false);
         mockMvc.perform(post("/api/test-framework/suites/run/by-name")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content("{\"name\":\"Controller Suite\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.runId", notNullValue()));
     }
 
     @Test
     void runSuiteByBodyCompletesWithExpectedCounts() throws Exception {
-        TestSuite body = new TestSuite("Controller Suite", null, null, false);
         MvcResult r = mockMvc.perform(post("/api/test-framework/suites/run/by-name")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
+                        .content("{\"name\":\"Controller Suite\"}"))
                 .andReturn();
         String runId = objectMapper.readTree(r.getResponse().getContentAsString()).get("runId").asText();
 

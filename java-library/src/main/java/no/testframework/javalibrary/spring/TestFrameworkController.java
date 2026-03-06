@@ -1,6 +1,7 @@
 package no.testframework.javalibrary.spring;
 
 import no.testframework.javalibrary.model.TestSuite;
+import no.testframework.javalibrary.spring.model.RunSuiteRequest;
 import no.testframework.javalibrary.spring.model.SuiteRunStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -86,12 +87,12 @@ public final class TestFrameworkController {
      * The body only requires the {@code name} field:
      * <pre>{@code {"name": "CalculatorTestSuite"} }</pre>
      *
-     * @param suite request body — only {@code name} is required
+     * @param request request body containing the suite {@code name}
      * @return map containing {@code runId}
      */
     @PostMapping("/suites/run/by-name")
-    public Map<String, String> runSuite(@RequestBody TestSuite suite) {
-        return Map.of("runId", testFrameworkService.startSuiteAsync(suite.getName()));
+    public Map<String, String> runSuite(@RequestBody RunSuiteRequest request) {
+        return Map.of("runId", testFrameworkService.startSuiteAsync(request.name()));
     }
 
     /**
