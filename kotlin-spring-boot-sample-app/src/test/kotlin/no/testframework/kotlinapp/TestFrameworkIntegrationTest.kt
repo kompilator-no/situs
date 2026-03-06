@@ -1,6 +1,9 @@
 package no.testframework.kotlinapp
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
@@ -14,26 +17,39 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 /**
  * Integration tests for the Kotlin Spring Boot sample app.
  *
- * Starts the full Spring Boot context and exercises the REST endpoints provided
- * by the library's `TestFrameworkController`.
- *
- * Verifies:
- * - The framework activates automatically via Spring Boot auto-configuration.
- * - All three Kotlin suites ([no.testframework.kotlinapp.tests.CalculatorTestSuite],
- *   [no.testframework.kotlinapp.tests.LongRunningTestSuite],
- *   [no.testframework.kotlinapp.tests.RetryTestSuite]) are discovered automatically.
- * - `CalculatorTestSuite` receives its [no.testframework.kotlinapp.tests.Calculator]
- *   dependency via constructor injection.
- * - Suite runs can be started by name (path variable) or by JSON body.
- * - Unknown suite names return `404 Not Found`.
+ * Tests are ordered alphabetically so run-triggering tests complete before
+ * the next test starts — avoiding 409 Conflict responses.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestMethodOrder(MethodOrderer.MethodName::class)
 class TestFrameworkIntegrationTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    private val objectMapper = ObjectMapper()
+
+    // -------------------------------------------------------------------------
+    // Helper — poll until COMPLETED (max 10 s)
+    // -------------------------------------------------------------------------
+
+    private fun awaitCompleted(runId: String) {
+        repeat(100) {
+            Thread.sleep(100)
+            val r = mockMvc.perform(get("/api/test-framework/runs/$runId/status"))
+                .andExpect(status().isOk)
+                .andReturn()
+            val status = objectMapper.readTree(r.response.contentAsString).get("status").asText()
+            if (status == "COMPLETED") return
+        }
+        throw AssertionError("Run $runId did not complete within 10 s")
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests
+    // -------------------------------------------------------------------------
 
     @Test
     fun statusEndpointReturnsOk() {
@@ -74,28 +90,37 @@ class TestFrameworkIntegrationTest {
     }
 
     @Test
-    fun runSuiteByNameReturnsRunId() {
-        mockMvc.perform(post("/api/test-framework/suites/CalculatorTestSuite/run"))
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.runId").isNotEmpty)
-    }
-
-    @Test
     fun runSuiteByBodyReturnsRunId() {
-        mockMvc.perform(
+        val result = mockMvc.perform(
             post("/api/test-framework/suites/run/by-name")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"name":"CalculatorTestSuite"}""")
+                .content("""{"name":"LongRunningTestSuite"}""")
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.runId").isNotEmpty)
+            .andReturn()
+        val runId = objectMapper.readTree(result.response.contentAsString).get("runId").asText()
+        awaitCompleted(runId)
+    }
+
+    @Test
+    fun runSuiteByNameReturnsRunId() {
+        val result = mockMvc.perform(post("/api/test-framework/suites/CalculatorTestSuite/run"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.runId").isNotEmpty)
+            .andReturn()
+        val runId = objectMapper.readTree(result.response.contentAsString).get("runId").asText()
+        awaitCompleted(runId)
     }
 
     @Test
     fun runRetrySuiteReturnsRunId() {
-        mockMvc.perform(post("/api/test-framework/suites/RetryTestSuite/run"))
+        val result = mockMvc.perform(post("/api/test-framework/suites/RetryTestSuite/run"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.runId").isNotEmpty)
+            .andReturn()
+        val runId = objectMapper.readTree(result.response.contentAsString).get("runId").asText()
+        awaitCompleted(runId)
     }
 
     @Test
