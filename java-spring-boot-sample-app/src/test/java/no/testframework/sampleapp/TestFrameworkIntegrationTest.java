@@ -67,7 +67,7 @@ class TestFrameworkIntegrationTest {
 
     @Test
     void runSuiteByBodyReturnsRunId() throws Exception {
-        mockMvc.perform(post("/api/test-framework/suites/run")
+        mockMvc.perform(post("/api/test-framework/suites/run/by-name")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"CalculatorTestSuite\"}"))
                 .andExpect(status().isOk())

@@ -114,13 +114,13 @@ class TestFrameworkControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // POST /suites/run  (run by body)
+    // POST /suites/run/by-name  (run by body)
     // -------------------------------------------------------------------------
 
     @Test
     void runSuiteByBodyReturnsRunId() throws Exception {
-        TestSuite body = new TestSuite("Controller Suite", null, null,false);
-        mockMvc.perform(post("/api/test-framework/suites/run")
+        TestSuite body = new TestSuite("Controller Suite", null, null, false);
+        mockMvc.perform(post("/api/test-framework/suites/run/by-name")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
@@ -129,8 +129,8 @@ class TestFrameworkControllerTest {
 
     @Test
     void runSuiteByBodyCompletesWithExpectedCounts() throws Exception {
-        TestSuite body = new TestSuite("Controller Suite", null, null,false);
-        MvcResult r = mockMvc.perform(post("/api/test-framework/suites/run")
+        TestSuite body = new TestSuite("Controller Suite", null, null, false);
+        MvcResult r = mockMvc.perform(post("/api/test-framework/suites/run/by-name")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andReturn();

@@ -31,7 +31,7 @@ import java.util.Map;
  * <ul>
  *   <li>{@code GET  /api/test-framework/status}                              — health check</li>
  *   <li>{@code GET  /api/test-framework/suites}                              — list all suites</li>
- *   <li>{@code POST /api/test-framework/suites/run}                          — run suite (body)</li>
+ *   <li>{@code POST /api/test-framework/suites/run/by-name}                  — run suite (body)</li>
  *   <li>{@code POST /api/test-framework/suites/{suiteName}/run}              — run suite by name</li>
  *   <li>{@code POST /api/test-framework/suites/{suiteName}/tests/{name}/run} — run single test</li>
  *   <li>{@code GET  /api/test-framework/runs/{runId}/status}                 — poll run status</li>
@@ -82,10 +82,14 @@ public final class TestFrameworkController {
     /**
      * Starts a suite run using the suite name from the request body.
      *
+     * <p>Use this endpoint when the suite name is determined at runtime.
+     * The body only requires the {@code name} field:
+     * <pre>{@code {"name": "CalculatorTestSuite"} }</pre>
+     *
      * @param suite request body — only {@code name} is required
      * @return map containing {@code runId}
      */
-    @PostMapping("/suites/run")
+    @PostMapping("/suites/run/by-name")
     public Map<String, String> runSuite(@RequestBody TestSuite suite) {
         return Map.of("runId", testFrameworkService.startSuiteAsync(suite.getName()));
     }

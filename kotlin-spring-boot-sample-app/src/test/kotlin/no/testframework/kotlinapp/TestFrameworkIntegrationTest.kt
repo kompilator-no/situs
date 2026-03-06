@@ -83,7 +83,7 @@ class TestFrameworkIntegrationTest {
     @Test
     fun runSuiteByBodyReturnsRunId() {
         mockMvc.perform(
-            post("/api/test-framework/suites/run")
+            post("/api/test-framework/suites/run/by-name")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"CalculatorTestSuite"}""")
         )
