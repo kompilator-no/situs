@@ -43,7 +43,7 @@ dependencies {
     // don't pull these in transitively)
     compileOnly("org.springframework.boot:spring-boot:4.0.3")
     compileOnly("org.springframework.boot:spring-boot-autoconfigure:4.0.3")
-    compileOnly("org.springframework:spring-context:6.2.10")
+    compileOnly("org.springframework:spring-context:6.2.16")
     implementation("org.assertj:assertj-core:3.27.7")
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
