@@ -69,7 +69,7 @@ class TestFrameworkIntegrationTest {
     void runSuiteByBodyReturnsRunId() throws Exception {
         mockMvc.perform(post("/api/test-framework/suites/run/by-name")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"CalculatorTestSuite\"}"))
+                        .content("{\"name\":\"LongRunningTestSuite\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.runId").isNotEmpty());
     }
