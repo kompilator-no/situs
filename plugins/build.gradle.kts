@@ -37,7 +37,7 @@ dependencies {
     api(project(":java-library"))
 
     // JSON serialisation for report writing
-    api("com.fasterxml.jackson.core:jackson-databind:2.18.6")
+    api("com.fasterxml.jackson.core:jackson-databind:2.21.1")
 
     // Spring Boot auto-configuration support (compileOnly — consumers without Spring
     // don't pull these in transitively)
