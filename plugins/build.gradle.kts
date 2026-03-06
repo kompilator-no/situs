@@ -45,7 +45,7 @@ dependencies {
     compileOnly("org.springframework.boot:spring-boot-autoconfigure:4.0.3")
     compileOnly("org.springframework:spring-context:6.2.10")
     implementation("org.assertj:assertj-core:3.27.7")
-
+    testImplementation("org.junit.jupiter:junit-jupiter:5.13.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
