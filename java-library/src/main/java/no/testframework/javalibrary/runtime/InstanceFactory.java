@@ -32,12 +32,16 @@ public interface InstanceFactory {
 
     /**
      * Default implementation — creates instances via the no-arg constructor.
+     * Uses {@link java.lang.reflect.Constructor#setAccessible(boolean) setAccessible(true)}
+     * so that non-public inner classes (e.g. test fixtures) can be instantiated.
      * Used when no DI container is available.
      */
     static InstanceFactory reflective() {
         return suiteClass -> {
             try {
-                return suiteClass.getDeclaredConstructor().newInstance();
+                var constructor = suiteClass.getDeclaredConstructor();
+                constructor.setAccessible(true);
+                return constructor.newInstance();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to instantiate " + suiteClass.getName(), e);
             }

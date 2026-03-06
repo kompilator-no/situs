@@ -180,34 +180,28 @@ public class SuiteReportWriter {
      * Writes an Open Test Reporting XML report using the JDK {@link DocumentBuilder} DOM API.
      *
      * <p>File name: {@code {suiteName}-open-test-report.xml}
-     *
-     * <p>Follows the <a href="https://github.com/ota4j-team/open-test-reporting">Open Test
-     * Reporting</a> schema (version 0.1.0).
      */
     private void writeOpenTestReportingXml(TestSuiteExecutionResult result) throws IOException {
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
-            Document doc = factory.newDocumentBuilder().newDocument();
+            // Use a plain (non-namespace-aware) document so the serializer preserves
+            // our e:/r: prefixes exactly as written rather than rewriting them.
+            Document doc   = newDocument();
             String now     = ISO_INSTANT.format(Instant.now());
             String suiteId = "suite-1";
 
-            Element events = doc.createElementNS(
-                    "https://schemas.opentest4j.org/reporting/events/0.1.0", "e:events");
-            events.setAttributeNS("http://www.w3.org/2000/xmlns/",
-                    "xmlns:e", "https://schemas.opentest4j.org/reporting/events/0.1.0");
-            events.setAttributeNS("http://www.w3.org/2000/xmlns/",
-                    "xmlns:r", "https://schemas.opentest4j.org/reporting/core/0.1.0");
+            Element events = doc.createElement("e:events");
+            events.setAttribute("xmlns:e", "https://schemas.opentest4j.org/reporting/events/0.1.0");
+            events.setAttribute("xmlns:r", "https://schemas.opentest4j.org/reporting/core/0.1.0");
             doc.appendChild(events);
 
             // Suite started
-            Element suiteStarted = otrElement(doc, "e:started");
+            Element suiteStarted = doc.createElement("e:started");
             suiteStarted.setAttribute("id",   suiteId);
             suiteStarted.setAttribute("name", result.getSuiteName());
             suiteStarted.setAttribute("time", now);
             if (result.getDescription() != null && !result.getDescription().isBlank()) {
-                Element meta = otrElement(doc, "r:metadata");
-                Element desc = otrElement(doc, "r:description");
+                Element meta = doc.createElement("r:metadata");
+                Element desc = doc.createElement("r:description");
                 desc.setTextContent(result.getDescription());
                 meta.appendChild(desc);
                 suiteStarted.appendChild(meta);
@@ -219,33 +213,33 @@ public class SuiteReportWriter {
             for (TestCaseExecutionResult tc : result.getTestCaseResults()) {
                 String testId = "test-" + idx++;
 
-                Element started = otrElement(doc, "e:started");
+                Element started = doc.createElement("e:started");
                 started.setAttribute("id",       testId);
                 started.setAttribute("name",     tc.getName());
                 started.setAttribute("parentId", suiteId);
                 started.setAttribute("time",     now);
                 events.appendChild(started);
 
-                Element finished = otrElement(doc, "e:finished");
+                Element finished = doc.createElement("e:finished");
                 finished.setAttribute("id",         testId);
                 finished.setAttribute("time",       now);
                 finished.setAttribute("durationMs", String.valueOf(tc.getDurationMs()));
 
                 if (tc.getAttempts() > 1) {
-                    Element meta  = otrElement(doc, "r:metadata");
-                    Element entry = otrElement(doc, "r:entry");
+                    Element meta  = doc.createElement("r:metadata");
+                    Element entry = doc.createElement("r:entry");
                     entry.setAttribute("key",   "attempts");
                     entry.setAttribute("value", String.valueOf(tc.getAttempts()));
                     meta.appendChild(entry);
                     finished.appendChild(meta);
                 }
 
-                Element resultEl = otrElement(doc, "r:result");
+                Element resultEl = doc.createElement("r:result");
                 if (tc.isPassed()) {
                     resultEl.setAttribute("status", "SUCCESSFUL");
                 } else {
                     resultEl.setAttribute("status", "FAILED");
-                    Element failure = otrElement(doc, "r:failure");
+                    Element failure = doc.createElement("r:failure");
                     failure.setAttribute("type",
                             tc.getExceptionType() != null ? tc.getExceptionType() : "AssertionError");
                     failure.setAttribute("message", nullToEmpty(tc.getErrorMessage()));
@@ -256,10 +250,10 @@ public class SuiteReportWriter {
             }
 
             // Suite finished
-            Element suiteFinished = otrElement(doc, "e:finished");
+            Element suiteFinished = doc.createElement("e:finished");
             suiteFinished.setAttribute("id",   suiteId);
             suiteFinished.setAttribute("time", now);
-            Element suiteResult = otrElement(doc, "r:result");
+            Element suiteResult = doc.createElement("r:result");
             suiteResult.setAttribute("status", result.isAllPassed() ? "SUCCESSFUL" : "FAILED");
             suiteFinished.appendChild(suiteResult);
             events.appendChild(suiteFinished);
@@ -319,23 +313,13 @@ public class SuiteReportWriter {
         return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
     }
 
-    /** Creates an element with a prefixed name — works for both plain and namespace-aware docs. */
-    private static Element otrElement(Document doc, String tagName) {
-        // Namespace-aware doc — use the correct NS URI for the prefix
-        if (tagName.startsWith("e:")) {
-            return doc.createElementNS(
-                    "https://schemas.opentest4j.org/reporting/events/0.1.0", tagName);
-        } else {
-            return doc.createElementNS(
-                    "https://schemas.opentest4j.org/reporting/core/0.1.0", tagName);
-        }
-    }
 
     private static void writeXml(Document doc, Path file)
-            throws TransformerException, IOException {
+            throws TransformerException {
         Transformer transformer = TransformerFactory.newInstance().newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT,  "yes");
-        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty(OutputKeys.INDENT,               "yes");
+        transformer.setOutputProperty(OutputKeys.ENCODING,             "UTF-8");
+        transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
         transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
         transformer.transform(new DOMSource(doc), new StreamResult(file.toFile()));
     }

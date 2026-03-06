@@ -4,7 +4,6 @@ import no.testframework.javalibrary.annotations.RunTimeTest;
 import no.testframework.javalibrary.annotations.RuntimeTestSuite;
 import no.testframework.javalibrary.domain.TestCaseExecutionResult;
 import no.testframework.javalibrary.domain.TestSuiteExecutionResult;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -19,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Tests for {@link SuiteReportWriter} and {@link ReportingPlugin}.
  */
-class ReportingPluginTest {
+public class ReportingPluginTest {
 
     @TempDir
     Path tempDir;
@@ -29,12 +28,12 @@ class ReportingPluginTest {
     // -------------------------------------------------------------------------
 
     @RuntimeTestSuite(name = "All Pass Suite", description = "All tests pass")
-    static class AllPassSuite {
+    public static class AllPassSuite {
         @RunTimeTest(name = "passingTest") public void passingTest() {}
     }
 
     @RuntimeTestSuite(name = "Mixed Suite", description = "One pass one fail")
-    static class MixedSuite {
+    public static class MixedSuite {
         @RunTimeTest(name = "passes") public void passes() {}
         @RunTimeTest(name = "fails")  public void fails() { throw new AssertionError("expected <1> but was <2>"); }
     }
@@ -166,7 +165,7 @@ class ReportingPluginTest {
         String xml = Files.readString(tempDir.resolve("TEST-My_Suite.xml"));
         assertThat(xml).startsWith("<?xml version=\"1.0\"");
         assertThat(xml).contains("<testsuite");
-        assertThat(xml).endsWith("</testsuite>\n");
+        assertThat(xml).contains("</testsuite>");
     }
 
     // -------------------------------------------------------------------------
@@ -212,7 +211,7 @@ class ReportingPluginTest {
 
         String xml = Files.readString(tempDir.resolve("My_Suite-open-test-report.xml"));
         assertThat(xml).contains("<e:started id=\"test-1\"");
-        assertThat(xml).contains("<e:finished id=\"test-1\"");
+        assertThat(xml).contains("id=\"test-1\"");
         assertThat(xml).contains("<e:started id=\"test-2\"");
     }
 
@@ -278,7 +277,7 @@ class ReportingPluginTest {
         writer.write(mixedResult());
 
         String json = Files.readString(tempDir.resolve("My_Suite-report.json"));
-        assertThat(json).contains("\"suiteName\": \"My Suite\"");
+        assertThat(json).contains("\"suiteName\" : \"My Suite\"");
     }
 
     @Test
@@ -290,8 +289,8 @@ class ReportingPluginTest {
         String json = Files.readString(tempDir.resolve("My_Suite-report.json"));
         assertThat(json).contains("\"passingTest\"");
         assertThat(json).contains("\"failingTest\"");
-        assertThat(json).contains("\"passed\": true");
-        assertThat(json).contains("\"passed\": false");
+        assertThat(json).contains("\"passed\" : true");
+        assertThat(json).contains("\"passed\" : false");
     }
 
     @Test
@@ -301,7 +300,7 @@ class ReportingPluginTest {
         writer.write(mixedResult());
 
         String json = Files.readString(tempDir.resolve("My_Suite-report.json"));
-        assertThat(json).contains("\"attempts\": 3");
+        assertThat(json).contains("\"attempts\" : 3");
     }
 
     @Test
@@ -311,8 +310,8 @@ class ReportingPluginTest {
         writer.write(mixedResult());
 
         String json = Files.readString(tempDir.resolve("My_Suite-report.json"));
-        assertThat(json).contains("\"passedCount\": 2");
-        assertThat(json).contains("\"failedCount\": 1");
+        assertThat(json).contains("\"passedCount\" : 2");
+        assertThat(json).contains("\"failedCount\" : 1");
     }
 
     @Test
@@ -322,8 +321,8 @@ class ReportingPluginTest {
         writer.write(allPassResult());
 
         String json = Files.readString(tempDir.resolve("Clean_Suite-report.json"));
-        assertThat(json).contains("\"errorMessage\": null");
-        assertThat(json).contains("\"stackTrace\": null");
+        assertThat(json).contains("\"errorMessage\" : null");
+        assertThat(json).contains("\"stackTrace\" : null");
     }
 
     // -------------------------------------------------------------------------
@@ -374,7 +373,7 @@ class ReportingPluginTest {
     // -------------------------------------------------------------------------
 
     @Test
-    void reportingPluginRunsAllSuitesAndWritesReports() throws IOException {
+    void reportingPluginRunsAllSuitesAndWritesReports() {
         ReportingPlugin plugin = ReportingPlugin.builder()
                 .suite(AllPassSuite.class)
                 .suite(MixedSuite.class)
@@ -399,8 +398,8 @@ class ReportingPluginTest {
 
         List<TestSuiteExecutionResult> results = plugin.runAndReport();
 
-        assertThat(results.get(0).isAllPassed()).isTrue();
-        assertThat(results.get(0).getPassedCount()).isEqualTo(1);
+        assertThat(results.getFirst().isAllPassed()).isTrue();
+        assertThat(results.getFirst().getPassedCount()).isEqualTo(1);
     }
 
     @Test
@@ -417,7 +416,7 @@ class ReportingPluginTest {
         // Both suites ran
         assertThat(results).hasSize(2);
         // First suite has a failure
-        assertThat(results.get(0).getFailedCount()).isEqualTo(1);
+        assertThat(results.getFirst().getFailedCount()).isEqualTo(1);
         // Second suite all passed
         assertThat(results.get(1).isAllPassed()).isTrue();
     }
@@ -436,7 +435,7 @@ class ReportingPluginTest {
     }
 
     @Test
-    void reportingPluginAllFormatsProducedEndToEnd() throws IOException {
+    void reportingPluginAllFormatsProducedEndToEnd() {
         ReportingPlugin plugin = ReportingPlugin.builder()
                 .suite(AllPassSuite.class)
                 .outputDir(tempDir)

@@ -40,15 +40,14 @@ import java.util.Set;
  * </pre>
  *
  * <h2>Properties</h2>
- * <table>
- *   <tr><th>Property</th><th>Default</th><th>Description</th></tr>
- *   <tr><td>{@code testframework.reporting.enabled}</td><td>{@code true}</td>
- *       <td>Set to {@code false} to disable the plugin entirely.</td></tr>
- *   <tr><td>{@code testframework.reporting.output-dir}</td><td>{@code build/test-reports}</td>
- *       <td>Directory where report files are written.</td></tr>
- *   <tr><td>{@code testframework.reporting.formats}</td><td>{@code JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON}</td>
- *       <td>Comma-separated list of formats to produce.</td></tr>
- * </table>
+ * <dl>
+ *   <dt>{@code testframework.reporting.enabled} (default: {@code true})</dt>
+ *   <dd>Set to {@code false} to disable the plugin entirely.</dd>
+ *   <dt>{@code testframework.reporting.output-dir} (default: {@code build/test-reports})</dt>
+ *   <dd>Directory where report files are written.</dd>
+ *   <dt>{@code testframework.reporting.formats} (default: {@code JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON})</dt>
+ *   <dd>Comma-separated list of formats to produce.</dd>
+ * </dl>
  *
  * <h2>Override</h2>
  * <p>Declare your own {@link ReportingPlugin} {@code @Bean} to take full control —
@@ -64,6 +63,22 @@ public class ReportingAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(ReportingAutoConfiguration.class);
 
+    /** Creates the auto-configuration. Instantiated by the Spring Boot auto-configuration mechanism. */
+    public ReportingAutoConfiguration() {}
+
+    /**
+     * Creates and registers a {@link ReportingPlugin} bean.
+     *
+     * <p>The plugin is registered as a {@link no.testframework.javalibrary.plugin.SuiteRunListener}
+     * on the {@link TestFrameworkService} so reports are written automatically whenever
+     * any suite run completes — no manual invocation needed.
+     *
+     * @param applicationContext   the Spring application context used for suite DI
+     * @param testFrameworkService the service to register the listener on
+     * @param outputDir            directory to write report files into
+     * @param formats              comma-separated list of {@link ReportFormat} names
+     * @return the configured {@link ReportingPlugin}, or {@code null} if no suites found
+     */
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "testframework.reporting.enabled", havingValue = "true", matchIfMissing = true)
