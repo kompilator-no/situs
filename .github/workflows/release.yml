@@ -27,9 +27,9 @@ jobs:
 
       - name: Build java-library and plugins
         run: |
-          sed -i 's/\r//' gradlew
-          chmod +x gradlew
-          ./gradlew :java-library:build :plugins:build \
+          sed -i 's/\r//' java-library/gradlew
+          chmod +x java-library/gradlew
+          java-library/gradlew --project-dir . :java-library:build :plugins:build \
             -Pversion=${{ steps.version.outputs.VERSION }}
 
       - name: List built jars
