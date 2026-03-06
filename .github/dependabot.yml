@@ -8,23 +8,58 @@ updates:
     directory: "/java-library"
     schedule:
       interval: "weekly"
+    automerge: true
+    groups:
+      all-dependencies:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "gradle"
     directory: "/plugins"
     schedule:
       interval: "weekly"
+    automerge: true
+    groups:
+      all-dependencies:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "gradle"
     directory: "/java-spring-boot-sample-app"
     schedule:
       interval: "weekly"
+    automerge: true
+    groups:
+      all-dependencies:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "gradle"
     directory: "/kotlin-spring-boot-sample-app"
     schedule:
       interval: "weekly"
+    automerge: true
+    groups:
+      all-dependencies:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    automerge: true
+    groups:
+      all-actions:
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
