@@ -51,7 +51,7 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.27.7")
     testImplementation("org.springframework.boot:spring-boot-autoconfigure:3.4.2")
     testImplementation("org.springframework:spring-context:7.0.5")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.0.3")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
 }
 
