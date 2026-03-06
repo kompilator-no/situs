@@ -9,14 +9,14 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       - name: Build and test all projects
         working-directory: java-library
@@ -26,25 +26,25 @@ jobs:
           ./gradlew -p .. build
 
       - name: Upload java-library artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java-library
           path: java-library/build/libs
 
       - name: Upload plugins artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: plugins
           path: plugins/build/libs
 
       - name: Upload java-spring-boot-sample-app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: java-spring-boot-sample-app
           path: java-spring-boot-sample-app/build/libs
 
       - name: Upload kotlin-spring-boot-sample-app artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kotlin-spring-boot-sample-app
           path: kotlin-spring-boot-sample-app/build/libs

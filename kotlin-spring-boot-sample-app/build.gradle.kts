@@ -1,7 +1,7 @@
 plugins {
     kotlin("jvm") version "2.1.20"
-    kotlin("plugin.spring") version "2.1.20"   // makes @Component classes open automatically
-    id("org.springframework.boot") version "3.4.2"
+    kotlin("plugin.spring") version "2.3.10"   // makes @Component classes open automatically
+    id("org.springframework.boot") version "4.0.3"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
