@@ -26,6 +26,26 @@ public class RuntimeTestSuiteRunner {
 
     private static final Logger log = LoggerFactory.getLogger(RuntimeTestSuiteRunner.class);
 
+    private final InstanceFactory instanceFactory;
+
+    /**
+     * Creates a runner that uses plain reflection to instantiate suite classes.
+     * Use this when no DI container is available.
+     */
+    public RuntimeTestSuiteRunner() {
+        this(InstanceFactory.reflective());
+    }
+
+    /**
+     * Creates a runner that uses the given {@link InstanceFactory} to instantiate
+     * suite classes. Pass a {@code SpringInstanceFactory} to enable Spring DI.
+     *
+     * @param instanceFactory the factory to use for creating suite instances
+     */
+    public RuntimeTestSuiteRunner(InstanceFactory instanceFactory) {
+        this.instanceFactory = instanceFactory;
+    }
+
     /**
      * Executes all {@code @RunTimeTest} methods in {@code suiteClass}, writes a
      * formatted report to the logger, and returns the aggregated result.
@@ -45,12 +65,12 @@ public class RuntimeTestSuiteRunner {
             throw new IllegalArgumentException("Class is not annotated with @RuntimeTestSuite");
         }
         RuntimeTestSuite suiteAnnotation = suiteClass.getAnnotation(RuntimeTestSuite.class);
-        String suiteName    = suiteAnnotation.name().isEmpty() ? suiteClass.getSimpleName() : suiteAnnotation.name();
-        String description  = suiteAnnotation.description();
+        String suiteName   = suiteAnnotation.name().isEmpty() ? suiteClass.getSimpleName() : suiteAnnotation.name();
+        String description = suiteAnnotation.description();
 
         log.debug("Starting suite: '{}'", suiteName);
         TestSuiteExecutionResult result = new TestSuiteExecutionResult(
-                suiteName, description, new TestRunner().runTests(suiteClass));
+                suiteName, description, new TestRunner(instanceFactory).runTests(suiteClass));
 
         SuiteReporter.report(suiteName, description, result.getTestCaseResults());
         return result;

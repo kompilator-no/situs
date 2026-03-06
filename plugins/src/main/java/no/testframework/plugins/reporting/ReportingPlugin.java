@@ -1,8 +1,10 @@
 package no.testframework.plugins.reporting;
 
 import no.testframework.javalibrary.domain.TestSuiteExecutionResult;
+import no.testframework.javalibrary.plugin.SuiteRunListener;
+import no.testframework.javalibrary.plugin.TestFrameworkPlugin;
+import no.testframework.javalibrary.runtime.InstanceFactory;
 import no.testframework.javalibrary.runtime.RuntimeTestSuiteRunner;
-import no.testframework.plugins.TestFrameworkPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +59,7 @@ import java.util.List;
  * @see SuiteReportWriter
  * @see ReportFormat
  */
-public class ReportingPlugin implements TestFrameworkPlugin {
+public class ReportingPlugin implements TestFrameworkPlugin, SuiteRunListener {
 
     private static final Logger log = LoggerFactory.getLogger(ReportingPlugin.class);
 
@@ -68,8 +70,44 @@ public class ReportingPlugin implements TestFrameworkPlugin {
     private ReportingPlugin(Builder builder) {
         this.suiteClasses = List.copyOf(builder.suiteClasses);
         this.writer       = builder.writer;
-        this.runner       = new RuntimeTestSuiteRunner();
+        this.runner       = new RuntimeTestSuiteRunner(builder.instanceFactory);
     }
+
+    // -------------------------------------------------------------------------
+    // SuiteRunListener — writes reports when tests are run
+    // -------------------------------------------------------------------------
+
+    /**
+     * Called automatically by {@link no.testframework.javalibrary.spring.TestFrameworkService}
+     * whenever a suite run completes. Writes report files for the result.
+     *
+     * <p>This is the primary way reports are produced — no manual invocation needed.
+     * Register this plugin as a listener via
+     * {@code testFrameworkService.addListener(reportingPlugin)} or let
+     * {@link ReportingAutoConfiguration} wire it automatically.
+     *
+     * @param result the completed suite result
+     */
+    @Override
+    public void onSuiteCompleted(TestSuiteExecutionResult result) {
+        try {
+            writer.write(result);
+        } catch (IOException e) {
+            throw new UncheckedIOException(
+                    "Failed to write report for suite: " + result.getSuiteName(), e);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // TestFrameworkPlugin
+    // -------------------------------------------------------------------------
+
+    /** @return {@code "ReportingPlugin"} */
+    @Override
+    public String pluginName() {
+        return "ReportingPlugin";
+    }
+
 
     // -------------------------------------------------------------------------
     // Public API
@@ -139,6 +177,7 @@ public class ReportingPlugin implements TestFrameworkPlugin {
         private final List<Class<?>> suiteClasses = new ArrayList<>();
         private Path outputDir = Path.of("build/test-reports");
         private final List<ReportFormat> formats  = new ArrayList<>();
+        private InstanceFactory instanceFactory   = InstanceFactory.reflective();
 
         private Builder() {}
 
@@ -173,6 +212,30 @@ public class ReportingPlugin implements TestFrameworkPlugin {
          */
         public Builder format(ReportFormat format) {
             this.formats.add(format);
+            return this;
+        }
+
+        /**
+         * Sets the {@link InstanceFactory} used to create suite class instances.
+         *
+         * <p>Defaults to {@link InstanceFactory#reflective()} (plain no-arg constructor).
+         * Pass a {@code SpringInstanceFactory} when running inside a Spring context so
+         * that suite classes annotated with {@code @Component} receive their dependencies
+         * via injection rather than failing with {@code NoSuchMethodException}.
+         *
+         * <pre>{@code
+         * ReportingPlugin.builder()
+         *         .suite(CalculatorTestSuite.class)
+         *         .instanceFactory(new SpringInstanceFactory(applicationContext))
+         *         .format(ReportFormat.JUNIT_XML)
+         *         .build();
+         * }</pre>
+         *
+         * @param instanceFactory the factory to use
+         * @return this builder
+         */
+        public Builder instanceFactory(InstanceFactory instanceFactory) {
+            this.instanceFactory = instanceFactory;
             return this;
         }
 

@@ -19,6 +19,7 @@ repositories {
 
 dependencies {
     implementation(project(":java-library"))
+    implementation(project(":plugins"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.assertj:assertj-core:3.27.7")
 

@@ -1,5 +1,6 @@
 package no.testframework.javalibrary.spring;
 
+import no.testframework.javalibrary.plugin.SuiteRunListener;
 import no.testframework.javalibrary.domain.TestCaseDefinition;
 import no.testframework.javalibrary.domain.TestCaseExecutionResult;
 import no.testframework.javalibrary.domain.TestSuiteDefinition;
@@ -78,6 +79,19 @@ public class TestFrameworkService {
      * Key format: {@code suiteName} or {@code suiteName/testName}.
      */
     private final Set<String> activeRuns = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    /** Listeners notified after every suite run completes. */
+    private final List<SuiteRunListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    /**
+     * Registers a {@link SuiteRunListener} that will be called after every suite
+     * run completes — whether triggered via the HTTP API or directly.
+     *
+     * @param listener the listener to add
+     */
+    public void addListener(SuiteRunListener listener) {
+        listeners.add(listener);
+    }
 
     /**
      * Creates the service with an explicit set of suite classes.
@@ -201,6 +215,13 @@ public class TestFrameworkService {
                         testRunner.runTests(definition.getSuiteClass(), definition.isParallel());
                 List<TestCaseResult> converted = toTestCaseResults(results);
                 SuiteReporter.report(suiteName, definition.getDescription(), results);
+                no.testframework.javalibrary.domain.TestSuiteExecutionResult suiteResult =
+                        new no.testframework.javalibrary.domain.TestSuiteExecutionResult(
+                                suiteName, definition.getDescription(), results);
+                listeners.forEach(l -> {
+                    try { l.onSuiteCompleted(suiteResult); }
+                    catch (Exception ex) { log.error("SuiteRunListener threw an exception", ex); }
+                });
                 updateStatus(runId, SuiteRunStatus.Status.COMPLETED, converted);
             } catch (Exception e) {
                 log.error("Suite run failed: runId={}", runId, e);

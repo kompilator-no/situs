@@ -1,5 +1,6 @@
 package no.testframework.javalibrary.spring;
 
+import no.testframework.javalibrary.plugin.PluginRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,11 +23,11 @@ import org.springframework.context.annotation.Configuration;
  * <p>Beans registered:
  * <ul>
  *   <li>{@link TestFrameworkService} — scans the entire classpath for
- *       {@code @RuntimeTestSuite} classes automatically. Injects the
- *       {@link ApplicationContext} so suite classes that are Spring beans
- *       receive full dependency injection via {@link SpringInstanceFactory}.</li>
+ *       {@code @RuntimeTestSuite} classes automatically.</li>
  *   <li>{@link TestFrameworkController} — exposes the REST API under
  *       {@code /api/test-framework/...}.</li>
+ *   <li>{@link PluginRunner} — discovers all {@link no.testframework.javalibrary.plugin.TestFrameworkPlugin}
+ *       beans in the context and calls {@code onStartup()} on those that opt in.</li>
  * </ul>
  *
  * @see EnableRuntimeTests
@@ -59,5 +60,19 @@ public class RuntimeTestAutoConfiguration {
     @Bean
     public TestFrameworkController testFrameworkController(TestFrameworkService testFrameworkService) {
         return new TestFrameworkController(testFrameworkService);
+    }
+
+    /**
+     * Creates the {@link PluginRunner} that discovers all
+     * {@link no.testframework.javalibrary.plugin.TestFrameworkPlugin} beans in the
+     * context and calls {@code onStartup()} on those that opt in via
+     * {@code runOnStartup() == true}.
+     *
+     * @param applicationContext the Spring application context
+     * @return the plugin runner
+     */
+    @Bean
+    public PluginRunner pluginRunner(ApplicationContext applicationContext) {
+        return new PluginRunner(applicationContext);
     }
 }

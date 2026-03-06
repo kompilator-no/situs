@@ -1,0 +1,104 @@
+package no.testframework.plugins.reporting;
+
+import no.testframework.javalibrary.runtime.ClasspathScanner;
+import no.testframework.javalibrary.spring.SpringInstanceFactory;
+import no.testframework.javalibrary.spring.TestFrameworkService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+
+import java.nio.file.Path;
+import java.util.Set;
+
+/**
+ * Spring Boot auto-configuration for the {@link ReportingPlugin}.
+ *
+ * <p>Activated automatically when the {@code plugins} JAR is on the classpath.
+ * Registers a {@link ReportingPlugin} bean that:
+ * <ul>
+ *   <li>Scans the entire classpath for {@code @RuntimeTestSuite} classes automatically
+ *       — no need to list suite classes manually.</li>
+ *   <li>Uses {@link SpringInstanceFactory} so {@code @Component} suites receive
+ *       their Spring dependencies via constructor injection.</li>
+ *   <li>Writes all three report formats by default
+ *       ({@link ReportFormat#JUNIT_XML}, {@link ReportFormat#OPEN_TEST_REPORTING_XML},
+ *       {@link ReportFormat#JSON}).</li>
+ * </ul>
+ *
+ * <h2>Minimum configuration</h2>
+ * <p>No configuration is required. Add the JAR and the plugin activates automatically:
+ * <pre>
+ * dependencies {
+ *     implementation("no.testframework:plugins:0.1.0")
+ * }
+ * </pre>
+ *
+ * <h2>Properties</h2>
+ * <table>
+ *   <tr><th>Property</th><th>Default</th><th>Description</th></tr>
+ *   <tr><td>{@code testframework.reporting.enabled}</td><td>{@code true}</td>
+ *       <td>Set to {@code false} to disable the plugin entirely.</td></tr>
+ *   <tr><td>{@code testframework.reporting.output-dir}</td><td>{@code build/test-reports}</td>
+ *       <td>Directory where report files are written.</td></tr>
+ *   <tr><td>{@code testframework.reporting.formats}</td><td>{@code JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON}</td>
+ *       <td>Comma-separated list of formats to produce.</td></tr>
+ * </table>
+ *
+ * <h2>Override</h2>
+ * <p>Declare your own {@link ReportingPlugin} {@code @Bean} to take full control —
+ * this auto-configuration backs off when a bean already exists
+ * ({@code @ConditionalOnMissingBean}).
+ *
+ * @see ReportingPlugin
+ * @see no.testframework.javalibrary.plugin.PluginRunner
+ */
+@AutoConfiguration
+@ConditionalOnBean(TestFrameworkService.class)
+public class ReportingAutoConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportingAutoConfiguration.class);
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(name = "testframework.reporting.enabled", havingValue = "true", matchIfMissing = true)
+    public ReportingPlugin reportingPlugin(
+            ApplicationContext applicationContext,
+            TestFrameworkService testFrameworkService,
+            @Value("${testframework.reporting.output-dir:build/test-reports}") String outputDir,
+            @Value("${testframework.reporting.formats:JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON}") String formats) {
+
+        Set<Class<?>> suites = ClasspathScanner.findAllRuntimeTestSuites();
+
+        if (suites.isEmpty()) {
+            log.warn("ReportingAutoConfiguration: no @RuntimeTestSuite classes found — " +
+                     "ReportingPlugin will not be created.");
+            return null;
+        }
+
+        log.info("ReportingAutoConfiguration: discovered {} suite(s), registering reporting listener",
+                suites.size());
+
+        ReportingPlugin.Builder builder = ReportingPlugin.builder()
+                .instanceFactory(new SpringInstanceFactory(applicationContext))
+                .outputDir(Path.of(outputDir));
+
+        suites.forEach(builder::suite);
+
+        for (String format : formats.split(",")) {
+            builder.format(ReportFormat.valueOf(format.trim()));
+        }
+
+        ReportingPlugin plugin = builder.build();
+
+        // Register as a listener — reports are written whenever any suite run completes
+        testFrameworkService.addListener(plugin);
+
+        return plugin;
+    }
+}

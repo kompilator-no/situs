@@ -35,6 +35,7 @@ publishing {
 dependencies {
     compileOnly("org.springframework:spring-web:6.2.10")
     compileOnly("org.springframework:spring-context:6.2.10")
+    compileOnly("org.springframework.boot:spring-boot:3.4.2")
     api("org.slf4j:slf4j-api:2.0.17")
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.0")
     testImplementation("org.hamcrest:hamcrest:3.0")

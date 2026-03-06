@@ -1,13 +1,26 @@
 package no.testframework.plugins.reporting;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import no.testframework.javalibrary.domain.TestCaseExecutionResult;
 import no.testframework.javalibrary.domain.TestSuiteExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.IOException;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -20,9 +33,12 @@ import java.util.List;
  *
  * <p>Three formats are supported — see {@link ReportFormat} for details:
  * <ul>
- *   <li>{@link ReportFormat#JUNIT_XML} — Surefire/JUnit XML (widest CI tool support)</li>
- *   <li>{@link ReportFormat#OPEN_TEST_REPORTING_XML} — Open Test Reporting XML schema</li>
- *   <li>{@link ReportFormat#JSON} — simple JSON array</li>
+ *   <li>{@link ReportFormat#JUNIT_XML} — Surefire/JUnit XML (widest CI tool support),
+ *       written via the JDK {@link DocumentBuilder} DOM API.</li>
+ *   <li>{@link ReportFormat#OPEN_TEST_REPORTING_XML} — Open Test Reporting XML,
+ *       also written via the JDK DOM API.</li>
+ *   <li>{@link ReportFormat#JSON} — pretty-printed JSON via
+ *       <a href="https://github.com/FasterXML/jackson-databind">Jackson Databind</a>.</li>
  * </ul>
  *
  * <h2>Usage</h2>
@@ -31,6 +47,7 @@ import java.util.List;
  *         .outputDir(Path.of("build/test-reports"))
  *         .format(ReportFormat.JUNIT_XML)
  *         .format(ReportFormat.OPEN_TEST_REPORTING_XML)
+ *         .format(ReportFormat.JSON)
  *         .build();
  *
  * writer.write(suiteResult);
@@ -44,6 +61,9 @@ public class SuiteReportWriter {
 
     private static final DateTimeFormatter ISO_INSTANT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneOffset.UTC);
+
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .enable(SerializationFeature.INDENT_OUTPUT);
 
     private final Path outputDir;
     private final List<ReportFormat> formats;
@@ -67,9 +87,9 @@ public class SuiteReportWriter {
         Files.createDirectories(outputDir);
         for (ReportFormat format : formats) {
             switch (format) {
-                case JUNIT_XML              -> writeJUnitXml(result);
+                case JUNIT_XML               -> writeJUnitXml(result);
                 case OPEN_TEST_REPORTING_XML -> writeOpenTestReportingXml(result);
-                case JSON                   -> writeJson(result);
+                case JSON                    -> writeJson(result);
             }
         }
     }
@@ -93,217 +113,201 @@ public class SuiteReportWriter {
     }
 
     // -------------------------------------------------------------------------
-    // JUNIT_XML
+    // JUNIT_XML  — JDK DOM API
     // -------------------------------------------------------------------------
 
     /**
-     * Writes a Surefire/JUnit XML report.
+     * Writes a Surefire/JUnit XML report using the JDK {@link DocumentBuilder} DOM API.
      *
      * <p>File name: {@code TEST-{suiteName}.xml}
-     *
-     * <p>Schema compatible with Apache Maven Surefire, Gradle's built-in XML reporter,
-     * Jenkins JUnit plugin, GitHub Actions test summaries, and IntelliJ IDEA.
      */
     private void writeJUnitXml(TestSuiteExecutionResult result) throws IOException {
-        String safeName = safeName(result.getSuiteName());
-        Path file = outputDir.resolve("TEST-" + safeName + ".xml");
+        try {
+            Document doc = newDocument();
+            String now   = ISO_INSTANT.format(Instant.now());
 
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            long totalMs  = result.getTestCaseResults().stream()
+            long totalMs = result.getTestCaseResults().stream()
                     .mapToLong(TestCaseExecutionResult::getDurationMs).sum();
-            double totalSec = totalMs / 1000.0;
 
-            w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            w.write(String.format(
-                    "<testsuite name=\"%s\" tests=\"%d\" failures=\"%d\" errors=\"0\" "
-                    + "skipped=\"0\" time=\"%.3f\" timestamp=\"%s\">\n",
-                    xmlEsc(result.getSuiteName()),
-                    result.getTestCaseResults().size(),
-                    result.getFailedCount(),
-                    totalSec,
-                    ISO_INSTANT.format(Instant.now())
-            ));
+            Element suite = doc.createElement("testsuite");
+            suite.setAttribute("name",      result.getSuiteName());
+            suite.setAttribute("tests",     String.valueOf(result.getTestCaseResults().size()));
+            suite.setAttribute("failures",  String.valueOf(result.getFailedCount()));
+            suite.setAttribute("errors",    "0");
+            suite.setAttribute("skipped",   "0");
+            suite.setAttribute("time",      String.format("%.3f", totalMs / 1000.0));
+            suite.setAttribute("timestamp", now);
+            doc.appendChild(suite);
 
             for (TestCaseExecutionResult tc : result.getTestCaseResults()) {
-                w.write(String.format(
-                        "  <testcase name=\"%s\" classname=\"%s\" time=\"%.3f\"",
-                        xmlEsc(tc.getName()),
-                        xmlEsc(result.getSuiteName()),
-                        tc.getDurationMs() / 1000.0
-                ));
+                Element testcase = doc.createElement("testcase");
+                testcase.setAttribute("name",      tc.getName());
+                testcase.setAttribute("classname", result.getSuiteName());
+                testcase.setAttribute("time",      String.format("%.3f", tc.getDurationMs() / 1000.0));
 
-                if (tc.isPassed()) {
-                    w.write("/>\n");
-                } else {
-                    w.write(">\n");
-                    String msg   = tc.getErrorMessage()  != null ? xmlEsc(tc.getErrorMessage())  : "";
-                    String type  = tc.getExceptionType() != null ? xmlEsc(tc.getExceptionType()) : "AssertionError";
-                    String trace = tc.getStackTrace()    != null ? xmlEsc(tc.getStackTrace())    : msg;
-                    w.write(String.format(
-                            "    <failure message=\"%s\" type=\"%s\">%s</failure>\n",
-                            msg, type, trace
-                    ));
+                if (!tc.isPassed()) {
+                    Element failure = doc.createElement("failure");
+                    failure.setAttribute("message", nullToEmpty(tc.getErrorMessage()));
+                    failure.setAttribute("type",
+                            tc.getExceptionType() != null ? tc.getExceptionType() : "AssertionError");
+                    failure.setTextContent(
+                            tc.getStackTrace() != null ? tc.getStackTrace() : nullToEmpty(tc.getErrorMessage()));
+                    testcase.appendChild(failure);
+
                     if (tc.getAttempts() > 1) {
-                        w.write(String.format(
-                                "    <system-out>Attempts: %d</system-out>\n", tc.getAttempts()
-                        ));
+                        Element sysOut = doc.createElement("system-out");
+                        sysOut.setTextContent("Attempts: " + tc.getAttempts());
+                        testcase.appendChild(sysOut);
                     }
-                    w.write("  </testcase>\n");
                 }
+                suite.appendChild(testcase);
             }
 
-            w.write("</testsuite>\n");
-        }
+            Path file = outputDir.resolve("TEST-" + safeName(result.getSuiteName()) + ".xml");
+            writeXml(doc, file);
+            log.info("JUnit XML report written to {}", file);
 
-        log.info("JUnit XML report written to {}", file);
+        } catch (ParserConfigurationException | TransformerException e) {
+            throw new IOException("Failed to write JUnit XML report for: " + result.getSuiteName(), e);
+        }
     }
 
     // -------------------------------------------------------------------------
-    // OPEN_TEST_REPORTING_XML
+    // OPEN_TEST_REPORTING_XML  — JDK DOM API
     // -------------------------------------------------------------------------
 
     /**
-     * Writes an Open Test Reporting XML report.
+     * Writes an Open Test Reporting XML report using the JDK {@link DocumentBuilder} DOM API.
      *
      * <p>File name: {@code {suiteName}-open-test-report.xml}
      *
-     * <p>Follows the
-     * <a href="https://github.com/ota4j-team/open-test-reporting">Open Test Reporting</a>
-     * schema, compatible with the JUnit Platform {@code OpenTestReportingListener}.
-     * The schema uses an {@code e:events} root with {@code started}, {@code finished},
-     * and nested {@code test} / {@code container} event elements.
+     * <p>Follows the <a href="https://github.com/ota4j-team/open-test-reporting">Open Test
+     * Reporting</a> schema (version 0.1.0).
      */
     private void writeOpenTestReportingXml(TestSuiteExecutionResult result) throws IOException {
-        String safeName = safeName(result.getSuiteName());
-        Path file = outputDir.resolve(safeName + "-open-test-report.xml");
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            Document doc = factory.newDocumentBuilder().newDocument();
+            String now     = ISO_INSTANT.format(Instant.now());
+            String suiteId = "suite-1";
 
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            String suiteId  = "suite-1";
-            String now      = ISO_INSTANT.format(Instant.now());
-
-            w.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-            w.write("<e:events xmlns:e=\"https://schemas.opentest4j.org/reporting/events/0.1.0\"\n");
-            w.write("          xmlns:r=\"https://schemas.opentest4j.org/reporting/core/0.1.0\">\n");
+            Element events = doc.createElementNS(
+                    "https://schemas.opentest4j.org/reporting/events/0.1.0", "e:events");
+            events.setAttributeNS("http://www.w3.org/2000/xmlns/",
+                    "xmlns:e", "https://schemas.opentest4j.org/reporting/events/0.1.0");
+            events.setAttributeNS("http://www.w3.org/2000/xmlns/",
+                    "xmlns:r", "https://schemas.opentest4j.org/reporting/core/0.1.0");
+            doc.appendChild(events);
 
             // Suite started
-            w.write(String.format(
-                    "  <e:started id=\"%s\" name=\"%s\" time=\"%s\">\n",
-                    suiteId, xmlEsc(result.getSuiteName()), now
-            ));
+            Element suiteStarted = otrElement(doc, "e:started");
+            suiteStarted.setAttribute("id",   suiteId);
+            suiteStarted.setAttribute("name", result.getSuiteName());
+            suiteStarted.setAttribute("time", now);
             if (result.getDescription() != null && !result.getDescription().isBlank()) {
-                w.write(String.format(
-                        "    <r:metadata><r:description>%s</r:description></r:metadata>\n",
-                        xmlEsc(result.getDescription())
-                ));
+                Element meta = otrElement(doc, "r:metadata");
+                Element desc = otrElement(doc, "r:description");
+                desc.setTextContent(result.getDescription());
+                meta.appendChild(desc);
+                suiteStarted.appendChild(meta);
             }
-            w.write("  </e:started>\n");
+            events.appendChild(suiteStarted);
 
             // Each test case
             int idx = 1;
             for (TestCaseExecutionResult tc : result.getTestCaseResults()) {
                 String testId = "test-" + idx++;
-                w.write(String.format(
-                        "  <e:started id=\"%s\" name=\"%s\" parentId=\"%s\" time=\"%s\"/>\n",
-                        testId, xmlEsc(tc.getName()), suiteId, now
-                ));
 
-                if (tc.isPassed()) {
-                    w.write(String.format(
-                            "  <e:finished id=\"%s\" time=\"%s\" durationMs=\"%d\">\n",
-                            testId, now, tc.getDurationMs()
-                    ));
-                    if (tc.getAttempts() > 1) {
-                        w.write(String.format(
-                                "    <r:metadata><r:entry key=\"attempts\" value=\"%d\"/></r:metadata>\n",
-                                tc.getAttempts()
-                        ));
-                    }
-                    w.write("    <r:result status=\"SUCCESSFUL\"/>\n");
-                    w.write("  </e:finished>\n");
-                } else {
-                    w.write(String.format(
-                            "  <e:finished id=\"%s\" time=\"%s\" durationMs=\"%d\">\n",
-                            testId, now, tc.getDurationMs()
-                    ));
-                    if (tc.getAttempts() > 1) {
-                        w.write(String.format(
-                                "    <r:metadata><r:entry key=\"attempts\" value=\"%d\"/></r:metadata>\n",
-                                tc.getAttempts()
-                        ));
-                    }
-                    String type = tc.getExceptionType() != null ? tc.getExceptionType() : "AssertionError";
-                    String msg  = tc.getErrorMessage()  != null ? xmlEsc(tc.getErrorMessage()) : "";
-                    w.write(String.format(
-                            "    <r:result status=\"FAILED\">\n"
-                            + "      <r:failure type=\"%s\" message=\"%s\"/>\n"
-                            + "    </r:result>\n",
-                            xmlEsc(type), msg
-                    ));
-                    w.write("  </e:finished>\n");
+                Element started = otrElement(doc, "e:started");
+                started.setAttribute("id",       testId);
+                started.setAttribute("name",     tc.getName());
+                started.setAttribute("parentId", suiteId);
+                started.setAttribute("time",     now);
+                events.appendChild(started);
+
+                Element finished = otrElement(doc, "e:finished");
+                finished.setAttribute("id",         testId);
+                finished.setAttribute("time",       now);
+                finished.setAttribute("durationMs", String.valueOf(tc.getDurationMs()));
+
+                if (tc.getAttempts() > 1) {
+                    Element meta  = otrElement(doc, "r:metadata");
+                    Element entry = otrElement(doc, "r:entry");
+                    entry.setAttribute("key",   "attempts");
+                    entry.setAttribute("value", String.valueOf(tc.getAttempts()));
+                    meta.appendChild(entry);
+                    finished.appendChild(meta);
                 }
+
+                Element resultEl = otrElement(doc, "r:result");
+                if (tc.isPassed()) {
+                    resultEl.setAttribute("status", "SUCCESSFUL");
+                } else {
+                    resultEl.setAttribute("status", "FAILED");
+                    Element failure = otrElement(doc, "r:failure");
+                    failure.setAttribute("type",
+                            tc.getExceptionType() != null ? tc.getExceptionType() : "AssertionError");
+                    failure.setAttribute("message", nullToEmpty(tc.getErrorMessage()));
+                    resultEl.appendChild(failure);
+                }
+                finished.appendChild(resultEl);
+                events.appendChild(finished);
             }
 
             // Suite finished
-            w.write(String.format(
-                    "  <e:finished id=\"%s\" time=\"%s\">\n", suiteId, now
-            ));
-            w.write(String.format(
-                    "    <r:result status=\"%s\"/>\n",
-                    result.isAllPassed() ? "SUCCESSFUL" : "FAILED"
-            ));
-            w.write("  </e:finished>\n");
-            w.write("</e:events>\n");
-        }
+            Element suiteFinished = otrElement(doc, "e:finished");
+            suiteFinished.setAttribute("id",   suiteId);
+            suiteFinished.setAttribute("time", now);
+            Element suiteResult = otrElement(doc, "r:result");
+            suiteResult.setAttribute("status", result.isAllPassed() ? "SUCCESSFUL" : "FAILED");
+            suiteFinished.appendChild(suiteResult);
+            events.appendChild(suiteFinished);
 
-        log.info("Open Test Reporting XML written to {}", file);
+            Path file = outputDir.resolve(safeName(result.getSuiteName()) + "-open-test-report.xml");
+            writeXml(doc, file);
+            log.info("Open Test Reporting XML written to {}", file);
+
+        } catch (ParserConfigurationException | TransformerException e) {
+            throw new IOException("Failed to write OTR XML report for: " + result.getSuiteName(), e);
+        }
     }
 
     // -------------------------------------------------------------------------
-    // JSON
+    // JSON  — Jackson
     // -------------------------------------------------------------------------
 
     /**
-     * Writes a simple JSON report.
+     * Writes a pretty-printed JSON report using Jackson.
      *
      * <p>File name: {@code {suiteName}-report.json}
      */
     private void writeJson(TestSuiteExecutionResult result) throws IOException {
-        String safeName = safeName(result.getSuiteName());
-        Path file = outputDir.resolve(safeName + "-report.json");
+        ObjectNode root = MAPPER.createObjectNode();
+        root.put("suiteName",   result.getSuiteName());
+        root.put("description", nullToEmpty(result.getDescription()));
+        root.put("timestamp",   ISO_INSTANT.format(Instant.now()));
+        root.put("passed",      result.isAllPassed());
+        root.put("passedCount", result.getPassedCount());
+        root.put("failedCount", result.getFailedCount());
 
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write("{\n");
-            w.write(String.format("  \"suiteName\": \"%s\",\n",  jsonEsc(result.getSuiteName())));
-            w.write(String.format("  \"description\": \"%s\",\n",
-                    result.getDescription() != null ? jsonEsc(result.getDescription()) : ""));
-            w.write(String.format("  \"timestamp\": \"%s\",\n",  ISO_INSTANT.format(Instant.now())));
-            w.write(String.format("  \"passed\": %b,\n",         result.isAllPassed()));
-            w.write(String.format("  \"passedCount\": %d,\n",    result.getPassedCount()));
-            w.write(String.format("  \"failedCount\": %d,\n",    result.getFailedCount()));
-            w.write("  \"tests\": [\n");
-
-            List<TestCaseExecutionResult> tests = result.getTestCaseResults();
-            for (int i = 0; i < tests.size(); i++) {
-                TestCaseExecutionResult tc = tests.get(i);
-                boolean last = (i == tests.size() - 1);
-                w.write("    {\n");
-                w.write(String.format("      \"name\": \"%s\",\n",       jsonEsc(tc.getName())));
-                w.write(String.format("      \"passed\": %b,\n",         tc.isPassed()));
-                w.write(String.format("      \"durationMs\": %d,\n",     tc.getDurationMs()));
-                w.write(String.format("      \"attempts\": %d,\n",       tc.getAttempts()));
-                w.write(String.format("      \"errorMessage\": %s,\n",
-                        tc.getErrorMessage() != null ? "\"" + jsonEsc(tc.getErrorMessage()) + "\"" : "null"));
-                w.write(String.format("      \"exceptionType\": %s,\n",
-                        tc.getExceptionType() != null ? "\"" + jsonEsc(tc.getExceptionType()) + "\"" : "null"));
-                w.write(String.format("      \"stackTrace\": %s\n",
-                        tc.getStackTrace() != null ? "\"" + jsonEsc(tc.getStackTrace()) + "\"" : "null"));
-                w.write(last ? "    }\n" : "    },\n");
-            }
-
-            w.write("  ]\n");
-            w.write("}\n");
+        ArrayNode tests = root.putArray("tests");
+        for (TestCaseExecutionResult tc : result.getTestCaseResults()) {
+            ObjectNode node = tests.addObject();
+            node.put("name",          tc.getName());
+            node.put("passed",        tc.isPassed());
+            node.put("durationMs",    tc.getDurationMs());
+            node.put("attempts",      tc.getAttempts());
+            if (tc.getErrorMessage()  != null) node.put("errorMessage",  tc.getErrorMessage());
+            else                               node.putNull("errorMessage");
+            if (tc.getExceptionType() != null) node.put("exceptionType", tc.getExceptionType());
+            else                               node.putNull("exceptionType");
+            if (tc.getStackTrace()    != null) node.put("stackTrace",    tc.getStackTrace());
+            else                               node.putNull("stackTrace");
         }
 
+        Path file = outputDir.resolve(safeName(result.getSuiteName()) + "-report.json");
+        MAPPER.writeValue(file.toFile(), root);
         log.info("JSON report written to {}", file);
     }
 
@@ -311,26 +315,37 @@ public class SuiteReportWriter {
     // Helpers
     // -------------------------------------------------------------------------
 
+    private static Document newDocument() throws ParserConfigurationException {
+        return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+    }
+
+    /** Creates an element with a prefixed name — works for both plain and namespace-aware docs. */
+    private static Element otrElement(Document doc, String tagName) {
+        // Namespace-aware doc — use the correct NS URI for the prefix
+        if (tagName.startsWith("e:")) {
+            return doc.createElementNS(
+                    "https://schemas.opentest4j.org/reporting/events/0.1.0", tagName);
+        } else {
+            return doc.createElementNS(
+                    "https://schemas.opentest4j.org/reporting/core/0.1.0", tagName);
+        }
+    }
+
+    private static void writeXml(Document doc, Path file)
+            throws TransformerException, IOException {
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT,  "yes");
+        transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+        transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+        transformer.transform(new DOMSource(doc), new StreamResult(file.toFile()));
+    }
+
     private static String safeName(String name) {
         return name.replaceAll("[^a-zA-Z0-9._-]", "_");
     }
 
-    private static String xmlEsc(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&apos;");
-    }
-
-    private static String jsonEsc(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
+    private static String nullToEmpty(String s) {
+        return s != null ? s : "";
     }
 
     // -------------------------------------------------------------------------
@@ -348,15 +363,6 @@ public class SuiteReportWriter {
 
     /**
      * Fluent builder for {@link SuiteReportWriter}.
-     *
-     * <pre>{@code
-     * SuiteReportWriter writer = SuiteReportWriter.builder()
-     *         .outputDir(Path.of("build/test-reports"))
-     *         .format(ReportFormat.JUNIT_XML)
-     *         .format(ReportFormat.OPEN_TEST_REPORTING_XML)
-     *         .format(ReportFormat.JSON)
-     *         .build();
-     * }</pre>
      */
     public static final class Builder {
 

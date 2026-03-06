@@ -83,10 +83,11 @@ class TestFrameworkControllerTest {
     void getSuitesReturnsAllSuites() throws Exception {
         mockMvc.perform(get("/api/test-framework/suites"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$", hasSize(4)))
                 .andExpect(jsonPath("$[?(@.name == 'Controller Suite')]", hasSize(1)))
                 .andExpect(jsonPath("$[?(@.name == 'Slow Suite')]", hasSize(1)))
-                .andExpect(jsonPath("$[?(@.name == 'Long Running Suite')]", hasSize(1)));
+                .andExpect(jsonPath("$[?(@.name == 'Long Running Suite')]", hasSize(1)))
+                .andExpect(jsonPath("$[?(@.name == 'Retry Controller Suite')]", hasSize(1)));
     }
 
     @Test
