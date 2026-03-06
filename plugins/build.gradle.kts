@@ -41,15 +41,15 @@ dependencies {
 
     // Spring Boot auto-configuration support (compileOnly — consumers without Spring
     // don't pull these in transitively)
-    compileOnly("org.springframework.boot:spring-boot:3.4.2")
-    compileOnly("org.springframework.boot:spring-boot-autoconfigure:3.4.2")
+    compileOnly("org.springframework.boot:spring-boot:4.0.3")
+    compileOnly("org.springframework.boot:spring-boot-autoconfigure:4.0.3")
     compileOnly("org.springframework:spring-context:6.2.10")
 
     api("org.slf4j:slf4j-api:2.0.17")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.13.0")
     testImplementation("org.assertj:assertj-core:3.27.7")
-    testImplementation("org.springframework.boot:spring-boot-autoconfigure:3.4.2")
+    testImplementation("org.springframework.boot:spring-boot-autoconfigure:4.0.3")
     testImplementation("org.springframework:spring-context:6.2.10")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
     testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
