@@ -44,7 +44,7 @@ dependencies {
     testImplementation("org.springframework:spring-webmvc:7.0.5")
     testImplementation("org.springframework:spring-context:7.0.5")
     testImplementation("org.springframework:spring-test:7.0.5")
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.18.6")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.21.1")
     testImplementation("jakarta.servlet:jakarta.servlet-api:6.1.0")
     testImplementation("com.jayway.jsonpath:json-path:3.0.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.0")
