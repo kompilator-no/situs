@@ -1,5 +1,7 @@
 # Java Library
 
+[![Maven Central](https://img.shields.io/maven-central/v/no.kompilator/java-library?label=Maven%20Central)](https://central.sonatype.com/artifact/no.kompilator/java-library)
+
 Annotation-driven runtime test framework for Java 21.  
 Define test suites as plain Java classes, run them via the engine directly or over HTTP, and poll for live status while long-running tests execute.
 
