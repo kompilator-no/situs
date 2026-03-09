@@ -46,6 +46,16 @@ jobs:
           java-library/gradlew --project-dir . publishRelease \
             -Pversion=${{ steps.version.outputs.VERSION }}
 
+      - name: Finalize uploaded artifacts in Central
+        run: |
+          set -euo pipefail
+          TOKEN="$(printf '%s:%s' "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 | tr -d '\n')"
+
+          curl --fail-with-body \
+            --request POST \
+            --header "Authorization: Bearer $TOKEN" \
+            "https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/no.kompilator?publishing_type=user_managed"
+
       - name: List built jars
         run: |
           echo "=== java-library ===" && ls java-library/build/libs/
