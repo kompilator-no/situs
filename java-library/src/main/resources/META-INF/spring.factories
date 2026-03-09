@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  no.certusdev.testframework.javalibrary.spring.RuntimeTestAutoConfiguration
+  no.kompilator.javalibrary.spring.RuntimeTestAutoConfiguration

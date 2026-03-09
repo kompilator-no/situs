@@ -18,8 +18,8 @@ test-framework/
 
 | Module | Artifact | Description |
 |---|---|---|
-| `java-library` | `no.certusdev.testframework:java-library` | Annotations, runtime engine, HTTP API |
-| `plugins` | `no.certusdev.testframework:plugins` | Reporting plugin — writes structured test reports |
+| `java-library` | `no.kompilator:java-library` | Annotations, runtime engine, HTTP API |
+| `plugins` | `no.kompilator:plugins` | Reporting plugin — writes structured test reports |
 | `java-spring-boot-sample-app` | — | Java sample app (not published) |
 | `kotlin-spring-boot-sample-app` | — | Kotlin sample app (not published) |
 
@@ -29,17 +29,17 @@ test-framework/
 
 Supported packages:
 
-- `no.certusdev.testframework.javalibrary.annotations`
-- `no.certusdev.testframework.javalibrary.model`
-- `no.certusdev.testframework.javalibrary.plugin`
-- `no.certusdev.testframework.javalibrary.service`
-- `no.certusdev.testframework.javalibrary.spring`
-- `no.certusdev.testframework.javalibrary.spring.model`
+- `no.kompilator.javalibrary.annotations`
+- `no.kompilator.javalibrary.model`
+- `no.kompilator.javalibrary.plugin`
+- `no.kompilator.javalibrary.service`
+- `no.kompilator.javalibrary.spring`
+- `no.kompilator.javalibrary.spring.model`
 
 Internal packages that may change without notice:
 
-- `no.certusdev.testframework.javalibrary.domain`
-- `no.certusdev.testframework.javalibrary.runtime`
+- `no.kompilator.javalibrary.domain`
+- `no.kompilator.javalibrary.runtime`
 
 Build against the supported packages only.
 
@@ -52,10 +52,10 @@ Build against the supported packages only.
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("no.certusdev.testframework:java-library:0.1.0")
+    implementation("no.kompilator:java-library:0.1.0")
 
     // Optional — adds structured report writing (pulls in java-library transitively)
-    implementation("no.certusdev.testframework:plugins:0.1.0")
+    implementation("no.kompilator:plugins:0.1.0")
 }
 ```
 
@@ -170,7 +170,7 @@ public class PaymentTestSuite {
 
 ```kotlin
 dependencies {
-    implementation("no.certusdev.testframework:plugins:0.1.0")
+    implementation("no.kompilator:plugins:0.1.0")
 }
 ```
 

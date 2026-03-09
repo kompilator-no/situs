@@ -6,7 +6,7 @@ This repository contains both Java and Kotlin code, with Spring Boot used for se
 - Use Java for Spring Boot integration points and shared runner library APIs where existing code already follows Java conventions.
 - Keep classes small and focused; prefer constructor injection for Spring-managed components.
 - Use immutable request/response models when practical.
-- Keep package naming under `no.certusdev.testframework.*`.
+- Keep package naming under `no.kompilator.*`.
 
 ## Kotlin guidelines
 - Use Kotlin for framework and transport modules.
