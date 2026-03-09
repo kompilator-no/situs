@@ -6,7 +6,57 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      java_library: ${{ steps.filter.outputs.java_library }}
+      plugins: ${{ steps.filter.outputs.plugins }}
+      java_spring_boot_sample_app: ${{ steps.filter.outputs.java_spring_boot_sample_app }}
+      kotlin_spring_boot_sample_app: ${{ steps.filter.outputs.kotlin_spring_boot_sample_app }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            java_library:
+              - 'java-library/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle.properties'
+              - 'gradle/**'
+              - '.github/workflows/**'
+            plugins:
+              - 'plugins/**'
+              - 'java-library/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle.properties'
+              - 'gradle/**'
+              - '.github/workflows/**'
+            java_spring_boot_sample_app:
+              - 'java-spring-boot-sample-app/**'
+              - 'plugins/**'
+              - 'java-library/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle.properties'
+              - 'gradle/**'
+              - '.github/workflows/**'
+            kotlin_spring_boot_sample_app:
+              - 'kotlin-spring-boot-sample-app/**'
+              - 'plugins/**'
+              - 'java-library/**'
+              - 'build.gradle.kts'
+              - 'settings.gradle.kts'
+              - 'gradle.properties'
+              - 'gradle/**'
+              - '.github/workflows/**'
+
   build-and-test:
+    needs: changes
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -16,20 +66,25 @@ jobs:
             gradle-task: :java-library:build
             artifact-name: java-library
             artifact-path: java-library/build/libs
+            changed-key: java_library
           - module: plugins
             gradle-task: :plugins:build
             artifact-name: plugins
             artifact-path: plugins/build/libs
+            changed-key: plugins
           - module: java-spring-boot-sample-app
             gradle-task: :java-spring-boot-sample-app:build
             artifact-name: java-spring-boot-sample-app
             artifact-path: java-spring-boot-sample-app/build/libs
+            changed-key: java_spring_boot_sample_app
           - module: kotlin-spring-boot-sample-app
             gradle-task: :kotlin-spring-boot-sample-app:build
             artifact-name: kotlin-spring-boot-sample-app
             artifact-path: kotlin-spring-boot-sample-app/build/libs
+            changed-key: kotlin_spring_boot_sample_app
 
     name: ${{ matrix.module }}
+    if: ${{ needs.changes.outputs[matrix.changed-key] == 'true' }}
 
     steps:
       - uses: actions/checkout@v6
