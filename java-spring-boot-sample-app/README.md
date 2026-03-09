@@ -29,6 +29,14 @@ This sample scopes suite discovery to:
 testframework.scan-packages=no.kompilator.sampleapp.tests
 ```
 
+Reporting startup behavior in this sample:
+
+```properties
+testframework.reporting.run-on-startup=false
+```
+
+That means reports are available, but suites are not executed automatically when the app starts.
+
 ## HTTP API
 
 ```bash
@@ -43,16 +51,19 @@ curl -X POST http://localhost:8080/api/test-framework/suites/CalculatorTestSuite
 
 # Poll run status
 curl http://localhost:8080/api/test-framework/runs/{runId}/status
+
+# Cancel a running suite
+curl -X POST http://localhost:8080/api/test-framework/runs/{runId}/cancel
 ```
 
 ## Run the app
 
 ```bash
-./gradlew :java-spring-boot-sample-app:bootRun
+./java-library/gradlew :java-spring-boot-sample-app:bootRun
 ```
 
 ## Run tests
 
 ```bash
-./gradlew :java-spring-boot-sample-app:test
+./java-library/gradlew :java-spring-boot-sample-app:test
 ```

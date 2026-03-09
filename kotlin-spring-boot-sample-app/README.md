@@ -23,15 +23,19 @@ This sample scopes suite discovery to:
 testframework.scan-packages=no.kompilator.kotlinapp.tests
 ```
 
+Reporting startup behavior in this sample:
+
+```properties
+testframework.reporting.run-on-startup=true
+```
+
+So the reporting plugin runs discovered suites automatically when the application starts.
+
 ## Kotlin-specific notes
 
 ### `kotlin.plugin.spring`
 Applied in `build.gradle.kts` — automatically makes `@Component`-annotated classes `open`
 so Spring can proxy them. Without this, Kotlin's default `final` classes would prevent proxying.
-
-### `jackson-module-kotlin`
-Added as a dependency — required for correct Jackson serialisation/deserialisation of Kotlin
-classes in the API responses.
 
 ### `companion object` vs `static`
 Kotlin uses `companion object` where Java uses `static`. The `flakyCallCount` in
@@ -56,16 +60,19 @@ curl -X POST http://localhost:8080/api/test-framework/suites/CalculatorTestSuite
 
 # Poll run status
 curl http://localhost:8080/api/test-framework/runs/{runId}/status
+
+# Cancel a running suite
+curl -X POST http://localhost:8080/api/test-framework/runs/{runId}/cancel
 ```
 
 ## Run the app
 
 ```bash
-./gradlew :kotlin-spring-boot-sample-app:bootRun
+./java-library/gradlew :kotlin-spring-boot-sample-app:bootRun
 ```
 
 ## Run tests
 
 ```bash
-./gradlew :kotlin-spring-boot-sample-app:test
+./java-library/gradlew :kotlin-spring-boot-sample-app:test
 ```
