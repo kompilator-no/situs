@@ -5,6 +5,8 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
+import org.springframework.boot.gradle.tasks.bundling.BootJar
+
 val javaVersion = providers.gradleProperty("javaVersion").map(String::toInt).get()
 val springBootVersion = providers.gradleProperty("springBootVersion").get()
 val springDependencyManagementVersion = providers.gradleProperty("springDependencyManagementVersion").get()
@@ -45,4 +47,8 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.withType<BootJar>().configureEach {
+    mainClass.set("no.kompilator.kotlinapp.KotlinSampleApplicationKt")
 }
