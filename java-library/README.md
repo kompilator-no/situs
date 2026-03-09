@@ -126,7 +126,7 @@ These classes live in `no.kompilator.javalibrary.model` and have no Spring depen
 | `TestCase` | Public test case descriptor nested inside `TestSuite`. |
 | `TestCaseResult` | Result of a single test — name, passed, error message, exception type, stack trace, duration ms, **attempts**, `startedAtEpochMs`, `completedAtEpochMs`. |
 | `TestSuiteResult` | Aggregate suite result — individual `TestCaseResult`s plus pass/fail counts. |
-| `SuiteRunStatus` | Snapshot of an asynchronous run exposed by the service/HTTP API, including `completedCount`, `totalCount`, `runStartedAtEpochMs`, and `lastUpdatedAtEpochMs`. |
+| `SuiteRunStatus` | Snapshot of an asynchronous run exposed by the service/HTTP API, including `completedCount`, `totalCount`, `runStartedAtEpochMs`, `lastUpdatedAtEpochMs`, and terminal states such as `CANCELLED`. |
 
 ---
 
@@ -275,6 +275,29 @@ public class PaymentTestSuite {
     }
 }
 ```
+
+### 7. Cancel an async run
+
+Programmatic API:
+
+```java
+String runId = testFrameworkService.startSuiteAsync("My Suite");
+
+SuiteRunStatus cancelled = testFrameworkService.cancelRun(runId);
+assert cancelled.getStatus() == SuiteRunStatus.Status.CANCELLED;
+```
+
+Spring HTTP API:
+
+```bash
+curl -X POST http://localhost:8080/api/test-framework/runs/<runId>/cancel
+```
+
+Cancelled runs are terminal and report:
+
+- `status = CANCELLED`
+- partial `completedResults` collected before cancellation, if any
+- `runErrorType = java.util.concurrent.CancellationException`
 
 > **Non-bean suites continue to work unchanged.** If the suite class is not a Spring bean the framework falls back to plain reflection instantiation (`new SuiteClass()`), so you do not have to annotate every suite.
 

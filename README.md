@@ -121,6 +121,9 @@ curl -X POST http://localhost:8080/api/test-framework/suites/CalculatorTestSuite
 
 # Poll until COMPLETED
 curl http://localhost:8080/api/test-framework/runs/abc-123/status
+
+# Cancel a running suite
+curl -X POST http://localhost:8080/api/test-framework/runs/abc-123/cancel
 ```
 
 ---
@@ -140,6 +143,7 @@ curl http://localhost:8080/api/test-framework/runs/abc-123/status
 | Spring DI in suites | Annotate suite with `@Component` |
 | Auto-discovery | Package-scoped scan via `testframework.scan-packages` |
 | HTTP API | Built-in REST controller via Spring auto-configuration |
+| Run cancellation | `POST /api/test-framework/runs/{runId}/cancel` |
 | Structured reports | `ReportingPlugin` — JUnit XML, OTR XML, JSON |
 | Incremental plugin hook | `SuiteRunListener#onTestCompleted(...)` |
 
@@ -204,6 +208,7 @@ Async status polling exposes explicit progress and timing fields:
 - `completedCount` / `totalCount` for cheap progress tracking
 - `runStartedAtEpochMs` / `lastUpdatedAtEpochMs` on `SuiteRunStatus`
 - `startedAtEpochMs` / `completedAtEpochMs` on each `TestCaseResult`
+- `status = CANCELLED` when a caller stops a run explicitly
 
 ---
 
