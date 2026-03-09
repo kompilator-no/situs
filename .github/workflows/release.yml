@@ -30,6 +30,8 @@ jobs:
           java-version: '21'
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          add-job-summary: always
 
       - name: Extract version from tag
         id: version
@@ -43,7 +45,7 @@ jobs:
       - name: Verify and publish release artifacts
         run: |
           git update-index --chmod=+x java-library/gradlew
-          java-library/gradlew --project-dir . publishRelease \
+          java-library/gradlew --project-dir . publishRelease --scan \
             -Pversion=${{ steps.version.outputs.VERSION }}
 
       - name: Finalize uploaded artifacts in Central

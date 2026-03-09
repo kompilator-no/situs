@@ -1,5 +1,8 @@
 # test-framework
 
+[![Maven Central - java-library](https://img.shields.io/maven-central/v/no.kompilator/java-library?label=java-library)](https://central.sonatype.com/artifact/no.kompilator/java-library)
+[![Maven Central - plugins](https://img.shields.io/maven-central/v/no.kompilator/plugins?label=plugins)](https://central.sonatype.com/artifact/no.kompilator/plugins)
+
 An annotation-driven **runtime test framework** for Java 21. Define test suites as plain Java classes, run them on demand via a REST API or programmatically, and get structured reports in JUnit XML, Open Test Reporting XML, or JSON.
 
 Unlike JUnit, tests run **at runtime in production-like environments** instead of only at build time. Suites support Spring dependency injection, parallel execution, timeouts, delays, retries, and deterministic ordering.

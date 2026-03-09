@@ -1,5 +1,7 @@
 # plugins
 
+[![Maven Central](https://img.shields.io/maven-central/v/no.kompilator/plugins?label=Maven%20Central)](https://central.sonatype.com/artifact/no.kompilator/plugins)
+
 Ready-made, drop-in runtime test suite plugins for the test framework.
 
 Plugins react to events emitted by the main library and add secondary behaviour
