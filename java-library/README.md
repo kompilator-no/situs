@@ -20,10 +20,10 @@ Define test suites as plain Java classes, run them via the engine directly or ov
 
 ```bash
 # Windows CMD / PowerShell
-.\gradlew.bat build
+..\java-library\gradlew.bat --project-dir .. :java-library:build
 
 # WSL / macOS / Linux
-./gradlew build
+./java-library/gradlew :java-library:build
 ```
 
 The `build` task compiles sources, runs all tests, and produces the JAR under `build/libs/`.
@@ -31,8 +31,8 @@ The `build` task compiles sources, runs all tests, and produces the JAR under `b
 ## Run tests only
 
 ```bash
-.\gradlew.bat test          # Windows
-./gradlew test              # WSL / Linux / macOS
+..\java-library\gradlew.bat --project-dir .. :java-library:test   # Windows
+./java-library/gradlew :java-library:test                         # WSL / Linux / macOS
 ```
 
 Test reports are written to `build/reports/tests/test/index.html`.

@@ -131,11 +131,11 @@ dependencies {
 ## Build
 
 ```bash
-./gradlew :plugins:build
+./java-library/gradlew :plugins:build
 ```
 
 ## Run tests
 
 ```bash
-./gradlew :plugins:test
+./java-library/gradlew :plugins:test
 ```
