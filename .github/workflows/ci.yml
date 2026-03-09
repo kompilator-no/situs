@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Build and test all projects
+        working-directory: java-library
+        run: |
+          sed -i 's/\r//' gradlew
+          chmod +x gradlew
+          ./gradlew -p .. build
+
+      - name: Upload java-library artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: java-library
+          path: java-library/build/libs
+
+      - name: Upload plugins artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: plugins
+          path: plugins/build/libs
+
+      - name: Upload java-spring-boot-sample-app artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: java-spring-boot-sample-app
+          path: java-spring-boot-sample-app/build/libs
+
+      - name: Upload kotlin-spring-boot-sample-app artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: kotlin-spring-boot-sample-app
+          path: kotlin-spring-boot-sample-app/build/libs
