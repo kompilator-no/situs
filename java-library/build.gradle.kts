@@ -131,8 +131,8 @@ publishing {
         if (remotePublishingEnabled) {
             maven {
                 name = "central"
-                val releasesRepoUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-                val snapshotsRepoUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+                val releasesRepoUrl = uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
+                val snapshotsRepoUrl = uri("https://central.sonatype.com/repository/maven-snapshots/")
                 url = if (isReleaseVersion) releasesRepoUrl else snapshotsRepoUrl
                 credentials {
                     username = centralUsername.get()
