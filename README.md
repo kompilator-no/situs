@@ -250,6 +250,16 @@ Local publish:
 ./java-library/gradlew publishAllToMavenLocal
 ```
 
+Parallel multi-module verification:
+
+```bash
+./java-library/gradlew testAll
+./java-library/gradlew buildAll
+```
+
+Project-level parallel execution is enabled in `gradle.properties`, so independent
+subprojects run concurrently where Gradle can schedule them safely.
+
 Remote publish requires credentials and signing material in `~/.gradle/gradle.properties` or env vars:
 
 ```properties

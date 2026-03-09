@@ -30,6 +30,28 @@ tasks.register("releaseCheck") {
     )
 }
 
+tasks.register("testAll") {
+    group = "verification"
+    description = "Runs tests for all subprojects."
+    dependsOn(
+            ":java-library:test",
+            ":plugins:test",
+            ":java-spring-boot-sample-app:test",
+            ":kotlin-spring-boot-sample-app:test"
+    )
+}
+
+tasks.register("buildAll") {
+    group = "build"
+    description = "Builds all subprojects."
+    dependsOn(
+            ":java-library:build",
+            ":plugins:build",
+            ":java-spring-boot-sample-app:build",
+            ":kotlin-spring-boot-sample-app:build"
+    )
+}
+
 tasks.register("publishAllToMavenLocal") {
     group = "release"
     description = "Publishes the releasable modules to the local Maven repository."

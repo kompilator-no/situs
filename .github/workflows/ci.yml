@@ -8,6 +8,29 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: java-library
+            gradle-task: :java-library:build
+            artifact-name: java-library
+            artifact-path: java-library/build/libs
+          - module: plugins
+            gradle-task: :plugins:build
+            artifact-name: plugins
+            artifact-path: plugins/build/libs
+          - module: java-spring-boot-sample-app
+            gradle-task: :java-spring-boot-sample-app:build
+            artifact-name: java-spring-boot-sample-app
+            artifact-path: java-spring-boot-sample-app/build/libs
+          - module: kotlin-spring-boot-sample-app
+            gradle-task: :kotlin-spring-boot-sample-app:build
+            artifact-name: kotlin-spring-boot-sample-app
+            artifact-path: kotlin-spring-boot-sample-app/build/libs
+
+    name: ${{ matrix.module }}
+
     steps:
       - uses: actions/checkout@v6
 
@@ -18,33 +41,14 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - name: Build and test all projects
-        working-directory: java-library
+      - name: Build and test ${{ matrix.module }}
         run: |
-          sed -i 's/\r//' gradlew
-          chmod +x gradlew
-          ./gradlew -p .. build
+          sed -i 's/\r//' java-library/gradlew
+          chmod +x java-library/gradlew
+          ./java-library/gradlew ${{ matrix.gradle-task }}
 
-      - name: Upload java-library artifact
-        uses: actions/upload-artifact@v7
+      - name: Upload ${{ matrix.module }} artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: java-library
-          path: java-library/build/libs
-
-      - name: Upload plugins artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: plugins
-          path: plugins/build/libs
-
-      - name: Upload java-spring-boot-sample-app artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: java-spring-boot-sample-app
-          path: java-spring-boot-sample-app/build/libs
-
-      - name: Upload kotlin-spring-boot-sample-app artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: kotlin-spring-boot-sample-app
-          path: kotlin-spring-boot-sample-app/build/libs
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.artifact-path }}
