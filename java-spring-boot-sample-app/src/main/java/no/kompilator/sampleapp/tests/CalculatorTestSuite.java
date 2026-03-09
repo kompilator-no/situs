@@ -1,7 +1,7 @@
 package no.kompilator.sampleapp.tests;
 
-import no.kompilator.javalibrary.annotations.Test;
-import no.kompilator.javalibrary.annotations.TestSuite;
+import no.kompilator.testframework.annotations.Test;
+import no.kompilator.testframework.annotations.TestSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

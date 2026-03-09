@@ -83,7 +83,7 @@ tasks.javadoc {
 tasks.register<Delete>("cleanupOldApi") {
     group = "build"
     description = "Deletes the deprecated api/ package and duplicate spring/model/ classes"
-    val base = "src/main/java/no/testframework/javalibrary"
+    val base = "src/main/java/no/kompilator/testframework"
     delete("$base/api")
     delete("$base/spring/model/TestCase.java")
     delete("$base/spring/model/TestCaseResult.java")
@@ -95,7 +95,7 @@ tasks.register<JavaExec>("runSuite") {
     group = "verification"
     description = "Runs the RuntimeTestSuiteRunnerMain to execute runtime test suites"
     classpath = sourceSets["test"].runtimeClasspath
-    mainClass.set("no.kompilator.javalibrary.runtime.RuntimeTestSuiteRunnerMain")
+    mainClass.set("no.kompilator.testframework.runtime.RuntimeTestSuiteRunnerMain")
 }
 
 publishing {

@@ -26,23 +26,28 @@ test-framework/
 | `java-spring-boot-sample-app` | — | Java sample app (not published) |
 | `kotlin-spring-boot-sample-app` | — | Kotlin sample app (not published) |
 
+Published artifacts:
+
+- [`no.kompilator:java-library`](https://central.sonatype.com/artifact/no.kompilator/java-library)
+- [`no.kompilator:plugins`](https://central.sonatype.com/artifact/no.kompilator/plugins)
+
 ---
 
 ## Supported API Surface
 
 Supported packages:
 
-- `no.kompilator.javalibrary.annotations`
-- `no.kompilator.javalibrary.model`
-- `no.kompilator.javalibrary.plugin`
-- `no.kompilator.javalibrary.service`
-- `no.kompilator.javalibrary.spring`
-- `no.kompilator.javalibrary.spring.model`
+- `no.kompilator.testframework.annotations`
+- `no.kompilator.testframework.model`
+- `no.kompilator.testframework.plugin`
+- `no.kompilator.testframework.service`
+- `no.kompilator.testframework.spring`
+- `no.kompilator.testframework.spring.model`
 
 Internal packages that may change without notice:
 
-- `no.kompilator.javalibrary.domain`
-- `no.kompilator.javalibrary.runtime`
+- `no.kompilator.testframework.domain`
+- `no.kompilator.testframework.runtime`
 
 Build against the supported packages only.
 

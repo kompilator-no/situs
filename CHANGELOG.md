@@ -7,6 +7,8 @@ once it reaches `1.0.0`. Until then, `0.x` releases may include breaking changes
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-03-09
+
 ### Added
 - Async run progress with per-test timestamps and explicit progress counters
 - Per-test plugin events via `SuiteRunListener#onTestCompleted(...)`

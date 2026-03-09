@@ -20,7 +20,7 @@ so plugins can build live dashboards with real timing data instead of only durat
 ## Package structure
 
 ```
-no.kompilator.plugins
+no.kompilator.testframework.plugins
 ├── TestFrameworkPlugin.java        Marker interface implemented by all plugins
 └── reporting/
     ├── ReportFormat.java           Enum: JUNIT_XML, OPEN_TEST_REPORTING_XML, JSON
