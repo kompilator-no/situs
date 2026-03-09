@@ -286,6 +286,20 @@ class TestFrameworkControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void cancelRunReturnsCancelledStatus() throws Exception {
+        String runId = startRun("/api/test-framework/suites/Long Running Suite/run");
+
+        Thread.sleep(100);
+        MvcResult cancelResult = mockMvc.perform(post("/api/test-framework/runs/" + runId + "/cancel"))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode cancelled = objectMapper.readTree(cancelResult.getResponse().getContentAsString());
+        assertThat(cancelled.get("status").asText()).isEqualTo("CANCELLED");
+        assertThat(cancelled.get("runErrorMessage").asText()).contains("Run cancelled");
+    }
+
     // -------------------------------------------------------------------------
     // Long-running test — observe RUNNING status while test executes
     // -------------------------------------------------------------------------
@@ -321,6 +335,21 @@ class TestFrameworkControllerTest {
         assertThat(finalResult.get("totalCount").asInt()).isEqualTo(2);
         assertThat(finalResult.get("passedCount").asInt()).isEqualTo(2);
         assertThat(finalResult.get("failedCount").asInt()).isEqualTo(0);
+    }
+
+    @Test
+    void cancelledRunCanBeStartedAgain() throws Exception {
+        String firstRunId = startRun("/api/test-framework/suites/Long Running Suite/run");
+
+        Thread.sleep(100);
+        mockMvc.perform(post("/api/test-framework/runs/" + firstRunId + "/cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        String secondRunId = startRun("/api/test-framework/suites/Long Running Suite/run");
+        JsonNode result = awaitCompleted(secondRunId);
+
+        assertThat(result.get("status").asText()).isEqualTo("COMPLETED");
     }
 
     // -------------------------------------------------------------------------

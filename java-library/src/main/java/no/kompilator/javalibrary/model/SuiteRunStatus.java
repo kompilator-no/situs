@@ -7,8 +7,9 @@ import java.util.List;
  *
  * <p>Created when a run is first submitted ({@link Status#PENDING}), updated to
  * {@link Status#RUNNING} when execution begins, and finally to {@link Status#COMPLETED}
- * when all tests have finished successfully or {@link Status#FAILED} when the run
- * itself fails before producing a normal result set.
+ * when all tests have finished successfully, {@link Status#FAILED} when the run
+ * itself fails before producing a normal result set, or {@link Status#CANCELLED}
+ * when it is stopped explicitly by a caller.
  *
  * <p>Obtain a snapshot by polling
  * {@link no.kompilator.javalibrary.service.TestFrameworkService#getRunStatus(String)}
@@ -29,9 +30,10 @@ public class SuiteRunStatus {
      *   <li>{@link #RUNNING}   — currently executing tests</li>
      *   <li>{@link #COMPLETED} — all tests finished (pass or fail)</li>
      *   <li>{@link #FAILED}    — the run aborted due to an infrastructure or lifecycle error</li>
+     *   <li>{@link #CANCELLED} — the run was cancelled explicitly before completion</li>
      * </ul>
      */
-    public enum Status { PENDING, RUNNING, COMPLETED, FAILED }
+    public enum Status { PENDING, RUNNING, COMPLETED, FAILED, CANCELLED }
 
     private String runId;
     private String suiteName;

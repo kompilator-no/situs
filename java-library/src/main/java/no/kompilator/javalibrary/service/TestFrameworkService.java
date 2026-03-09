@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentHashMap;
@@ -83,6 +84,8 @@ public class TestFrameworkService implements AutoCloseable {
 
     /** Live status map — keyed by runId. */
     private final ConcurrentHashMap<String, SuiteRunStatus> runStatuses = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<Void>> runningTasks = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> runActiveKeys = new ConcurrentHashMap<>();
     private final ConcurrentLinkedDeque<String> terminalRunIds = new ConcurrentLinkedDeque<>();
 
     /**
@@ -331,6 +334,37 @@ public class TestFrameworkService implements AutoCloseable {
         return copyStatus(status);
     }
 
+    /**
+     * Cancels an in-flight run and returns the updated terminal snapshot.
+     *
+     * @param runId the run identifier returned by a start-run endpoint
+     * @return the terminal {@link SuiteRunStatus} after cancellation
+     * @throws IllegalArgumentException if {@code runId} is not recognised
+     */
+    public SuiteRunStatus cancelRun(String runId) {
+        SuiteRunStatus current = runStatuses.get(runId);
+        if (current == null) {
+            throw new IllegalArgumentException("Run not found: " + runId);
+        }
+        if (isTerminal(current.getStatus())) {
+            return copyStatus(current);
+        }
+
+        String activeKey = runActiveKeys.remove(runId);
+        if (activeKey != null) {
+            activeRuns.remove(activeKey);
+        }
+
+        CompletableFuture<Void> runningTask = runningTasks.remove(runId);
+        if (runningTask != null) {
+            runningTask.cancel(true);
+        }
+
+        updateStatus(runId, SuiteRunStatus.Status.CANCELLED, current.getCompletedResults(),
+                new CancellationException("Run cancelled"));
+        return getRunStatus(runId);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
@@ -341,8 +375,18 @@ public class TestFrameworkService implements AutoCloseable {
 
     private void submitAsyncRun(String runId, String runLabel, Runnable task, Runnable rollbackAction) {
         try {
-            CompletableFuture.runAsync(task, asyncExecutor);
+            runActiveKeys.put(runId, runLabel);
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    task.run();
+                } finally {
+                    runningTasks.remove(runId);
+                    runActiveKeys.remove(runId);
+                }
+            }, asyncExecutor);
+            runningTasks.put(runId, future);
         } catch (RejectedExecutionException e) {
+            runActiveKeys.remove(runId);
             rollbackAction.run();
             updateStatus(runId, SuiteRunStatus.Status.FAILED, List.of(), e);
             throw new IllegalStateException("TestFrameworkService is shut down and cannot accept new runs: " + runLabel, e);
@@ -353,6 +397,9 @@ public class TestFrameworkService implements AutoCloseable {
                               List<TestCaseResult> results, Throwable error) {
         SuiteRunStatus current = runStatuses.get(runId);
         if (current == null) {
+            return;
+        }
+        if (current.getStatus() == SuiteRunStatus.Status.CANCELLED && newStatus != SuiteRunStatus.Status.CANCELLED) {
             return;
         }
         long passed = results.stream().filter(TestCaseResult::isPassed).count();
@@ -372,7 +419,7 @@ public class TestFrameworkService implements AutoCloseable {
                 error == null ? null : error.getMessage(),
                 error == null ? null : error.getClass().getName(),
                 error == null ? null : stackTraceOf(error)));
-        if (newStatus == SuiteRunStatus.Status.COMPLETED || newStatus == SuiteRunStatus.Status.FAILED) {
+        if (isTerminal(newStatus)) {
             terminalRunIds.addLast(runId);
             evictTerminalRunsIfNeeded();
         }
@@ -483,6 +530,12 @@ public class TestFrameworkService implements AutoCloseable {
             throw new IllegalArgumentException("maxStoredRuns must be at least 1");
         }
         return maxStoredRuns;
+    }
+
+    private boolean isTerminal(SuiteRunStatus.Status status) {
+        return status == SuiteRunStatus.Status.COMPLETED
+                || status == SuiteRunStatus.Status.FAILED
+                || status == SuiteRunStatus.Status.CANCELLED;
     }
 
     private ExecutorService createAsyncExecutor() {

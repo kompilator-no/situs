@@ -32,7 +32,8 @@ public final class AsyncTestHelper {
             Thread.sleep(POLL_INTERVAL);
             SuiteRunStatus s = service.getRunStatus(runId);
             if (s.getStatus() == SuiteRunStatus.Status.COMPLETED
-                    || s.getStatus() == SuiteRunStatus.Status.FAILED) {
+                    || s.getStatus() == SuiteRunStatus.Status.FAILED
+                    || s.getStatus() == SuiteRunStatus.Status.CANCELLED) {
                 return s;
             }
         }
@@ -54,7 +55,8 @@ public final class AsyncTestHelper {
             JsonNode node = MAPPER.readTree(r.getResponse().getContentAsString());
             String status = node.get("status").asText();
             if (SuiteRunStatus.Status.COMPLETED.name().equals(status)
-                    || SuiteRunStatus.Status.FAILED.name().equals(status)) {
+                    || SuiteRunStatus.Status.FAILED.name().equals(status)
+                    || SuiteRunStatus.Status.CANCELLED.name().equals(status)) {
                 return node;
             }
         }

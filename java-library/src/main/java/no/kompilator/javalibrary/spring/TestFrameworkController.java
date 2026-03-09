@@ -38,6 +38,7 @@ import java.util.Map;
  *   <li>{@code POST /api/test-framework/suites/{suiteName}/run}              — run suite by name</li>
  *   <li>{@code POST /api/test-framework/suites/{suiteName}/tests/{name}/run} — run single test</li>
  *   <li>{@code GET  /api/test-framework/runs/{runId}/status}                 — poll run status</li>
+ *   <li>{@code POST /api/test-framework/runs/{runId}/cancel}                 — cancel a running run</li>
  * </ul>
  *
  * <h2>Error responses</h2>
@@ -130,6 +131,17 @@ public final class TestFrameworkController {
     @GetMapping("/runs/{runId}/status")
     public SuiteRunStatus getRunStatus(@PathVariable String runId) {
         return testFrameworkService.getRunStatus(runId);
+    }
+
+    /**
+     * Cancels a running or pending run.
+     *
+     * @param runId the run identifier returned by a start-run endpoint
+     * @return the terminal {@link SuiteRunStatus} after cancellation
+     */
+    @PostMapping("/runs/{runId}/cancel")
+    public SuiteRunStatus cancelRun(@PathVariable String runId) {
+        return testFrameworkService.cancelRun(runId);
     }
 
     /**

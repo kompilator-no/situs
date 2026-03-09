@@ -169,6 +169,34 @@ class TestFrameworkServiceTest {
                 .hasMessageContaining("Does Not Exist");
     }
 
+    @Test
+    void cancelRunMarksRunningSuiteAsCancelled() throws InterruptedException {
+        TestFrameworkService cancellableService = new TestFrameworkService(Set.of(TestSuiteFixtures.LongRunningSuite.class));
+        String runId = cancellableService.startSuiteAsync("Long Running Suite");
+
+        Thread.sleep(100);
+        SuiteRunStatus cancelled = cancellableService.cancelRun(runId);
+
+        assertThat(cancelled.getStatus()).isEqualTo(SuiteRunStatus.Status.CANCELLED);
+        assertThat(cancelled.getRunErrorMessage()).contains("Run cancelled");
+        assertThat(cancelled.getRunErrorType()).isEqualTo(java.util.concurrent.CancellationException.class.getName());
+    }
+
+    @Test
+    void cancelledSuiteCanBeStartedAgain() throws InterruptedException {
+        TestFrameworkService cancellableService = new TestFrameworkService(Set.of(TestSuiteFixtures.LongRunningSuite.class));
+        String firstRunId = cancellableService.startSuiteAsync("Long Running Suite");
+
+        Thread.sleep(100);
+        SuiteRunStatus cancelled = cancellableService.cancelRun(firstRunId);
+        assertThat(cancelled.getStatus()).isEqualTo(SuiteRunStatus.Status.CANCELLED);
+
+        String secondRunId = cancellableService.startSuiteAsync("Long Running Suite");
+        SuiteRunStatus secondResult = AsyncTestHelper.awaitCompleted(cancellableService, secondRunId);
+
+        assertThat(secondResult.getStatus()).isEqualTo(SuiteRunStatus.Status.COMPLETED);
+    }
+
     // -------------------------------------------------------------------------
     // startSingleTestAsync
     // -------------------------------------------------------------------------
@@ -225,6 +253,13 @@ class TestFrameworkServiceTest {
     @Test
     void getRunStatusThrowsForUnknownRunId() {
         assertThatThrownBy(() -> service.getRunStatus("no-such-run"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no-such-run");
+    }
+
+    @Test
+    void cancelRunThrowsForUnknownRunId() {
+        assertThatThrownBy(() -> service.cancelRun("no-such-run"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("no-such-run");
     }
