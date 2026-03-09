@@ -18,6 +18,8 @@ Define test suites as plain Java classes, run them via the engine directly or ov
 
 ## Build
 
+From the repo root:
+
 ```bash
 # Windows CMD / PowerShell
 ..\java-library\gradlew.bat --project-dir .. :java-library:build
@@ -30,6 +32,8 @@ The `build` task compiles sources, runs all tests, and produces the JAR under `b
 
 ## Run tests only
 
+From the repo root:
+
 ```bash
 ..\java-library\gradlew.bat --project-dir .. :java-library:test   # Windows
 ./java-library/gradlew :java-library:test                         # WSL / Linux / macOS
@@ -38,6 +42,8 @@ The `build` task compiles sources, runs all tests, and produces the JAR under `b
 Test reports are written to `build/reports/tests/test/index.html`.
 
 ## Publish to local Maven repository
+
+From the repo root:
 
 ```bash
 ./gradlew -p .. publishAllToMavenLocal
@@ -427,7 +433,7 @@ All run endpoints are **asynchronous** — they return a `runId` immediately; po
 |---|---|---|
 | `GET` | `/api/test-framework/status` | Health check — returns `"OK"`. |
 | `GET` | `/api/test-framework/suites` | Lists all registered suites and their test cases. |
-| `POST` | `/api/test-framework/suites/run` | Start a suite run (suite name in JSON body). Returns `{"runId":"…"}`. |
+| `POST` | `/api/test-framework/suites/run/by-name` | Start a suite run (suite name in JSON body). Returns `{"runId":"…"}`. |
 | `POST` | `/api/test-framework/suites/{suiteName}/run` | Start a suite run by path parameter. Returns `{"runId":"…"}`. |
 | `POST` | `/api/test-framework/suites/{suiteName}/tests/{testName}/run` | Start a single-test run. Returns `{"runId":"…"}`. |
 | `GET` | `/api/test-framework/runs/{runId}/status` | Poll live status and results. |
