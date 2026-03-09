@@ -95,7 +95,7 @@ tasks.register<JavaExec>("runSuite") {
     group = "verification"
     description = "Runs the RuntimeTestSuiteRunnerMain to execute runtime test suites"
     classpath = sourceSets["test"].runtimeClasspath
-    mainClass.set("no.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerMain")
+    mainClass.set("no.certusdev.testframework.javalibrary.runtime.RuntimeTestSuiteRunnerMain")
 }
 
 publishing {

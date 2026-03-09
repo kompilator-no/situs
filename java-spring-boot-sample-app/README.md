@@ -26,7 +26,7 @@ A Java Spring Boot application demonstrating the **test-framework** library.
 This sample scopes suite discovery to:
 
 ```properties
-testframework.scan-packages=no.testframework.sampleapp.tests
+testframework.scan-packages=no.certusdev.testframework.sampleapp.tests
 ```
 
 ## HTTP API

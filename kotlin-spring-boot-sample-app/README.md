@@ -20,7 +20,7 @@ library works with Kotlin with no changes required to the library itself.
 This sample scopes suite discovery to:
 
 ```properties
-testframework.scan-packages=no.testframework.kotlinapp.tests
+testframework.scan-packages=no.certusdev.testframework.kotlinapp.tests
 ```
 
 ## Kotlin-specific notes

@@ -56,7 +56,7 @@ This runs the release verification tasks and then publishes the releasable modul
 ## Package structure
 
 ```
-no.testframework.javalibrary
+no.certusdev.testframework.javalibrary
 ├── annotations/     Public annotations (`@TestSuite`, `@Test`, lifecycle annotations)
 ├── domain/          Internal domain objects (not part of the public API)
 ├── model/           Shared public models — no Spring dependency
@@ -116,7 +116,7 @@ These classes are used internally by the runtime engine and are not part of the 
 
 ## Shared model (public API)
 
-These classes live in `no.testframework.javalibrary.model` and have no Spring dependency.
+These classes live in `no.certusdev.testframework.javalibrary.model` and have no Spring dependency.
 
 | Class | Description |
 |---|---|
@@ -291,7 +291,7 @@ plugins {
 }
 
 dependencies {
-    implementation("no.testframework:java-library:<version>")
+    implementation("no.certusdev.testframework:java-library:<version>")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")  // for Jackson
 }
 ```

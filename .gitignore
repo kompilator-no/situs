@@ -54,3 +54,4 @@ logs/
 # Kotlin
 .kotlin/
 /.idea/
+kotlin

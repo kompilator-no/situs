@@ -18,7 +18,7 @@ so plugins can build live dashboards with real timing data instead of only durat
 ## Package structure
 
 ```
-no.testframework.plugins
+no.certusdev.testframework.plugins
 ├── TestFrameworkPlugin.java        Marker interface implemented by all plugins
 └── reporting/
     ├── ReportFormat.java           Enum: JUNIT_XML, OPEN_TEST_REPORTING_XML, JSON
@@ -117,7 +117,7 @@ information visible to any OTR-compatible tool.
 
 ```kotlin
 dependencies {
-    implementation("no.testframework:plugins:0.1.0")
+    implementation("no.certusdev.testframework:plugins:0.1.0")
 }
 ```
 
