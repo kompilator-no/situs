@@ -72,9 +72,18 @@ jobs:
 
       - name: Build and test java-library
         run: |
+          set -euo pipefail
           sed -i 's/\r//' java-library/gradlew
           chmod +x java-library/gradlew
-          ./java-library/gradlew :java-library:build
+          ./java-library/gradlew :java-library:build --scan | tee gradle-java-library.log
+          SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-java-library.log | tail -n 1 || true)"
+          if [ -n "$SCAN_URL" ]; then
+            {
+              echo "### java-library Build Scan"
+              echo
+              echo "$SCAN_URL"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload java-library artifact
         uses: actions/upload-artifact@v4
@@ -99,9 +108,18 @@ jobs:
 
       - name: Build and test plugins
         run: |
+          set -euo pipefail
           sed -i 's/\r//' java-library/gradlew
           chmod +x java-library/gradlew
-          ./java-library/gradlew :plugins:build
+          ./java-library/gradlew :plugins:build --scan | tee gradle-plugins.log
+          SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-plugins.log | tail -n 1 || true)"
+          if [ -n "$SCAN_URL" ]; then
+            {
+              echo "### plugins Build Scan"
+              echo
+              echo "$SCAN_URL"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload plugins artifact
         uses: actions/upload-artifact@v4
@@ -126,9 +144,18 @@ jobs:
 
       - name: Build and test java-spring-boot-sample-app
         run: |
+          set -euo pipefail
           sed -i 's/\r//' java-library/gradlew
           chmod +x java-library/gradlew
-          ./java-library/gradlew :java-spring-boot-sample-app:build
+          ./java-library/gradlew :java-spring-boot-sample-app:build --scan | tee gradle-java-spring-boot-sample-app.log
+          SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-java-spring-boot-sample-app.log | tail -n 1 || true)"
+          if [ -n "$SCAN_URL" ]; then
+            {
+              echo "### java-spring-boot-sample-app Build Scan"
+              echo
+              echo "$SCAN_URL"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload java-spring-boot-sample-app artifact
         uses: actions/upload-artifact@v4
@@ -153,9 +180,18 @@ jobs:
 
       - name: Build and test kotlin-spring-boot-sample-app
         run: |
+          set -euo pipefail
           sed -i 's/\r//' java-library/gradlew
           chmod +x java-library/gradlew
-          ./java-library/gradlew :kotlin-spring-boot-sample-app:build
+          ./java-library/gradlew :kotlin-spring-boot-sample-app:build --scan | tee gradle-kotlin-spring-boot-sample-app.log
+          SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-kotlin-spring-boot-sample-app.log | tail -n 1 || true)"
+          if [ -n "$SCAN_URL" ]; then
+            {
+              echo "### kotlin-spring-boot-sample-app Build Scan"
+              echo
+              echo "$SCAN_URL"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload kotlin-spring-boot-sample-app artifact
         uses: actions/upload-artifact@v4

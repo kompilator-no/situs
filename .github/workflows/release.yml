@@ -44,9 +44,18 @@ jobs:
 
       - name: Verify and publish release artifacts
         run: |
+          set -euo pipefail
           git update-index --chmod=+x java-library/gradlew
           java-library/gradlew --project-dir . publishRelease --scan \
-            -Pversion=${{ steps.version.outputs.VERSION }}
+            -Pversion=${{ steps.version.outputs.VERSION }} | tee gradle-release.log
+          SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-release.log | tail -n 1 || true)"
+          if [ -n "$SCAN_URL" ]; then
+            {
+              echo "### release Build Scan"
+              echo
+              echo "$SCAN_URL"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Finalize uploaded artifacts in Central
         run: |
