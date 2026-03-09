@@ -23,13 +23,7 @@ This sample scopes suite discovery to:
 testframework.scan-packages=no.kompilator.kotlinapp.tests
 ```
 
-Reporting startup behavior in this sample:
-
-```properties
-testframework.reporting.run-on-startup=true
-```
-
-So the reporting plugin runs discovered suites automatically when the application starts.
+The reporting plugin writes reports for suite runs, but it does not auto-run suites on startup.
 
 ## Kotlin-specific notes
 

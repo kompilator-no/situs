@@ -29,13 +29,7 @@ This sample scopes suite discovery to:
 testframework.scan-packages=no.kompilator.sampleapp.tests
 ```
 
-Reporting startup behavior in this sample:
-
-```properties
-testframework.reporting.run-on-startup=false
-```
-
-That means reports are available, but suites are not executed automatically when the app starts.
+The reporting plugin writes reports for suite runs, but it does not auto-run suites on startup.
 
 ## HTTP API
 
