@@ -1,10 +1,10 @@
 package no.kompilator.sampleapp.tests;
 
-import no.kompilator.testframework.annotations.AfterEach;
-import no.kompilator.testframework.annotations.BeforeAll;
-import no.kompilator.testframework.annotations.BeforeEach;
-import no.kompilator.testframework.annotations.Test;
-import no.kompilator.testframework.annotations.TestSuite;
+import no.kompilator.situs.annotations.AfterEach;
+import no.kompilator.situs.annotations.BeforeAll;
+import no.kompilator.situs.annotations.BeforeEach;
+import no.kompilator.situs.annotations.Test;
+import no.kompilator.situs.annotations.TestSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

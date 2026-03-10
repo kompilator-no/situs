@@ -1,9 +1,9 @@
 package no.kompilator.sampleapp.tests;
 
-import no.kompilator.testframework.annotations.AfterEach;
-import no.kompilator.testframework.annotations.BeforeAll;
-import no.kompilator.testframework.annotations.Test;
-import no.kompilator.testframework.annotations.TestSuite;
+import no.kompilator.situs.annotations.AfterEach;
+import no.kompilator.situs.annotations.BeforeAll;
+import no.kompilator.situs.annotations.Test;
+import no.kompilator.situs.annotations.TestSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Sample runtime test suite demonstrating the {@code retries} feature.
+ * Sample system integration test suite demonstrating the {@code retries} feature.
  *
  * <ul>
  *   <li>{@code flakyExternalCheck} — fails twice, passes on attempt 3 ({@code retries=2})</li>

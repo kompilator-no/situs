@@ -1,6 +1,6 @@
 # kotlin-spring-boot-sample-app
 
-A Kotlin Spring Boot application demonstrating the **test-framework** library.
+A Kotlin Spring Boot application demonstrating the **situs** library.
 
 This is the Kotlin equivalent of `java-spring-boot-sample-app` — it shows that the
 library works with Kotlin with no changes required to the library itself.
@@ -62,11 +62,11 @@ curl -X POST http://localhost:8080/api/test-framework/runs/{runId}/cancel
 ## Run the app
 
 ```bash
-./java-library/gradlew :kotlin-spring-boot-sample-app:bootRun
+./situs/gradlew :kotlin-spring-boot-sample-app:bootRun
 ```
 
 ## Run tests
 
 ```bash
-./java-library/gradlew :kotlin-spring-boot-sample-app:test
+./situs/gradlew :kotlin-spring-boot-sample-app:test
 ```

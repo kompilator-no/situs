@@ -1,6 +1,6 @@
 # java-spring-boot-sample-app
 
-A Java Spring Boot application demonstrating the **test-framework** library.
+A Java Spring Boot application demonstrating the **situs** library.
 
 ## What it includes
 
@@ -53,11 +53,11 @@ curl -X POST http://localhost:8080/api/test-framework/runs/{runId}/cancel
 ## Run the app
 
 ```bash
-./java-library/gradlew :java-spring-boot-sample-app:bootRun
+./situs/gradlew :java-spring-boot-sample-app:bootRun
 ```
 
 ## Run tests
 
 ```bash
-./java-library/gradlew :java-spring-boot-sample-app:test
+./situs/gradlew :java-spring-boot-sample-app:test
 ```

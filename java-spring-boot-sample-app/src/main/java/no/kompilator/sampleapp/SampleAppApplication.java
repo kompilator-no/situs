@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Entry point for the Java Spring Boot sample application demonstrating the test framework.
+ * Entry point for the Java Spring Boot sample application demonstrating Situs for system integration testing.
  *
  * <h2>Framework activation</h2>
  * <p>The framework activates automatically via Spring Boot auto-configuration as soon

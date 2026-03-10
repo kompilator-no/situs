@@ -21,11 +21,11 @@ tasks.register("releaseCheck") {
     group = "release"
     description = "Runs the verification tasks required before publishing artifacts."
     dependsOn(
-            ":java-library:test",
+            ":situs:test",
             ":plugins:test",
             ":java-spring-boot-sample-app:test",
             ":kotlin-spring-boot-sample-app:test",
-            ":java-library:javadoc",
+            ":situs:javadoc",
             ":plugins:javadoc"
     )
 }
@@ -34,7 +34,7 @@ tasks.register("testAll") {
     group = "verification"
     description = "Runs tests for all subprojects."
     dependsOn(
-            ":java-library:test",
+            ":situs:test",
             ":plugins:test",
             ":java-spring-boot-sample-app:test",
             ":kotlin-spring-boot-sample-app:test"
@@ -45,7 +45,7 @@ tasks.register("buildAll") {
     group = "build"
     description = "Builds all subprojects."
     dependsOn(
-            ":java-library:build",
+            ":situs:build",
             ":plugins:build",
             ":java-spring-boot-sample-app:build",
             ":kotlin-spring-boot-sample-app:build"
@@ -56,7 +56,7 @@ tasks.register("publishAllToMavenLocal") {
     group = "release"
     description = "Publishes the releasable modules to the local Maven repository."
     dependsOn(
-            ":java-library:publishToMavenLocal",
+            ":situs:publishToMavenLocal",
             ":plugins:publishToMavenLocal"
     )
 }
@@ -64,5 +64,5 @@ tasks.register("publishAllToMavenLocal") {
 tasks.register("publishRelease") {
     group = "release"
     description = "Runs release verification and publishes the releasable modules."
-    dependsOn("releaseCheck", ":java-library:publish", ":plugins:publish")
+    dependsOn("releaseCheck", ":situs:publish", ":plugins:publish")
 }

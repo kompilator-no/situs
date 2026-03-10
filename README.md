@@ -1,19 +1,19 @@
-# test-framework
+# situs
 
-[![Maven Central - java-library](https://img.shields.io/maven-central/v/no.kompilator/java-library?label=java-library)](https://central.sonatype.com/artifact/no.kompilator/java-library)
+[![Maven Central - situs](https://img.shields.io/maven-central/v/no.kompilator/situs?label=situs)](https://central.sonatype.com/artifact/no.kompilator/situs)
 [![Maven Central - plugins](https://img.shields.io/maven-central/v/no.kompilator/plugins?label=plugins)](https://central.sonatype.com/artifact/no.kompilator/plugins)
 
-An annotation-driven **runtime test framework** for Java 21. Define test suites as plain Java classes, run them on demand via a REST API or programmatically, and get structured reports in JUnit XML, Open Test Reporting XML, or JSON.
+An annotation-driven system integration testing library for Java 21 under the `no.kompilator.situs` namespace. Define SIT suites as plain Java classes, run them on demand via a REST API or programmatically, and get structured reports in JUnit XML, Open Test Reporting XML, or JSON.
 
-Unlike JUnit, tests run **at runtime in production-like environments** instead of only at build time. Suites support Spring dependency injection, parallel execution, timeouts, delays, retries, and deterministic ordering.
+Like JUnit, but aimed at System Integration Testing (SIT): suites run **at runtime in production-like environments** instead of only at build time. They support Spring dependency injection, parallel execution, timeouts, delays, retries, and deterministic ordering.
 
 ---
 
 ## Repository structure
 
 ```
-test-framework/
-├── java-library/                   Core library — annotations, engine, Spring integration
+.
+├── situs/                   Core library — annotations, engine, Spring integration
 ├── plugins/                        Ready-made plugins (reporting: JUnit XML, OTR XML, JSON)
 ├── java-spring-boot-sample-app/    Java Spring Boot example using the library
 └── kotlin-spring-boot-sample-app/  Kotlin Spring Boot example using the library
@@ -21,14 +21,14 @@ test-framework/
 
 | Module | Artifact | Description |
 |---|---|---|
-| `java-library` | `no.kompilator:java-library` | Annotations, runtime engine, HTTP API |
+| `situs` | `no.kompilator:situs` | SIT annotations, execution engine, and HTTP API |
 | `plugins` | `no.kompilator:plugins` | Reporting plugin — writes structured test reports |
 | `java-spring-boot-sample-app` | — | Java sample app (not published) |
 | `kotlin-spring-boot-sample-app` | — | Kotlin sample app (not published) |
 
 Published artifacts:
 
-- [`no.kompilator:java-library`](https://central.sonatype.com/artifact/no.kompilator/java-library)
+- [`no.kompilator:situs`](https://central.sonatype.com/artifact/no.kompilator/situs)
 - [`no.kompilator:plugins`](https://central.sonatype.com/artifact/no.kompilator/plugins)
 
 ---
@@ -37,17 +37,17 @@ Published artifacts:
 
 Supported packages:
 
-- `no.kompilator.testframework.annotations`
-- `no.kompilator.testframework.model`
-- `no.kompilator.testframework.plugin`
-- `no.kompilator.testframework.service`
-- `no.kompilator.testframework.spring`
-- `no.kompilator.testframework.spring.model`
+- `no.kompilator.situs.annotations`
+- `no.kompilator.situs.model`
+- `no.kompilator.situs.plugin`
+- `no.kompilator.situs.service`
+- `no.kompilator.situs.spring`
+- `no.kompilator.situs.spring.model`
 
 Internal packages that may change without notice:
 
-- `no.kompilator.testframework.domain`
-- `no.kompilator.testframework.runtime`
+- `no.kompilator.situs.domain`
+- `no.kompilator.situs.runtime`
 
 Build against the supported packages only.
 
@@ -60,10 +60,10 @@ Build against the supported packages only.
 ```kotlin
 // build.gradle.kts
 dependencies {
-    implementation("no.kompilator:java-library:0.1.0")
+    implementation("no.kompilator:situs:2.0.0")
 
-    // Optional — adds structured report writing (pulls in java-library transitively)
-    implementation("no.kompilator:plugins:0.1.0")
+    // Optional — adds structured report writing (pulls in situs transitively)
+    implementation("no.kompilator:plugins:2.0.0")
 }
 ```
 
@@ -182,7 +182,7 @@ public class PaymentTestSuite {
 
 ```kotlin
 dependencies {
-    implementation("no.kompilator:plugins:0.1.0")
+    implementation("no.kompilator:plugins:2.0.0")
 }
 ```
 
@@ -260,14 +260,14 @@ Ordering is deterministic:
 Local publish:
 
 ```bash
-./java-library/gradlew publishAllToMavenLocal
+./situs/gradlew publishAllToMavenLocal
 ```
 
 Parallel multi-module verification:
 
 ```bash
-./java-library/gradlew testAll
-./java-library/gradlew buildAll
+./situs/gradlew testAll
+./situs/gradlew buildAll
 ```
 
 Project-level parallel execution is enabled in `gradle.properties`, so independent
@@ -294,18 +294,18 @@ export SIGNING_PASSWORD=...
 Then publish:
 
 ```bash
-./java-library/gradlew publishRelease
+./situs/gradlew publishRelease
 ```
 
 The root release tasks are:
 
 - `releaseCheck` — runs tests and Javadocs for the releasable modules and sample apps
-- `publishAllToMavenLocal` — publishes `java-library` and `plugins` to `mavenLocal`
-- `publishRelease` — runs `releaseCheck` and then publishes `java-library` and `plugins`
+- `publishAllToMavenLocal` — publishes `situs` and `plugins` to `mavenLocal`
+- `publishRelease` — runs `releaseCheck` and then publishes `situs` and `plugins`
 
 GitHub Actions release flow:
 
-- push a tag like `v0.1.0`
+- push a tag like `v2.0.0`
 - or trigger the `release` workflow manually with `version`
 - the workflow runs `publishRelease` with `-Pversion=<tag>`
 - required repository secrets:
@@ -322,25 +322,25 @@ See [`kotlin-spring-boot-sample-app`](kotlin-spring-boot-sample-app/README.md) f
 
 ```bash
 # Build everything from the repo root
-./java-library/gradlew --project-dir . build
+./situs/gradlew --project-dir . build
 
 # Build a specific module
-./java-library/gradlew :java-library:build
-./java-library/gradlew :plugins:build
+./situs/gradlew :situs:build
+./situs/gradlew :plugins:build
 ```
 
 ## Run tests
 
 ```bash
-./java-library/gradlew :java-library:test
-./java-library/gradlew :plugins:test
+./situs/gradlew :situs:test
+./situs/gradlew :plugins:test
 ```
 
 ---
 
 ## Modules — further reading
 
-- [`java-library/README.md`](java-library/README.md) — annotations, runtime engine, Spring integration, full API reference
+- [`situs/README.md`](situs/README.md) — annotations, runtime engine, Spring integration, full API reference
 - [`plugins/README.md`](plugins/README.md) — reporting plugin, report formats, configuration
 - [`java-spring-boot-sample-app/README.md`](java-spring-boot-sample-app/README.md) — Java Spring Boot sample
 - [`kotlin-spring-boot-sample-app/README.md`](kotlin-spring-boot-sample-app/README.md) — Kotlin Spring Boot sample

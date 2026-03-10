@@ -2,7 +2,7 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/no.kompilator/plugins?label=Maven%20Central)](https://central.sonatype.com/artifact/no.kompilator/plugins)
 
-Ready-made, drop-in runtime test suite plugins for the test framework.
+Ready-made, drop-in plugins for Situs system integration test suites.
 
 Plugins react to events emitted by the main library and add secondary behaviour
 such as report writing. They do not control suite discovery or execution.
@@ -20,7 +20,7 @@ so plugins can build live dashboards with real timing data instead of only durat
 ## Package structure
 
 ```
-no.kompilator.testframework.plugins
+no.kompilator.situs.plugins
 ├── TestFrameworkPlugin.java        Marker interface implemented by all plugins
 └── reporting/
     ├── ReportFormat.java           Enum: JUNIT_XML, OPEN_TEST_REPORTING_XML, JSON
@@ -119,11 +119,11 @@ information visible to any OTR-compatible tool.
 
 ```kotlin
 dependencies {
-    implementation("no.kompilator:plugins:0.1.0")
+    implementation("no.kompilator:plugins:2.0.0")
 }
 ```
 
-> `plugins` depends on `java-library` — you do **not** need to add `java-library`
+> `plugins` depends on `situs` — you do **not** need to add `situs`
 > separately; it is pulled in transitively.
 
 ---
@@ -131,11 +131,11 @@ dependencies {
 ## Build
 
 ```bash
-./java-library/gradlew :plugins:build
+./situs/gradlew :plugins:build
 ```
 
 ## Run tests
 
 ```bash
-./java-library/gradlew :plugins:test
+./situs/gradlew :plugins:test
 ```

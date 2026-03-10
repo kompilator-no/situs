@@ -36,7 +36,7 @@ java {
 }
 
 dependencies {
-    api(project(":java-library"))
+    api(project(":situs"))
     api("com.fasterxml.jackson.core:jackson-databind:$jacksonDatabindVersion")
 
     compileOnly("org.springframework.boot:spring-boot:$springBootVersion")
@@ -63,7 +63,7 @@ publishing {
             from(components["java"])
             pom {
                 name.set("Test Framework Plugins")
-                description.set("Ready-made runtime test suite plugins for the test framework")
+                description.set("Ready-made plugins for Situs system integration testing")
                 url.set(providers.gradleProperty("pomUrl"))
                 licenses {
                     license {

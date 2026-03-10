@@ -1,7 +1,7 @@
 package no.kompilator.sampleapp.tests;
 
-import no.kompilator.testframework.annotations.Test;
-import no.kompilator.testframework.annotations.TestSuite;
+import no.kompilator.situs.annotations.Test;
+import no.kompilator.situs.annotations.TestSuite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Sample runtime test suite that exercises {@link Calculator} via Spring DI.
+ * Sample system integration test suite that exercises {@link Calculator} via Spring DI.
  *
  * <p>Annotated with {@code @Component} so the framework resolves it from the
  * {@code ApplicationContext} and injects {@link Calculator} via the constructor.

@@ -22,7 +22,7 @@ jobs:
         with:
           filters: |
             java_library:
-              - 'java-library/**'
+              - 'situs/**'
               - 'build.gradle.kts'
               - 'settings.gradle.kts'
               - 'gradle.properties'
@@ -30,7 +30,7 @@ jobs:
               - '.github/workflows/**'
             plugins:
               - 'plugins/**'
-              - 'java-library/**'
+              - 'situs/**'
               - 'build.gradle.kts'
               - 'settings.gradle.kts'
               - 'gradle.properties'
@@ -39,7 +39,7 @@ jobs:
             java_spring_boot_sample_app:
               - 'java-spring-boot-sample-app/**'
               - 'plugins/**'
-              - 'java-library/**'
+              - 'situs/**'
               - 'build.gradle.kts'
               - 'settings.gradle.kts'
               - 'gradle.properties'
@@ -48,14 +48,14 @@ jobs:
             kotlin_spring_boot_sample_app:
               - 'kotlin-spring-boot-sample-app/**'
               - 'plugins/**'
-              - 'java-library/**'
+              - 'situs/**'
               - 'build.gradle.kts'
               - 'settings.gradle.kts'
               - 'gradle.properties'
               - 'gradle/**'
               - '.github/workflows/**'
 
-  java-library:
+  situs:
     needs: changes
     if: ${{ needs.changes.outputs.java_library == 'true' }}
     runs-on: ubuntu-latest
@@ -70,26 +70,26 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v5
 
-      - name: Build and test java-library
+      - name: Build and test situs
         run: |
           set -euo pipefail
-          sed -i 's/\r//' java-library/gradlew
-          chmod +x java-library/gradlew
-          ./java-library/gradlew :java-library:build --scan | tee gradle-java-library.log
-          SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-java-library.log | tail -n 1 || true)"
+          sed -i 's/\r//' situs/gradlew
+          chmod +x situs/gradlew
+          ./situs/gradlew :situs:build --scan | tee gradle-situs.log
+          SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-situs.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {
-              echo "### java-library Build Scan"
+              echo "### situs Build Scan"
               echo
               echo "$SCAN_URL"
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Upload java-library artifact
+      - name: Upload situs artifact
         uses: actions/upload-artifact@v4
         with:
-          name: java-library
-          path: java-library/build/libs
+          name: situs
+          path: situs/build/libs
 
   plugins:
     needs: changes
@@ -109,9 +109,9 @@ jobs:
       - name: Build and test plugins
         run: |
           set -euo pipefail
-          sed -i 's/\r//' java-library/gradlew
-          chmod +x java-library/gradlew
-          ./java-library/gradlew :plugins:build --scan | tee gradle-plugins.log
+          sed -i 's/\r//' situs/gradlew
+          chmod +x situs/gradlew
+          ./situs/gradlew :plugins:build --scan | tee gradle-plugins.log
           SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-plugins.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {
@@ -145,9 +145,9 @@ jobs:
       - name: Build and test java-spring-boot-sample-app
         run: |
           set -euo pipefail
-          sed -i 's/\r//' java-library/gradlew
-          chmod +x java-library/gradlew
-          ./java-library/gradlew :java-spring-boot-sample-app:build --scan | tee gradle-java-spring-boot-sample-app.log
+          sed -i 's/\r//' situs/gradlew
+          chmod +x situs/gradlew
+          ./situs/gradlew :java-spring-boot-sample-app:build --scan | tee gradle-java-spring-boot-sample-app.log
           SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-java-spring-boot-sample-app.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {
@@ -181,9 +181,9 @@ jobs:
       - name: Build and test kotlin-spring-boot-sample-app
         run: |
           set -euo pipefail
-          sed -i 's/\r//' java-library/gradlew
-          chmod +x java-library/gradlew
-          ./java-library/gradlew :kotlin-spring-boot-sample-app:build --scan | tee gradle-kotlin-spring-boot-sample-app.log
+          sed -i 's/\r//' situs/gradlew
+          chmod +x situs/gradlew
+          ./situs/gradlew :kotlin-spring-boot-sample-app:build --scan | tee gradle-kotlin-spring-boot-sample-app.log
           SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-kotlin-spring-boot-sample-app.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {

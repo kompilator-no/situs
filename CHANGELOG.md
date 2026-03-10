@@ -2,16 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on Keep a Changelog and this project follows Semantic Versioning
-once it reaches `1.0.0`. Until then, `0.x` releases may include breaking changes.
+The format is based on Keep a Changelog and this project follows Semantic Versioning.
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-03-09
+## [2.0.0] - 2026-03-09
 
 ### Breaking
-- Java package namespace renamed from `no.kompilator.javalibrary...` to `no.kompilator.testframework...`
-- Plugin package namespace renamed from `no.kompilator.plugins...` to `no.kompilator.testframework.plugins...`
+- Java package namespace renamed from `no.kompilator.testframework...` to `no.kompilator.situs...`
+- Plugin package namespace renamed from `no.kompilator.testframework.plugins...` to `no.kompilator.situs.plugins...`
 - Consumers must update imports, reflection-based references, and any Spring class-name references that pointed at the old packages
 
 ### Added
@@ -22,7 +21,7 @@ once it reaches `1.0.0`. Until then, `0.x` releases may include breaking changes
 - Maven Central publishing and GitHub release workflows
 
 ### Changed
-- Public namespace moved to `no.kompilator`
+- Core artifact/module renamed from `java-library` to `situs`
 - Reporting plugin now observes run results instead of controlling execution
 - Spring integration split from framework-agnostic service/model code
 

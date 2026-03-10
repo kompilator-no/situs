@@ -2,9 +2,9 @@ plugins {
     id("com.gradle.develocity") version "4.3.2"
 }
 
-rootProject.name = "test-framework"
+rootProject.name = "situs"
 
-include("java-library")
+include("situs")
 include("plugins")
 include("java-spring-boot-sample-app")
 include("kotlin-spring-boot-sample-app")
