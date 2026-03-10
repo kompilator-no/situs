@@ -6,12 +6,13 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-03-09
+## [3.0.0] - 2026-03-10
 
 ### Breaking
 - Java package namespace renamed from `no.kompilator.testframework...` to `no.kompilator.situs...`
 - Plugin package namespace renamed from `no.kompilator.testframework.plugins...` to `no.kompilator.situs.plugins...`
-- Consumers must update imports, reflection-based references, and any Spring class-name references that pointed at the old packages
+- Core artifact and module renamed from `java-library` to `situs`
+- Consumers must update imports, Gradle/Maven coordinates, and any reflection-based or Spring class-name references that pointed at the old namespaces
 
 ### Added
 - Async run progress with per-test timestamps and explicit progress counters
@@ -21,13 +22,17 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 - Maven Central publishing and GitHub release workflows
 
 ### Changed
-- Core artifact/module renamed from `java-library` to `situs`
+- Project branding and documentation now describe Situs as a system integration testing library
 - Reporting plugin now observes run results instead of controlling execution
-- Spring integration split from framework-agnostic service/model code
+- Spring integration is split from framework-agnostic service and model code
+- Repository remote moved to `kompilator-no/situs`
 
 ### Fixed
 - Single-test execution now runs only the selected test
 - Async and parallel executor leaks
 - Empty parallel suite handling
-- Duplicate suite/test validation at startup
+- Duplicate suite and test validation at startup
 - Sample app and release documentation consistency
+
+### License
+- License changed from MIT to Apache-2.0
