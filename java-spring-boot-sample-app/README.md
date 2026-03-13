@@ -9,17 +9,32 @@ A Java Spring Boot application demonstrating the **situs** library.
 | `SampleAppApplication` | Spring Boot entry point — framework auto-config activates from the classpath |
 | `Calculator` | `@Service` bean used as subject under test |
 | `CalculatorTestSuite` | `@Component` + `@TestSuite` — demonstrates Spring DI injection |
-| `LongRunningTestSuite` | Parallel suite demonstrating `timeoutMs` and `delayMs` |
+| `ParameterizedCalculatorTestSuite` | Parameterized suite demonstrating `@CsvSource` and `@MethodSource` |
+| `LongRunningTestSuite` | Parallel suite demonstrating `timeoutMs`, ISO-8601 `timeout`, and `delayMs` |
 | `RetryTestSuite` | Suite demonstrating `retries` — flaky, always-fail, and stable tests |
 
 ## Features demonstrated
 
 - **Auto-discovery** — suites are found by package-scoped scanning via `testframework.scan-packages`
 - **Spring DI** — `CalculatorTestSuite` receives `Calculator` via constructor injection
+- **Parameterized tests** — `ParameterizedCalculatorTestSuite` expands generated invocations from CSV and method sources
 - **Parallel execution** — `LongRunningTestSuite` runs all tests concurrently
-- **Timeouts** — `timeoutMs` cancels tests that run too long
+- **Timeouts** — `timeoutMs` or `timeout = "PT30S"` cancels tests that run too long
 - **Delays** — `delayMs` waits before starting a test
 - **Retries** — `retries = 2` re-runs a failing test up to 3 times total
+
+## Parameterized test example
+
+```java
+@ParameterizedTest(name = "add[{index}] {0}+{1}={2}")
+@CsvSource({"1,2,3", "20,22,42"})
+public void additionCases(int left, int right, int expected) {
+    assertThat(calculator.add(left, right)).isEqualTo(expected);
+}
+```
+
+Generated invocation names appear in `/api/test-framework/suites`, suite run results,
+and single-test execution endpoints.
 
 ## Configuration
 

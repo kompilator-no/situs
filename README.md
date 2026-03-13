@@ -259,6 +259,14 @@ Supported sources:
 - `@EnumSource` for enum constants
 - `@NullSource`, `@EmptySource`, and `@NullAndEmptySource` for single-argument nullable/empty cases
 
+Each resolved argument set becomes a separate logical test case in discovery, reporting,
+HTTP responses, and single-test execution. Use the `name` template on `@ParameterizedTest`
+to control the generated invocation names with:
+
+- `{index}` for the 1-based invocation index
+- `{arguments}` for the rendered full argument list
+- `{0}`, `{1}`, ... for individual argument values
+
 Example:
 
 ```java
@@ -271,7 +279,59 @@ public void rejectsBlankNames(String value) {
 ```
 
 `@MethodSource` can emit either raw values for single-parameter tests or `Arguments.of(...)`
-for multi-parameter invocations.
+for multi-parameter invocations:
+
+```java
+@ParameterizedTest(name = "multiply[{index}] {0}*{1}={2}")
+@MethodSource("cases")
+public void multiplies(int left, int right, int expected) {
+    assertThat(left * right).isEqualTo(expected);
+}
+
+static Stream<Arguments> cases() {
+    return Stream.of(
+            Arguments.of(2, 3, 6),
+            Arguments.of(7, 6, 42));
+}
+```
+
+---
+
+## Timeout configuration
+
+You can configure timeouts in either of these forms:
+
+- `timeoutMs = 500` for a millisecond value
+- `timeout = "PT30S"` for an ISO-8601 duration
+
+Examples:
+
+```java
+@Test(name = "fastCheck", timeoutMs = 500)
+public void fastCheck() {
+    // ...
+}
+
+@ParameterizedTest(name = "poll[{index}] {0}", timeout = "PT2M")
+@ValueSource(strings = {"node-a", "node-b"})
+public void pollNode(String nodeName) {
+    // ...
+}
+```
+
+Duration strings use `java.time.Duration` syntax:
+
+- `PT0.5S` = 500 ms
+- `PT30S` = 30 seconds
+- `PT5M` = 5 minutes
+- `PT1H` = 1 hour
+
+Rules:
+
+- `timeout` and `timeoutMs` are mutually exclusive on the same test
+- blank `timeout` means "not set"
+- negative `timeoutMs` is still only supported as `-1` for "no timeout"
+- invalid duration strings fail fast during suite registration
 
 ---
 
