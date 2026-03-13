@@ -1,23 +1,14 @@
 package no.kompilator.situs.runtime;
 
-import no.kompilator.situs.annotations.AfterAll;
-import no.kompilator.situs.annotations.AfterEach;
-import no.kompilator.situs.annotations.BeforeAll;
-import no.kompilator.situs.annotations.BeforeEach;
 import no.kompilator.situs.annotations.TestSuite;
-import no.kompilator.situs.annotations.Test;
 import no.kompilator.situs.domain.TestCaseDefinition;
 import no.kompilator.situs.domain.TestSuiteDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Comparator;
-import java.util.stream.Collectors;
 
 /**
  * Discovers and registers system integration test suites from a set of candidate classes.
@@ -35,6 +26,7 @@ import java.util.stream.Collectors;
 public class TestSuiteRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(TestSuiteRegistry.class);
+    private final TestDefinitionResolver testDefinitionResolver = new TestDefinitionResolver();
 
     /**
      * Scans {@code candidateClasses} and returns a {@link TestSuiteDefinition} for every
@@ -62,28 +54,11 @@ public class TestSuiteRegistry {
 
     private TestSuiteDefinition toSuiteDefinition(Class<?> clazz) {
         TestSuite suiteAnn = clazz.getAnnotation(TestSuite.class);
-        validateLifecycleMethods(clazz);
-        List<TestCaseDefinition> tests = java.util.Arrays.stream(clazz.getDeclaredMethods())
-                .filter(method -> method.isAnnotationPresent(Test.class))
-                .sorted(Comparator
-                        .comparingInt((Method method) -> method.getAnnotation(Test.class).order())
-                        .thenComparing(Method::getName))
-                .map(method -> toTestCaseDefinition(clazz, method))
-                .collect(Collectors.toList());
+        List<TestCaseDefinition> tests = testDefinitionResolver.resolveTestCases(clazz);
         String suiteName = suiteAnn.name().isEmpty() ? clazz.getSimpleName() : suiteAnn.name();
         validateDuplicateTestNames(clazz, suiteName, tests);
         log.info("Discovered suite: '{}' with {} test(s) [parallel={}]", suiteName, tests.size(), suiteAnn.parallel());
         return new TestSuiteDefinition(suiteName, suiteAnn.description(), clazz, tests, suiteAnn.parallel());
-    }
-
-    private TestCaseDefinition toTestCaseDefinition(Class<?> clazz, Method method) {
-        Test testAnn = method.getAnnotation(Test.class);
-        String testName = testAnn.name().isEmpty() ? method.getName() : testAnn.name();
-        validateAnnotatedMethodShape(clazz, method, "@Test");
-        validateTestConfiguration(clazz, testName, testAnn);
-        log.debug("  Discovered test: '{}' in suite '{}'", testName, clazz.getSimpleName());
-        return new TestCaseDefinition(testName, testAnn.description(), method,
-                testAnn.timeoutMs(), testAnn.delayMs(), testAnn.retries());
     }
 
     private void validateDuplicateSuiteNames(List<TestSuiteDefinition> suites) {
@@ -117,47 +92,4 @@ public class TestSuiteRegistry {
         return duplicates;
     }
 
-    private void validateTestConfiguration(Class<?> suiteClass, String testName, Test testAnnotation) {
-        if (testAnnotation.timeoutMs() < -1) {
-            throw new IllegalArgumentException("Invalid timeoutMs for test '" + testName + "' in suite '"
-                    + suiteClass.getName() + "': " + testAnnotation.timeoutMs() + " (must be -1, 0, or > 0)");
-        }
-        if (testAnnotation.delayMs() < 0) {
-            throw new IllegalArgumentException("Invalid delayMs for test '" + testName + "' in suite '"
-                    + suiteClass.getName() + "': " + testAnnotation.delayMs() + " (must be >= 0)");
-        }
-        if (testAnnotation.retries() < 0) {
-            throw new IllegalArgumentException("Invalid retries for test '" + testName + "' in suite '"
-                    + suiteClass.getName() + "': " + testAnnotation.retries() + " (must be >= 0)");
-        }
-    }
-
-    private void validateLifecycleMethods(Class<?> suiteClass) {
-        validateLifecycleMethods(suiteClass, BeforeAll.class, "@BeforeAll");
-        validateLifecycleMethods(suiteClass, BeforeEach.class, "@BeforeEach");
-        validateLifecycleMethods(suiteClass, AfterEach.class, "@AfterEach");
-        validateLifecycleMethods(suiteClass, AfterAll.class, "@AfterAll");
-    }
-
-    private void validateLifecycleMethods(
-            Class<?> suiteClass, Class<? extends java.lang.annotation.Annotation> annotationType, String label) {
-        java.util.Arrays.stream(suiteClass.getDeclaredMethods())
-                .filter(method -> method.isAnnotationPresent(annotationType))
-                .forEach(method -> validateAnnotatedMethodShape(suiteClass, method, label));
-    }
-
-    private void validateAnnotatedMethodShape(Class<?> suiteClass, Method method, String annotationLabel) {
-        if (!Modifier.isPublic(method.getModifiers())) {
-            throw new IllegalArgumentException(annotationLabel + " method '" + method.getName() + "' in suite '"
-                    + suiteClass.getName() + "' must be public");
-        }
-        if (Modifier.isStatic(method.getModifiers())) {
-            throw new IllegalArgumentException(annotationLabel + " method '" + method.getName() + "' in suite '"
-                    + suiteClass.getName() + "' must not be static");
-        }
-        if (method.getParameterCount() != 0) {
-            throw new IllegalArgumentException(annotationLabel + " method '" + method.getName() + "' in suite '"
-                    + suiteClass.getName() + "' must not declare parameters");
-        }
-    }
 }

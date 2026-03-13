@@ -6,6 +6,13 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-03-10
+
+### Changed
+- License changed from MIT to Apache-2.0
+- Published POM license metadata updated to Apache License 2.0
+- Published SCM/project URLs updated from `kompilator-no/test-framework` to `kompilator-no/situs`
+
 ## [3.0.0] - 2026-03-10
 
 ### Breaking

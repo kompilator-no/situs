@@ -54,6 +54,16 @@ public @interface Test {
     long timeoutMs() default 0;
 
     /**
+     * Maximum allowed execution time expressed as an ISO-8601 {@link java.time.Duration} string.
+     *
+     * <p>Examples: {@code "PT30S"}, {@code "PT5M"}, {@code "PT1H"}.
+     * Leave blank to use {@link #timeoutMs()} instead.
+     *
+     * <p>This attribute is mutually exclusive with {@link #timeoutMs()}.
+     */
+    String timeout() default "";
+
+    /**
      * Milliseconds to wait before starting this test.
      * Useful for staggering tests or waiting for an external system to become ready.
      * {@code 0} (default) means start immediately.

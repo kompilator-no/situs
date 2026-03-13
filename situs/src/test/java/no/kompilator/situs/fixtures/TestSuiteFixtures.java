@@ -4,8 +4,15 @@ import no.kompilator.situs.annotations.AfterAll;
 import no.kompilator.situs.annotations.AfterEach;
 import no.kompilator.situs.annotations.BeforeAll;
 import no.kompilator.situs.annotations.BeforeEach;
+import no.kompilator.situs.annotations.CsvSource;
+import no.kompilator.situs.annotations.EnumSource;
+import no.kompilator.situs.annotations.MethodSource;
+import no.kompilator.situs.annotations.NullAndEmptySource;
+import no.kompilator.situs.annotations.ParameterizedTest;
 import no.kompilator.situs.annotations.Test;
 import no.kompilator.situs.annotations.TestSuite;
+import no.kompilator.situs.annotations.ValueSource;
+import no.kompilator.situs.params.Arguments;
 
 import java.util.List;
 
@@ -152,6 +159,22 @@ public final class TestSuiteFixtures {
     public static class TimeoutNotExceedsSuite {
         @Test(name = "fastTest", timeoutMs = 5_000)
         public void fastTest() { /* instant */ }
+    }
+
+    @TestSuite(name = "Duration Timeout Suite", description = "Uses ISO-8601 duration timeout")
+    public static class DurationTimeoutSuite {
+        @Test(name = "durationFastTest", timeout = "PT0.5S")
+        public void durationFastTest() throws InterruptedException {
+            Thread.sleep(50);
+        }
+    }
+
+    @TestSuite(name = "Duration Timeout Exceeds Suite", description = "Duration timeout is enforced")
+    public static class DurationTimeoutExceedsSuite {
+        @Test(name = "durationSlowTest", timeout = "PT0.1S")
+        public void durationSlowTest() throws InterruptedException {
+            Thread.sleep(5_000);
+        }
     }
 
     /** No timeout set — sleeps 200 ms and must pass. Uses timeoutMs=-1 to explicitly disable. */
@@ -315,6 +338,18 @@ public final class TestSuiteFixtures {
         public void badTimeout() {}
     }
 
+    @TestSuite(name = "Invalid Duration Timeout Suite", description = "Used to verify duration timeout validation")
+    public static class InvalidDurationTimeoutSuite {
+        @Test(name = "badDuration", timeout = "not-a-duration")
+        public void badDuration() {}
+    }
+
+    @TestSuite(name = "Conflicting Timeout Suite", description = "Used to verify timeout conflict validation")
+    public static class ConflictingTimeoutSuite {
+        @Test(name = "bothTimeouts", timeoutMs = 10, timeout = "PT1S")
+        public void bothTimeouts() {}
+    }
+
     @TestSuite(name = "Invalid Delay Suite", description = "Used to verify delay validation")
     public static class InvalidDelaySuite {
         @Test(name = "badDelay", delayMs = -1)
@@ -331,6 +366,104 @@ public final class TestSuiteFixtures {
     public static class ParameterizedTestSuite {
         @Test(name = "badTest")
         public void badTest(String input) {}
+    }
+
+    @TestSuite(name = "Parameterized Value Suite", description = "Single-argument parameterized tests")
+    public static class ParameterizedValueSuite {
+        public static final List<String> OBSERVED = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @ParameterizedTest(name = "value[{index}]={0}")
+        @ValueSource(strings = {"alpha", "beta", "gamma"})
+        public void receivesStringValues(String value) {
+            OBSERVED.add(value);
+        }
+    }
+
+    @TestSuite(name = "Parameterized Null And Empty Suite", description = "Null and empty string inputs")
+    public static class ParameterizedNullAndEmptySuite {
+        public static final List<String> OBSERVED = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @ParameterizedTest(name = "blank[{index}]={0}")
+        @NullAndEmptySource
+        @ValueSource(strings = {" ", "\t"})
+        public void receivesBlankInputs(String value) {
+            OBSERVED.add(value == null ? "<null>" : value);
+        }
+    }
+
+    @TestSuite(name = "Parameterized Csv Suite", description = "Multi-argument parameterized tests")
+    public static class ParameterizedCsvSuite {
+        public static final List<Integer> SUMS = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @ParameterizedTest(name = "{0}+{1}={2}")
+        @CsvSource({"1,2,3", "4,5,9"})
+        public void addsPairs(int left, int right, int expected) {
+            SUMS.add(left + right);
+            if (left + right != expected) {
+                throw new AssertionError("Wrong sum");
+            }
+        }
+    }
+
+    @TestSuite(name = "Parameterized Method Source Suite", description = "Method source argument provider")
+    public static class ParameterizedMethodSourceSuite {
+        public static final List<String> OBSERVED = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @ParameterizedTest(name = "{0}-{1}")
+        @MethodSource("coordinates")
+        public void acceptsMethodSource(String label, int value) {
+            OBSERVED.add(label + ":" + value);
+        }
+
+        public static java.util.stream.Stream<Arguments> coordinates() {
+            return java.util.stream.Stream.of(
+                    Arguments.of("x", 1),
+                    Arguments.of("y", 2));
+        }
+    }
+
+    @TestSuite(name = "Parameterized Enum Suite", description = "Enum source support")
+    public static class ParameterizedEnumSuite {
+        public static final List<String> OBSERVED = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        enum Flavor { VANILLA, CHOCOLATE, STRAWBERRY }
+
+        @ParameterizedTest(name = "{0}")
+        @EnumSource(value = Flavor.class, names = {"STRAWBERRY"}, mode = EnumSource.Mode.EXCLUDE)
+        public void acceptsEnumValues(Flavor flavor) {
+            OBSERVED.add(flavor.name());
+        }
+    }
+
+    @TestSuite(name = "Parameterized Invalid Value Source Suite", description = "Invalid value source setup")
+    public static class ParameterizedInvalidValueSourceSuite {
+        @ParameterizedTest(name = "bad")
+        @ValueSource(strings = {"a"}, ints = {1})
+        public void bad(String value) {}
+    }
+
+    @TestSuite(name = "Parameterized Missing Source Suite", description = "Missing source on parameterized test")
+    public static class ParameterizedMissingSourceSuite {
+        @ParameterizedTest(name = "bad")
+        public void bad(String value) {}
+    }
+
+    @TestSuite(name = "Parameterized Primitive Null Suite", description = "Null source with primitive parameter")
+    public static class ParameterizedPrimitiveNullSuite {
+        @ParameterizedTest(name = "bad")
+        @NullAndEmptySource
+        public void bad(int value) {}
+    }
+
+    @TestSuite(name = "Parameterized Duration Timeout Suite", description = "Duration timeout on parameterized test")
+    public static class ParameterizedDurationTimeoutSuite {
+        @ParameterizedTest(name = "duration[{index}]={0}", timeout = "PT0.2S")
+        @ValueSource(strings = {"alpha", "beta"})
+        public void durationValues(String value) {
+            if (value.isBlank()) {
+                throw new AssertionError("unexpected blank");
+            }
+        }
     }
 
     @TestSuite(name = "Private Test Suite", description = "Used to verify test visibility validation")

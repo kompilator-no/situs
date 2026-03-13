@@ -1,6 +1,7 @@
 package no.kompilator.situs.domain;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * Immutable descriptor for a single test case discovered during suite scanning.
@@ -22,6 +23,7 @@ public class TestCaseDefinition {
     private final long timeoutMs;
     private final long delayMs;
     private final int retries;
+    private final Object[] arguments;
 
     /**
      * Creates a new test case descriptor.
@@ -36,12 +38,30 @@ public class TestCaseDefinition {
      */
     public TestCaseDefinition(String name, String description, Method method,
                               long timeoutMs, long delayMs, int retries) {
+        this(name, description, method, timeoutMs, delayMs, retries, new Object[0]);
+    }
+
+    /**
+     * Creates a new test case descriptor.
+     *
+     * @param name        display name for this concrete invocation
+     * @param description optional human-readable description of what the test verifies
+     * @param method      the reflected method to invoke when the test runs
+     * @param timeoutMs   maximum execution time in ms; {@code 0} = use framework default,
+     *                    {@code -1} = no timeout
+     * @param delayMs     milliseconds to wait before starting this test; {@code 0} = no delay
+     * @param retries     number of additional attempts after an initial failure; {@code 0} = no retries
+     * @param arguments   invocation arguments for parameterized tests; empty for regular tests
+     */
+    public TestCaseDefinition(String name, String description, Method method,
+                              long timeoutMs, long delayMs, int retries, Object[] arguments) {
         this.name = name;
         this.description = description;
         this.method = method;
         this.timeoutMs = timeoutMs;
         this.delayMs = delayMs;
         this.retries = retries;
+        this.arguments = arguments == null ? new Object[0] : Arrays.copyOf(arguments, arguments.length);
     }
 
     /** @return the display name of this test case */
@@ -75,4 +95,7 @@ public class TestCaseDefinition {
      * @return {@code 0} for no retries, or a positive number of additional attempts
      */
     public int getRetries() { return retries; }
+
+    /** @return the invocation arguments for this test case; empty for regular tests */
+    public Object[] getArguments() { return Arrays.copyOf(arguments, arguments.length); }
 }

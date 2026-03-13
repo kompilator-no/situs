@@ -6,6 +6,7 @@ import no.kompilator.situs.annotations.BeforeAll;
 import no.kompilator.situs.annotations.BeforeEach;
 import no.kompilator.situs.annotations.Test;
 import no.kompilator.situs.domain.TestCaseExecutionResult;
+import no.kompilator.situs.domain.TestCaseDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +61,7 @@ public class TestRunner {
     public static final long DEFAULT_TIMEOUT_MS = 10_000;
 
     private final InstanceFactory instanceFactory;
+    private final TestDefinitionResolver testDefinitionResolver = new TestDefinitionResolver();
 
     /**
      * Creates a {@code TestRunner} that instantiates suite classes via reflection
@@ -113,10 +115,10 @@ public class TestRunner {
         List<Method> beforeEachMethods = findAnnotatedMethods(testClass, BeforeEach.class);
         List<Method> afterEachMethods  = findAnnotatedMethods(testClass, AfterEach.class);
         List<Method> afterAllMethods   = findAnnotatedMethods(testClass, AfterAll.class);
-        List<Method> testMethods       = findAnnotatedMethods(testClass, Test.class);
+        List<TestCaseDefinition> testCases = testDefinitionResolver.resolveTestCases(testClass);
 
-        Method selectedMethod = testMethods.stream()
-                .filter(method -> resolveTestName(method).equals(testName))
+        TestCaseDefinition selectedTest = testCases.stream()
+                .filter(testCase -> testCase.getName().equals(testName))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Test not found: " + testName));
 
@@ -126,7 +128,7 @@ public class TestRunner {
         try {
             ExecutorService executor = Executors.newSingleThreadExecutor();
             try {
-                return executeTestMethod(testClass, selectedMethod, beforeEachMethods, afterEachMethods, executor);
+                return executeTestCase(testClass, selectedTest, beforeEachMethods, afterEachMethods, executor);
             } finally {
                 executor.shutdownNow();
             }
@@ -174,7 +176,7 @@ public class TestRunner {
         List<Method> beforeEachMethods = findAnnotatedMethods(testClass, BeforeEach.class);
         List<Method> afterEachMethods  = findAnnotatedMethods(testClass, AfterEach.class);
         List<Method> afterAllMethods   = findAnnotatedMethods(testClass, AfterAll.class);
-        List<Method> testMethods       = findAnnotatedMethods(testClass, Test.class);
+        List<TestCaseDefinition> testCases = testDefinitionResolver.resolveTestCases(testClass);
 
         // @BeforeAll — invoked once on a shared instance before all tests
         Object suiteInstance = instanceFactory.createInstance(testClass);
@@ -182,9 +184,9 @@ public class TestRunner {
 
         List<TestCaseExecutionResult> results;
         if (parallel) {
-            results = runParallel(testClass, testMethods, beforeEachMethods, afterEachMethods, resultConsumer);
+            results = runParallel(testClass, testCases, beforeEachMethods, afterEachMethods, resultConsumer);
         } else {
-            results = runSequential(testClass, testMethods, beforeEachMethods, afterEachMethods, resultConsumer);
+            results = runSequential(testClass, testCases, beforeEachMethods, afterEachMethods, resultConsumer);
         }
 
         // @AfterAll — invoked once on the shared instance after all tests
@@ -209,14 +211,14 @@ public class TestRunner {
      * @param afterEachMethods  lifecycle methods to call after each test
      * @return results in the same order as {@code testMethods}
      */
-    private List<TestCaseExecutionResult> runSequential(Class<?> testClass, List<Method> testMethods,
+    private List<TestCaseExecutionResult> runSequential(Class<?> testClass, List<TestCaseDefinition> testCases,
                                                          List<Method> beforeEachMethods,
                                                          List<Method> afterEachMethods,
                                                          Consumer<TestCaseExecutionResult> resultConsumer) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
-            return testMethods.stream()
-                    .map(method -> executeTestMethod(testClass, method, beforeEachMethods, afterEachMethods, executor))
+            return testCases.stream()
+                    .map(testCase -> executeTestCase(testClass, testCase, beforeEachMethods, afterEachMethods, executor))
                     .peek(result -> notifyResultConsumer(resultConsumer, result))
                     .toList();
         } finally {
@@ -246,23 +248,23 @@ public class TestRunner {
      * @param afterEachMethods  lifecycle methods to call after each test (on that test's instance)
      * @return results in submission order
      */
-    private List<TestCaseExecutionResult> runParallel(Class<?> testClass, List<Method> testMethods,
+    private List<TestCaseExecutionResult> runParallel(Class<?> testClass, List<TestCaseDefinition> testCases,
                                                        List<Method> beforeEachMethods,
                                                        List<Method> afterEachMethods,
                                                        Consumer<TestCaseExecutionResult> resultConsumer) {
-        if (testMethods.isEmpty()) {
+        if (testCases.isEmpty()) {
             return List.of();
         }
 
         // Each test gets its own single-thread executor so its own timeout is enforced independently.
-        ExecutorService pool = Executors.newFixedThreadPool(testMethods.size());
-        List<Future<TestCaseExecutionResult>> futures = testMethods.stream()
-                .map(method -> {
+        ExecutorService pool = Executors.newFixedThreadPool(testCases.size());
+        List<Future<TestCaseExecutionResult>> futures = testCases.stream()
+                .map(testCase -> {
                     ExecutorService testExecutor = Executors.newSingleThreadExecutor();
                     return pool.submit(() -> {
                         try {
-                            TestCaseExecutionResult result = executeTestMethod(
-                                    testClass, method, beforeEachMethods, afterEachMethods, testExecutor);
+                            TestCaseExecutionResult result = executeTestCase(
+                                    testClass, testCase, beforeEachMethods, afterEachMethods, testExecutor);
                             notifyResultConsumer(resultConsumer, result);
                             return result;
                         } finally {
@@ -301,22 +303,21 @@ public class TestRunner {
      * @param executor          the executor to submit the test body to
      * @return the final {@link TestCaseExecutionResult} (pass on first success, last failure otherwise)
      */
-    private TestCaseExecutionResult executeTestMethod(Class<?> testClass, Method method,
+    private TestCaseExecutionResult executeTestCase(Class<?> testClass, TestCaseDefinition testCase,
                                                       List<Method> beforeEachMethods,
                                                       List<Method> afterEachMethods,
                                                       ExecutorService executor) {
-        Test annotation = method.getAnnotation(Test.class);
-        int maxRetries = Math.max(0, annotation.retries());
+        int maxRetries = Math.max(0, testCase.getRetries());
         long totalStart = System.currentTimeMillis();
 
         TestCaseExecutionResult lastResult = null;
         for (int attempt = 1; attempt <= maxRetries + 1; attempt++) {
             if (attempt > 1) {
                 log.info("  Retrying test '{}' (attempt {}/{})",
-                        resolveTestName(method),
+                        testCase.getName(),
                         attempt, maxRetries + 1);
             }
-            lastResult = runAttempt(testClass, method, beforeEachMethods, afterEachMethods,
+            lastResult = runAttempt(testClass, testCase, beforeEachMethods, afterEachMethods,
                     executor, attempt, totalStart);
             if (lastResult.isPassed()) {
                 return lastResult;
@@ -353,20 +354,20 @@ public class TestRunner {
      * @param totalStart        wall-clock start time of the first attempt, for cumulative duration
      * @return the {@link TestCaseExecutionResult} for this attempt
      */
-    private TestCaseExecutionResult runAttempt(Class<?> testClass, Method method,
+    private TestCaseExecutionResult runAttempt(Class<?> testClass, TestCaseDefinition testCase,
                                                List<Method> beforeEachMethods,
                                                List<Method> afterEachMethods,
                                                ExecutorService executor,
                                                int attempt, long totalStart) {
-        Test annotation = method.getAnnotation(Test.class);
-        String testName = resolveTestName(method);
+        Method method = testCase.getMethod();
+        String testName = testCase.getName();
 
-        long configuredTimeout = annotation.timeoutMs();
+        long configuredTimeout = testCase.getTimeoutMs();
         long effectiveTimeout = configuredTimeout == 0 ? DEFAULT_TIMEOUT_MS
                               : configuredTimeout <  0 ? -1
                               : configuredTimeout;
-        long delayMs = annotation.delayMs();
-        int maxRetries = Math.max(0, annotation.retries());
+        long delayMs = testCase.getDelayMs();
+        int maxRetries = Math.max(0, testCase.getRetries());
 
         log.debug("Executing test: {} (attempt: {}/{}, timeout: {}, delay: {}ms)",
                 testName, attempt, maxRetries + 1,
@@ -392,7 +393,7 @@ public class TestRunner {
         Future<?> future = executor.submit(() -> {
             try {
                 method.setAccessible(true);
-                method.invoke(instance);
+                method.invoke(instance, testCase.getArguments());
             } catch (ReflectiveOperationException e) {
                 Throwable cause = e instanceof InvocationTargetException invocationTargetException
                         && invocationTargetException.getCause() != null
@@ -442,11 +443,6 @@ public class TestRunner {
             invokeLifecycleMethods(afterEachMethods, instance, "@AfterEach");
         }
         return result;
-    }
-
-    private String resolveTestName(Method method) {
-        Test annotation = method.getAnnotation(Test.class);
-        return annotation.name().isEmpty() ? method.getName() : annotation.name();
     }
 
     private TestCaseExecutionResult collectFutureResult(Future<TestCaseExecutionResult> future) {

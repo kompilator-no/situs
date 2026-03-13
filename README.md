@@ -39,6 +39,7 @@ Supported packages:
 
 - `no.kompilator.situs.annotations`
 - `no.kompilator.situs.model`
+- `no.kompilator.situs.params`
 - `no.kompilator.situs.plugin`
 - `no.kompilator.situs.service`
 - `no.kompilator.situs.spring`
@@ -78,10 +79,16 @@ public class CalculatorTestSuite {
         assertThat(2 + 3).isEqualTo(5);
     }
 
-    @Test(name = "divisionByZero", timeoutMs = 500, order = 2)
+    @Test(name = "divisionByZero", timeout = "PT0.5S", order = 2)
     public void testDivisionByZero() {
         assertThatThrownBy(() -> 1 / 0)
                 .isInstanceOf(ArithmeticException.class);
+    }
+
+    @ParameterizedTest(name = "addition[{index}] {0}+{1}={2}")
+    @CsvSource({"1,2,3", "2,3,5", "40,2,42"})
+    public void testAdditionCases(int left, int right, int expected) {
+        assertThat(left + right).isEqualTo(expected);
     }
 }
 ```
@@ -139,10 +146,11 @@ curl -X POST http://localhost:8080/api/test-framework/runs/abc-123/cancel
 |---|---|
 | Define a test suite | `@TestSuite` |
 | Define a test method | `@Test` |
+| Define parameterized tests | `@ParameterizedTest` with `@ValueSource`, `@CsvSource`, `@MethodSource`, `@EnumSource` |
 | Setup / teardown | `@BeforeAll`, `@AfterAll`, `@BeforeEach`, `@AfterEach` |
 | Parallel execution | `@TestSuite(parallel = true)` |
 | Deterministic ordering | `order = ...` on `@Test`, `@BeforeAll`, `@BeforeEach`, `@AfterEach`, `@AfterAll` |
-| Timeout per test | `@Test(timeoutMs = 500)` |
+| Timeout per test | `@Test(timeoutMs = 500)` or `@Test(timeout = "PT30S")` |
 | Delay before test | `@Test(delayMs = 300)` |
 | Retry on failure | `@Test(retries = 2)` |
 | Spring DI in suites | Annotate suite with `@Component` |
@@ -230,8 +238,40 @@ class CalculatorTestSuite(private val calculator: Calculator) {
     fun testAddition() {
         assertThat(calculator.add(2, 3)).isEqualTo(5)
     }
+
+    @ParameterizedTest(name = "addition[{index}] {0}+{1}={2}")
+    @CsvSource("1,2,3", "2,3,5")
+    fun additionCases(left: Int, right: Int, expected: Int) {
+        assertThat(calculator.add(left, right)).isEqualTo(expected)
+    }
 }
 ```
+
+---
+
+## Parameterized tests
+
+Supported sources:
+
+- `@ValueSource` for single-argument literals
+- `@CsvSource` for multi-argument rows
+- `@MethodSource` for provider methods returning `Stream`, `Iterable`, `Iterator`, or arrays
+- `@EnumSource` for enum constants
+- `@NullSource`, `@EmptySource`, and `@NullAndEmptySource` for single-argument nullable/empty cases
+
+Example:
+
+```java
+@ParameterizedTest(name = "blank[{index}]={0}")
+@NullAndEmptySource
+@ValueSource(strings = {" ", "\t"})
+public void rejectsBlankNames(String value) {
+    assertThat(value == null || value.isBlank()).isTrue();
+}
+```
+
+`@MethodSource` can emit either raw values for single-parameter tests or `Arguments.of(...)`
+for multi-parameter invocations.
 
 ---
 
@@ -242,11 +282,17 @@ The framework now fails fast during startup/registration when:
 - suite names are duplicated
 - test names are duplicated within a suite
 - `timeoutMs < -1`
+- `timeout` is not a valid ISO-8601 duration
+- both `timeoutMs` and `timeout` are configured on the same test
 - `delayMs < 0`
 - `retries < 0`
 - a `@Test` or lifecycle method is not `public`
 - a `@Test` or lifecycle method is `static`
 - a `@Test` or lifecycle method declares parameters
+- an `@ParameterizedTest` declares zero parameters
+- an `@ParameterizedTest` has no argument source
+- `@ValueSource` configures more than one non-empty literal array
+- `@NullSource` is used with primitive parameters
 
 Ordering is deterministic:
 

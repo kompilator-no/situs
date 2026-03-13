@@ -184,6 +184,23 @@ class TestRunnerTest {
     }
 
     @Test
+    void durationTimeoutPassesWhenTestCompletesWithinLimit() {
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.DurationTimeoutSuite.class);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().isPassed()).isTrue();
+    }
+
+    @Test
+    void durationTimeoutIsRecordedAsFailedWhenExceeded() {
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.DurationTimeoutExceedsSuite.class);
+
+        assertThat(results).hasSize(1);
+        assertThat(results.getFirst().isPassed()).isFalse();
+        assertThat(results.getFirst().getErrorMessage()).contains("100ms");
+    }
+
+    @Test
     void timedOutTestDurationReflectsConfiguredTimeout() {
         List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.TimeoutExceedsSuite.class);
 
@@ -437,6 +454,78 @@ class TestRunnerTest {
         assertThat(result.isPassed()).isTrue();
         assertThat(TestSuiteFixtures.CountingSuite.firstCount.get()).isZero();
         assertThat(TestSuiteFixtures.CountingSuite.secondCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    void parameterizedValueSourceRunsOneInvocationPerResolvedArgument() {
+        TestSuiteFixtures.ParameterizedValueSuite.OBSERVED.clear();
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParameterizedValueSuite.class);
+
+        assertThat(results).hasSize(3);
+        assertThat(results).allMatch(TestCaseExecutionResult::isPassed);
+        assertThat(results).extracting(TestCaseExecutionResult::getName)
+                .containsExactly("value[1]=alpha", "value[2]=beta", "value[3]=gamma");
+        assertThat(TestSuiteFixtures.ParameterizedValueSuite.OBSERVED)
+                .containsExactly("alpha", "beta", "gamma");
+    }
+
+    @Test
+    void parameterizedCsvSourceConvertsArgumentsToTargetTypes() {
+        TestSuiteFixtures.ParameterizedCsvSuite.SUMS.clear();
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParameterizedCsvSuite.class);
+
+        assertThat(results).hasSize(2);
+        assertThat(results).allMatch(TestCaseExecutionResult::isPassed);
+        assertThat(TestSuiteFixtures.ParameterizedCsvSuite.SUMS).containsExactly(3, 9);
+    }
+
+    @Test
+    void parameterizedMethodSourceSupportsMultipleParameters() {
+        TestSuiteFixtures.ParameterizedMethodSourceSuite.OBSERVED.clear();
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParameterizedMethodSourceSuite.class);
+
+        assertThat(results).hasSize(2);
+        assertThat(results).allMatch(TestCaseExecutionResult::isPassed);
+        assertThat(TestSuiteFixtures.ParameterizedMethodSourceSuite.OBSERVED)
+                .containsExactly("x:1", "y:2");
+    }
+
+    @Test
+    void parameterizedNullAndEmptySourceAddsSyntheticInvocations() {
+        TestSuiteFixtures.ParameterizedNullAndEmptySuite.OBSERVED.clear();
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParameterizedNullAndEmptySuite.class);
+
+        assertThat(results).hasSize(4);
+        assertThat(results).allMatch(TestCaseExecutionResult::isPassed);
+        assertThat(TestSuiteFixtures.ParameterizedNullAndEmptySuite.OBSERVED)
+                .containsExactly("<null>", "", " ", "\t");
+    }
+
+    @Test
+    void parameterizedEnumSourceFiltersValues() {
+        TestSuiteFixtures.ParameterizedEnumSuite.OBSERVED.clear();
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParameterizedEnumSuite.class);
+
+        assertThat(results).hasSize(2);
+        assertThat(results).extracting(TestCaseExecutionResult::getName)
+                .containsExactly("VANILLA", "CHOCOLATE");
+        assertThat(TestSuiteFixtures.ParameterizedEnumSuite.OBSERVED)
+                .containsExactly("VANILLA", "CHOCOLATE");
+    }
+
+    @Test
+    void runSingleTestCanTargetOneParameterizedInvocation() {
+        TestCaseExecutionResult result = runner.runSingleTest(
+                TestSuiteFixtures.ParameterizedValueSuite.class,
+                "value[2]=beta");
+
+        assertThat(result.isPassed()).isTrue();
+        assertThat(result.getName()).isEqualTo("value[2]=beta");
     }
 
     // -------------------------------------------------------------------------

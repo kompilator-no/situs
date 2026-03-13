@@ -175,12 +175,47 @@ class TestSuiteRegistryTest {
     }
 
     @Test
+    void durationTimeoutIsConvertedToMilliseconds() {
+        List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.DurationTimeoutSuite.class));
+
+        assertThat(suites.getFirst().getTestCases().getFirst().getTimeoutMs()).isEqualTo(500);
+    }
+
+    @Test
+    void parameterizedDurationTimeoutIsAppliedToEachInvocation() {
+        List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedDurationTimeoutSuite.class));
+
+        assertThat(suites.getFirst().getTestCases())
+                .extracting(TestCaseDefinition::getTimeoutMs)
+                .containsExactly(200L, 200L);
+    }
+
+    @Test
     void invalidTimeoutValuesFailFast() {
         assertThatThrownBy(() -> registry.getAllSuites(Set.of(
                 no.kompilator.situs.fixtures.TestSuiteFixtures.InvalidTimeoutSuite.class)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid timeoutMs")
                 .hasMessageContaining("badTimeout");
+    }
+
+    @Test
+    void invalidDurationTimeoutValuesFailFast() {
+        assertThatThrownBy(() -> registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.InvalidDurationTimeoutSuite.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Invalid timeout")
+                .hasMessageContaining("badDuration");
+    }
+
+    @Test
+    void timeoutMsAndDurationCannotBeCombined() {
+        assertThatThrownBy(() -> registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ConflictingTimeoutSuite.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("cannot declare both timeoutMs and timeout");
     }
 
     @Test
@@ -208,6 +243,54 @@ class TestSuiteRegistryTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("@Test method")
                 .hasMessageContaining("must not declare parameters");
+    }
+
+    @Test
+    void parameterizedTestsExpandIntoMultipleLogicalTestCases() {
+        List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedValueSuite.class));
+
+        assertThat(suites).hasSize(1);
+        assertThat(suites.getFirst().getTestCases())
+                .extracting(TestCaseDefinition::getName)
+                .containsExactly("value[1]=alpha", "value[2]=beta", "value[3]=gamma");
+    }
+
+    @Test
+    void parameterizedTestsPreserveInvocationArguments() {
+        List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedCsvSuite.class));
+
+        assertThat(suites.getFirst().getTestCases())
+                .extracting(TestCaseDefinition::getArguments)
+                .hasSize(2);
+        assertThat(suites.getFirst().getTestCases().getFirst().getArguments())
+                .containsExactly(1, 2, 3);
+    }
+
+    @Test
+    void parameterizedTestsWithoutSourceFailFast() {
+        assertThatThrownBy(() -> registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedMissingSourceSuite.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must declare at least one argument source");
+    }
+
+    @Test
+    void valueSourceRequiresExactlyOneConfiguredAttribute() {
+        assertThatThrownBy(() -> registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedInvalidValueSourceSuite.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("@ValueSource")
+                .hasMessageContaining("exactly one non-empty attribute");
+    }
+
+    @Test
+    void nullSourceRejectsPrimitiveParameters() {
+        assertThatThrownBy(() -> registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedPrimitiveNullSuite.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Null arguments cannot be used with primitive parameter");
     }
 
     @Test

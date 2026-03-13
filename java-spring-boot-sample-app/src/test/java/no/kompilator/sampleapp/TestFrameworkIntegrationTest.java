@@ -65,10 +65,11 @@ class TestFrameworkIntegrationTest {
     }
 
     @Test
-    void getSuitesReturnsAllThreeSuites() throws Exception {
+    void getSuitesReturnsAllFourSuites() throws Exception {
         mockMvc.perform(get("/api/test-framework/suites"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.name == 'CalculatorTestSuite')]").exists())
+                .andExpect(jsonPath("$[?(@.name == 'ParameterizedCalculatorTestSuite')]").exists())
                 .andExpect(jsonPath("$[?(@.name == 'LongRunningTestSuite')]").exists())
                 .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')]").exists());
     }
@@ -89,6 +90,18 @@ class TestFrameworkIntegrationTest {
                 .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')].tests[?(@.name == 'flakyExternalCheck')]").exists())
                 .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')].tests[?(@.name == 'alwaysFailingCheck')]").exists())
                 .andExpect(jsonPath("$[?(@.name == 'RetryTestSuite')].tests[?(@.name == 'stableCheck')]").exists());
+    }
+
+    @Test
+    void parameterizedCalculatorSuiteExpandsGeneratedInvocations() throws Exception {
+        mockMvc.perform(get("/api/test-framework/suites"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$[?(@.name == 'ParameterizedCalculatorTestSuite')].tests[?(@.name == 'add[1] 1+2=3')]").exists())
+                .andExpect(jsonPath(
+                        "$[?(@.name == 'ParameterizedCalculatorTestSuite')].tests[?(@.name == 'add[2] 20+22=42')]").exists())
+                .andExpect(jsonPath(
+                        "$[?(@.name == 'ParameterizedCalculatorTestSuite')].tests[?(@.name == 'multiply[2] 7*6=42')]").exists());
     }
 
     @Test
@@ -124,6 +137,24 @@ class TestFrameworkIntegrationTest {
         String runId = objectMapper.readTree(result.getResponse().getContentAsString())
                 .get("runId").asText();
         awaitCompleted(runId);
+    }
+
+    @Test
+    void runParameterizedCalculatorSuiteReturnsPassingInvocations() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/test-framework/suites/ParameterizedCalculatorTestSuite/run"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.runId").isNotEmpty())
+                .andReturn();
+        String runId = objectMapper.readTree(result.getResponse().getContentAsString())
+                .get("runId").asText();
+        awaitCompleted(runId);
+
+        mockMvc.perform(get("/api/test-framework/runs/" + runId + "/status"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.completedCount").value(5))
+                .andExpect(jsonPath("$.passedCount").value(5))
+                .andExpect(jsonPath("$.failedCount").value(0));
     }
 
     @Test

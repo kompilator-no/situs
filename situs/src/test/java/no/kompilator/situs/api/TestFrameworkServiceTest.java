@@ -71,6 +71,20 @@ class TestFrameworkServiceTest {
         assertThat(suite.getDescription()).isEqualTo("Used by service tests");
     }
 
+    @Test
+    void getAllSuitesExpandsParameterizedInvocationsIntoNamedTestCases() {
+        TestFrameworkService parameterizedService =
+                new TestFrameworkService(Set.of(TestSuiteFixtures.ParameterizedValueSuite.class));
+
+        TestSuite suite = parameterizedService.getAllSuites().stream()
+                .filter(s -> s.getName().equals("Parameterized Value Suite"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(suite.getTests()).extracting(TestCase::getName)
+                .containsExactly("value[1]=alpha", "value[2]=beta", "value[3]=gamma");
+    }
+
     // -------------------------------------------------------------------------
     // startSuiteAsync / getRunStatus
     // -------------------------------------------------------------------------
@@ -248,6 +262,23 @@ class TestFrameworkServiceTest {
         assertThat(result.getCompletedResults().get(0).getName()).isEqualTo("secondTest");
         assertThat(TestSuiteFixtures.CountingSuite.firstCount.get()).isZero();
         assertThat(TestSuiteFixtures.CountingSuite.secondCount.get()).isEqualTo(1);
+    }
+
+    @Test
+    void runSingleParameterizedInvocationExecutesOnlyRequestedCase() throws InterruptedException {
+        TestSuiteFixtures.ParameterizedValueSuite.OBSERVED.clear();
+        TestFrameworkService parameterizedService =
+                new TestFrameworkService(Set.of(TestSuiteFixtures.ParameterizedValueSuite.class));
+
+        String runId = parameterizedService.startSingleTestAsync(
+                "Parameterized Value Suite",
+                "value[2]=beta");
+        SuiteRunStatus result = AsyncTestHelper.awaitCompleted(parameterizedService, runId);
+
+        assertThat(result.getStatus()).isEqualTo(SuiteRunStatus.Status.COMPLETED);
+        assertThat(result.getCompletedResults()).hasSize(1);
+        assertThat(result.getCompletedResults().get(0).getName()).isEqualTo("value[2]=beta");
+        assertThat(TestSuiteFixtures.ParameterizedValueSuite.OBSERVED).containsExactly("beta");
     }
 
     @Test
