@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Situs</title>
+    <meta name="description" content="Situs is an annotation-driven system integration testing library for Java and Kotlin.">
+    <style>
+        :root {
+            --bg: #f6f1e8;
+            --bg-strong: #efe4d2;
+            --surface: rgba(255, 252, 247, 0.9);
+            --surface-strong: #fffaf2;
+            --text: #1f1a16;
+            --muted: #5b5148;
+            --border: rgba(82, 63, 44, 0.16);
+            --accent: #b14d21;
+            --accent-deep: #7f2e12;
+            --code-bg: #221d1a;
+            --code-text: #f4e7d7;
+            --shadow: 0 20px 60px rgba(59, 41, 23, 0.12);
+            --radius: 22px;
+            --max: 1180px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top left, rgba(196, 108, 53, 0.16), transparent 34%),
+                radial-gradient(circle at top right, rgba(124, 52, 20, 0.12), transparent 28%),
+                linear-gradient(180deg, #f9f4eb 0%, #f2eadf 55%, #efe7db 100%);
+            line-height: 1.65;
+        }
+
+        a {
+            color: var(--accent-deep);
+        }
+
+        code,
+        pre,
+        kbd {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+
+        .shell {
+            max-width: var(--max);
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: 44px 44px 36px;
+            margin-top: 16px;
+            background:
+                linear-gradient(135deg, rgba(255, 249, 240, 0.96), rgba(248, 238, 223, 0.92)),
+                linear-gradient(120deg, rgba(177, 77, 33, 0.08), transparent 60%);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            right: -120px;
+            top: -120px;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(177, 77, 33, 0.22), rgba(177, 77, 33, 0));
+            pointer-events: none;
+        }
+
+        .eyebrow {
+            margin: 0 0 12px;
+            color: var(--accent-deep);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-weight: 700;
+            line-height: 1.1;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: clamp(2.8rem, 6vw, 5.4rem);
+            letter-spacing: -0.04em;
+        }
+
+        h2 {
+            font-size: clamp(1.8rem, 3vw, 2.5rem);
+            margin-bottom: 14px;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .hero-grid {
+            display: grid;
+            gap: 28px;
+            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+            align-items: end;
+        }
+
+        .lead {
+            margin: 18px 0 0;
+            max-width: 760px;
+            font-size: 1.15rem;
+            color: var(--muted);
+        }
+
+        .hero-card {
+            padding: 22px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(126, 83, 41, 0.14);
+            backdrop-filter: blur(8px);
+        }
+
+        .hero-card p {
+            margin: 0 0 14px;
+            color: var(--muted);
+        }
+
+        .pill-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .pill {
+            padding: 9px 14px;
+            border-radius: 999px;
+            background: rgba(177, 77, 33, 0.1);
+            border: 1px solid rgba(177, 77, 33, 0.16);
+            color: var(--accent-deep);
+            font-size: 0.95rem;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 28px;
+            margin-top: 28px;
+            align-items: start;
+        }
+
+        .toc {
+            position: sticky;
+            top: 20px;
+            padding: 22px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .toc h2 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--accent-deep);
+        }
+
+        .toc ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc li + li {
+            margin-top: 10px;
+        }
+
+        .toc a {
+            text-decoration: none;
+            color: var(--muted);
+        }
+
+        .toc a:hover {
+            color: var(--accent-deep);
+        }
+
+        .content {
+            display: grid;
+            gap: 24px;
+        }
+
+        section {
+            padding: 32px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        p {
+            margin: 0 0 16px;
+        }
+
+        ul {
+            margin: 0 0 16px 20px;
+            padding: 0;
+        }
+
+        li + li {
+            margin-top: 8px;
+        }
+
+        .feature-grid,
+        .concept-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            margin-top: 20px;
+        }
+
+        .card {
+            padding: 18px;
+            background: var(--surface-strong);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+        }
+
+        .card strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--accent-deep);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 18px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 640px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--accent-deep);
+            font-size: 0.92rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        pre {
+            margin: 18px 0;
+            padding: 18px 20px;
+            overflow-x: auto;
+            border-radius: 18px;
+            background: var(--code-bg);
+            color: var(--code-text);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        }
+
+        .note {
+            padding: 16px 18px;
+            margin-top: 18px;
+            border-left: 4px solid var(--accent);
+            border-radius: 14px;
+            background: rgba(177, 77, 33, 0.08);
+        }
+
+        .footer {
+            color: var(--muted);
+            text-align: center;
+            padding: 18px 0 40px;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 920px) {
+            .hero-grid,
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .toc {
+                position: static;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .shell {
+                padding: 16px;
+            }
+
+            .hero,
+            section {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 2.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <header class="hero">
+        <div class="hero-grid">
+            <div>
+                <p class="eyebrow">Runtime System Integration Testing</p>
+                <h1>Situs</h1>
+                <p class="lead">
+                    An annotation-driven testing library for Java and Kotlin that lets you run
+                    real system integration suites in production-like environments through code or HTTP.
+                </p>
+                <div class="pill-row">
+                    <span class="pill">Spring DI</span>
+                    <span class="pill">Parameterized Tests</span>
+                    <span class="pill">Duration Timeouts</span>
+                    <span class="pill">Parallel Execution</span>
+                    <span class="pill">Structured Reports</span>
+                </div>
+            </div>
+            <aside class="hero-card">
+                <p>
+                    Situs is built for runtime verification of real infrastructure and application wiring,
+                    not just build-time unit tests.
+                </p>
+                <p>
+                    Define suites as plain classes, expose them over HTTP, and export results as
+                    JUnit XML, Open Test Reporting XML, or JSON.
+                </p>
+            </aside>
+        </div>
+    </header>
+
+    <div class="layout">
+        <nav class="toc" aria-label="Page">
+            <h2>Contents</h2>
+            <ul>
+                <li><a href="#why">Why Situs</a></li>
+                <li><a href="#concepts">Core Concepts</a></li>
+                <li><a href="#quick-start">Quick Start</a></li>
+                <li><a href="#parameterized">Parameterized Tests</a></li>
+                <li><a href="#timeouts">Timeouts</a></li>
+                <li><a href="#execution">Execution Model</a></li>
+                <li><a href="#http-api">HTTP API</a></li>
+                <li><a href="#reporting">Reporting</a></li>
+                <li><a href="#kotlin">Kotlin</a></li>
+                <li><a href="#api-surface">Public API</a></li>
+                <li><a href="#samples">Sample Apps</a></li>
+            </ul>
+        </nav>
+
+        <main class="content">
+            <section id="why">
+                <h2>Why Situs</h2>
+                <p>
+                    Situs is designed for runtime system integration testing. It is aimed at scenarios where
+                    you want to verify real dependencies, real network paths, and real application state while
+                    the system is actually running.
+                </p>
+                <div class="feature-grid">
+                    <div class="card">
+                        <strong>Runtime execution</strong>
+                        Trigger suites on demand instead of only during a build.
+                    </div>
+                    <div class="card">
+                        <strong>Spring integration</strong>
+                        Use constructor injection and auto-discovered suites.
+                    </div>
+                    <div class="card">
+                        <strong>Operational controls</strong>
+                        Configure retries, delays, timeouts, and parallelism per test.
+                    </div>
+                    <div class="card">
+                        <strong>Machine-readable output</strong>
+                        Publish structured reports and poll results over HTTP.
+                    </div>
+                </div>
+            </section>
+
+            <section id="concepts">
+                <h2>Core Concepts</h2>
+                <div class="concept-grid">
+                    <div class="card">
+                        <strong><code>@TestSuite</code></strong>
+                        Marks a class as a discoverable runtime test suite.
+                    </div>
+                    <div class="card">
+                        <strong><code>@Test</code></strong>
+                        Declares a regular runtime test method.
+                    </div>
+                    <div class="card">
+                        <strong><code>@ParameterizedTest</code></strong>
+                        Declares a parameterized test where each argument set becomes a separate invocation.
+                    </div>
+                </div>
+
+<pre><code class="language-java">@TestSuite(name = "PaymentTestSuite", description = "Checks end-to-end payment flows")
+public class PaymentTestSuite {
+}
+</code></pre>
+
+<pre><code class="language-java">@Test(name = "chargeSucceeds", timeout = "PT30S")
+public void chargeSucceeds() {
+    assertThat(paymentService.charge(100)).isTrue();
+}
+</code></pre>
+
+<pre><code class="language-java">@ParameterizedTest(name = "add[{index}] {0}+{1}={2}")
+@CsvSource({"1,2,3", "20,22,42"})
+public void additionCases(int left, int right, int expected) {
+    assertThat(calculator.add(left, right)).isEqualTo(expected);
+}
+</code></pre>
+            </section>
+
+            <section id="quick-start">
+                <h2>Quick Start</h2>
+                <h3>Gradle</h3>
+<pre><code class="language-kotlin">dependencies {
+    implementation("no.kompilator:situs:3.1.0")
+    implementation("no.kompilator:plugins:3.1.0")
+}
+</code></pre>
+
+                <h3>Java Example</h3>
+<pre><code class="language-java">import no.kompilator.situs.annotations.CsvSource;
+import no.kompilator.situs.annotations.ParameterizedTest;
+import no.kompilator.situs.annotations.Test;
+import no.kompilator.situs.annotations.TestSuite;
+import org.springframework.stereotype.Component;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@Component
+@TestSuite(name = "CalculatorTestSuite", description = "Tests for Calculator")
+public class CalculatorTestSuite {
+
+    private final Calculator calculator;
+
+    public CalculatorTestSuite(Calculator calculator) {
+        this.calculator = calculator;
+    }
+
+    @Test(name = "divisionByZero", timeout = "PT0.5S")
+    public void divisionByZero() {
+        assertThat(calculator.divide(20, 4)).isEqualTo(5);
+    }
+
+    @ParameterizedTest(name = "add[{index}] {0}+{1}={2}")
+    @CsvSource({"1,2,3", "2,3,5", "40,2,42"})
+    public void additionCases(int left, int right, int expected) {
+        assertThat(calculator.add(left, right)).isEqualTo(expected);
+    }
+}
+</code></pre>
+
+                <h3>Spring Boot Discovery</h3>
+<pre><code class="language-properties">testframework.scan-packages=com.example.tests
+testframework.full-classpath-scan=false
+testframework.max-stored-runs=200
+testframework.reporting.enabled=true
+testframework.reporting.output-dir=build/test-reports
+testframework.reporting.formats=JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON
+</code></pre>
+                <p>
+                    When Situs is on the Spring Boot classpath, the runtime test API is auto-configured.
+                    In non-Boot Spring applications, use <code>@EnableRuntimeTests</code> for explicit opt-in.
+                </p>
+            </section>
+
+            <section id="parameterized">
+                <h2>Parameterized Tests</h2>
+                <p>
+                    Each resolved argument set becomes a separate logical test case in discovery, reporting,
+                    HTTP responses, and single-test execution.
+                </p>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Source</th>
+                            <th>Purpose</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td><code>@ValueSource</code></td>
+                            <td>Single-argument literal values</td>
+                        </tr>
+                        <tr>
+                            <td><code>@CsvSource</code></td>
+                            <td>Inline multi-argument rows</td>
+                        </tr>
+                        <tr>
+                            <td><code>@MethodSource</code></td>
+                            <td>Provider methods returning streams, iterables, iterators, or arrays</td>
+                        </tr>
+                        <tr>
+                            <td><code>@EnumSource</code></td>
+                            <td>Enum constants</td>
+                        </tr>
+                        <tr>
+                            <td><code>@NullSource</code>, <code>@EmptySource</code>, <code>@NullAndEmptySource</code></td>
+                            <td>Nullable and empty-value cases for single-argument tests</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p>The <code>name</code> template on <code>@ParameterizedTest</code> supports:</p>
+                <ul>
+                    <li><code>{index}</code> for the 1-based invocation index</li>
+                    <li><code>{arguments}</code> for the full rendered argument list</li>
+                    <li><code>{0}</code>, <code>{1}</code>, ... for individual argument values</li>
+                </ul>
+
+<pre><code class="language-java">@ParameterizedTest(name = "blank[{index}]={0}")
+@NullAndEmptySource
+@ValueSource(strings = {" ", "\t"})
+public void rejectsBlankInput(String value) {
+    assertThat(value == null || value.isBlank()).isTrue();
+}
+</code></pre>
+
+                <p>For multi-parameter <code>@MethodSource</code>, emit <code>Arguments.of(...)</code>:</p>
+<pre><code class="language-java">@ParameterizedTest(name = "multiply[{index}] {0}*{1}={2}")
+@MethodSource("cases")
+public void multiplies(int left, int right, int expected) {
+    assertThat(left * right).isEqualTo(expected);
+}
+
+static Stream&lt;Arguments&gt; cases() {
+    return Stream.of(
+            Arguments.of(2, 3, 6),
+            Arguments.of(7, 6, 42));
+}
+</code></pre>
+            </section>
+
+            <section id="timeouts">
+                <h2>Timeout Configuration</h2>
+                <p>Situs supports two timeout styles:</p>
+                <ul>
+                    <li><code>timeoutMs = 500</code></li>
+                    <li><code>timeout = "PT30S"</code></li>
+                </ul>
+
+                <p>
+                    The <code>timeout</code> form uses ISO-8601 <code>java.time.Duration</code> syntax and is useful
+                    for longer waits where milliseconds are awkward to read.
+                </p>
+
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Value</th>
+                            <th>Meaning</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td><code>PT0.5S</code></td>
+                            <td>500 milliseconds</td>
+                        </tr>
+                        <tr>
+                            <td><code>PT30S</code></td>
+                            <td>30 seconds</td>
+                        </tr>
+                        <tr>
+                            <td><code>PT5M</code></td>
+                            <td>5 minutes</td>
+                        </tr>
+                        <tr>
+                            <td><code>PT1H</code></td>
+                            <td>1 hour</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="note">
+                    <strong>Rules:</strong> <code>timeout</code> and <code>timeoutMs</code> are mutually exclusive.
+                    Blank <code>timeout</code> means "not set". <code>timeoutMs = -1</code> disables timeout
+                    enforcement. Invalid duration strings fail fast during suite registration.
+                </div>
+            </section>
+
+            <section id="execution">
+                <h2>Execution Model</h2>
+                <ul>
+                    <li><code>@BeforeAll</code> runs once before the suite</li>
+                    <li><code>@BeforeEach</code> runs before each test or parameterized invocation</li>
+                    <li><code>@AfterEach</code> runs after each test or parameterized invocation</li>
+                    <li><code>@AfterAll</code> runs once after the suite</li>
+                    <li><code>@TestSuite(parallel = true)</code> enables parallel execution</li>
+                    <li>Retries re-run the full per-test lifecycle</li>
+                </ul>
+            </section>
+
+            <section id="http-api">
+                <h2>HTTP API</h2>
+<pre><code class="language-bash"># Health check
+curl http://localhost:8080/api/test-framework/status
+
+# List discovered suites
+curl http://localhost:8080/api/test-framework/suites
+
+# Start a suite
+curl -X POST http://localhost:8080/api/test-framework/suites/CalculatorTestSuite/run
+
+# Run a single generated invocation
+curl -X POST http://localhost:8080/api/test-framework/suites/ParameterizedCalculatorTestSuite/tests/add[1]%201+2=3/run
+
+# Poll run status
+curl http://localhost:8080/api/test-framework/runs/{runId}/status
+
+# Cancel a running run
+curl -X POST http://localhost:8080/api/test-framework/runs/{runId}/cancel
+</code></pre>
+            </section>
+
+            <section id="reporting">
+                <h2>Reporting</h2>
+                <p>With the <code>plugins</code> artifact, Situs can write:</p>
+                <ul>
+                    <li>JUnit XML</li>
+                    <li>Open Test Reporting XML</li>
+                    <li>JSON</li>
+                </ul>
+                <p>
+                    Reports are generated after suite runs and can be consumed by CI pipelines,
+                    dashboards, or custom tooling.
+                </p>
+            </section>
+
+            <section id="kotlin">
+                <h2>Kotlin Support</h2>
+                <p>
+                    Situs works with Kotlin out of the box. Use <code>kotlin("plugin.spring")</code>
+                    so <code>@Component</code> classes are opened for Spring proxying.
+                </p>
+                <p>
+                    For <code>@MethodSource</code>, provider methods can live in a <code>companion object</code>
+                    and be exposed with <code>@JvmStatic</code>.
+                </p>
+            </section>
+
+            <section id="api-surface">
+                <h2>Supported Public API</h2>
+                <p>Build against these packages:</p>
+                <ul>
+                    <li><code>no.kompilator.situs.annotations</code></li>
+                    <li><code>no.kompilator.situs.model</code></li>
+                    <li><code>no.kompilator.situs.params</code></li>
+                    <li><code>no.kompilator.situs.plugin</code></li>
+                    <li><code>no.kompilator.situs.service</code></li>
+                    <li><code>no.kompilator.situs.spring</code></li>
+                    <li><code>no.kompilator.situs.spring.model</code></li>
+                </ul>
+            </section>
+
+            <section id="samples">
+                <h2>Sample Applications</h2>
+                <p>This repository includes two sample applications:</p>
+                <ul>
+                    <li><code>java-spring-boot-sample-app</code></li>
+                    <li><code>kotlin-spring-boot-sample-app</code></li>
+                </ul>
+                <p>
+                    Both demonstrate runtime execution, Spring DI, parameterized tests,
+                    retries, and timeout handling.
+                </p>
+            </section>
+        </main>
+    </div>
+
+    <div class="footer">
+        Static documentation page for GitHub Pages. Publish the <code>docs/</code> directory to serve it directly.
+    </div>
+</div>
+</body>
+</html>
