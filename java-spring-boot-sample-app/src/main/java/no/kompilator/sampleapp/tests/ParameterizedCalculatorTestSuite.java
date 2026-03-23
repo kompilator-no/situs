@@ -1,6 +1,6 @@
 package no.kompilator.sampleapp.tests;
 
-import no.kompilator.situs.annotations.CsvSource;
+import no.kompilator.situs.annotations.CsvFileSource;
 import no.kompilator.situs.annotations.MethodSource;
 import no.kompilator.situs.annotations.ParameterizedTest;
 import no.kompilator.situs.annotations.TestSuite;
@@ -22,7 +22,7 @@ public class ParameterizedCalculatorTestSuite {
     }
 
     @ParameterizedTest(name = "add[{index}] {0}+{1}={2}")
-    @CsvSource({"1,2,3", "20,22,42", "-5,8,3"})
+    @CsvFileSource(resources = "csv/parameterized-addition-cases.csv", numLinesToSkip = 1)
     public void additionCases(int left, int right, int expected) {
         assertThat(calculator.add(left, right)).isEqualTo(expected);
     }
