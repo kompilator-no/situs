@@ -521,6 +521,10 @@ testframework.reporting.formats=JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON
                             <td>Inline multi-argument rows</td>
                         </tr>
                         <tr>
+                            <td><code>@CsvFileSource</code></td>
+                            <td>Classpath CSV resources with optional header skipping</td>
+                        </tr>
+                        <tr>
                             <td><code>@MethodSource</code></td>
                             <td>Provider methods returning streams, iterables, iterators, or arrays</td>
                         </tr>
@@ -562,6 +566,14 @@ static Stream&lt;Arguments&gt; cases() {
     return Stream.of(
             Arguments.of(2, 3, 6),
             Arguments.of(7, 6, 42));
+}
+</code></pre>
+
+                <p>For classpath-backed CSV data, use <code>@CsvFileSource</code>:</p>
+<pre><code class="language-java">@ParameterizedTest(name = "add[{index}] {0}+{1}={2}")
+@CsvFileSource(resources = "csv/addition-cases.csv", numLinesToSkip = 1)
+public void additionCases(int left, int right, int expected) {
+    assertThat(left + right).isEqualTo(expected);
 }
 </code></pre>
             </section>

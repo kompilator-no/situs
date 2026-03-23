@@ -146,7 +146,7 @@ curl -X POST http://localhost:8080/api/test-framework/runs/abc-123/cancel
 |---|---|
 | Define a test suite | `@TestSuite` |
 | Define a test method | `@Test` |
-| Define parameterized tests | `@ParameterizedTest` with `@ValueSource`, `@CsvSource`, `@MethodSource`, `@EnumSource` |
+| Define parameterized tests | `@ParameterizedTest` with `@ValueSource`, `@CsvSource`, `@CsvFileSource`, `@MethodSource`, `@EnumSource` |
 | Setup / teardown | `@BeforeAll`, `@AfterAll`, `@BeforeEach`, `@AfterEach` |
 | Parallel execution | `@TestSuite(parallel = true)` |
 | Deterministic ordering | `order = ...` on `@Test`, `@BeforeAll`, `@BeforeEach`, `@AfterEach`, `@AfterAll` |
@@ -255,6 +255,7 @@ Supported sources:
 
 - `@ValueSource` for single-argument literals
 - `@CsvSource` for multi-argument rows
+- `@CsvFileSource` for classpath CSV resources
 - `@MethodSource` for provider methods returning `Stream`, `Iterable`, `Iterator`, or arrays
 - `@EnumSource` for enum constants
 - `@NullSource`, `@EmptySource`, and `@NullAndEmptySource` for single-argument nullable/empty cases
@@ -292,6 +293,16 @@ static Stream<Arguments> cases() {
     return Stream.of(
             Arguments.of(2, 3, 6),
             Arguments.of(7, 6, 42));
+}
+```
+
+`@CsvFileSource` reads rows from classpath resources:
+
+```java
+@ParameterizedTest(name = "add[{index}] {0}+{1}={2}")
+@CsvFileSource(resources = "csv/addition-cases.csv", numLinesToSkip = 1)
+public void additionCases(int left, int right, int expected) {
+    assertThat(left + right).isEqualTo(expected);
 }
 ```
 

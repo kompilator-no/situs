@@ -2,6 +2,7 @@ package no.kompilator.situs.fixtures;
 
 import no.kompilator.situs.annotations.AfterAll;
 import no.kompilator.situs.annotations.AfterEach;
+import no.kompilator.situs.annotations.CsvFileSource;
 import no.kompilator.situs.annotations.BeforeAll;
 import no.kompilator.situs.annotations.BeforeEach;
 import no.kompilator.situs.annotations.CsvSource;
@@ -405,6 +406,20 @@ public final class TestSuiteFixtures {
         }
     }
 
+    @TestSuite(name = "Parameterized Csv File Suite", description = "CSV file source parameterized tests")
+    public static class ParameterizedCsvFileSuite {
+        public static final List<Integer> SUMS = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        @ParameterizedTest(name = "csv-file[{index}] {0}+{1}={2}")
+        @CsvFileSource(resources = "csv/addition-cases.csv", numLinesToSkip = 1)
+        public void addsPairsFromFile(int left, int right, int expected) {
+            SUMS.add(left + right);
+            if (left + right != expected) {
+                throw new AssertionError("Wrong sum");
+            }
+        }
+    }
+
     @TestSuite(name = "Parameterized Method Source Suite", description = "Method source argument provider")
     public static class ParameterizedMethodSourceSuite {
         public static final List<String> OBSERVED = new java.util.concurrent.CopyOnWriteArrayList<>();
@@ -440,6 +455,20 @@ public final class TestSuiteFixtures {
         @ParameterizedTest(name = "bad")
         @ValueSource(strings = {"a"}, ints = {1})
         public void bad(String value) {}
+    }
+
+    @TestSuite(name = "Parameterized Missing Csv File Suite", description = "Missing CSV file resource")
+    public static class ParameterizedMissingCsvFileSuite {
+        @ParameterizedTest(name = "bad")
+        @CsvFileSource(resources = "csv/does-not-exist.csv")
+        public void bad(String value) {}
+    }
+
+    @TestSuite(name = "Parameterized Invalid Csv File Suite", description = "Invalid CSV file row shape")
+    public static class ParameterizedInvalidCsvFileSuite {
+        @ParameterizedTest(name = "bad")
+        @CsvFileSource(resources = "csv/invalid-cases.csv", numLinesToSkip = 1)
+        public void bad(int left, int right, int expected) {}
     }
 
     @TestSuite(name = "Parameterized Missing Source Suite", description = "Missing source on parameterized test")
