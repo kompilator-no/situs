@@ -72,7 +72,22 @@ class TestFrameworkControllerTest {
     void statusEndpointReturnsOk() throws Exception {
         mockMvc.perform(get("/api/test-framework/status"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("OK"));
+                .andExpect(content().string("OK"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Pragma", "no-cache"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Expires", "0"));
+    }
+
+    @Test
+    void uiEndpointReturnsHtmlControlPanel() throws Exception {
+        mockMvc.perform(get("/api/test-framework/ui"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Situs Control")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/api/test-framework")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Pragma", "no-cache"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Expires", "0"));
     }
 
     // -------------------------------------------------------------------------
@@ -83,6 +98,7 @@ class TestFrameworkControllerTest {
     void getSuitesReturnsAllSuites() throws Exception {
         mockMvc.perform(get("/api/test-framework/suites"))
                 .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
                 .andExpect(jsonPath("$", hasSize(4)))
                 .andExpect(jsonPath("$[?(@.name == 'Controller Suite')]", hasSize(1)))
                 .andExpect(jsonPath("$[?(@.name == 'Slow Suite')]", hasSize(1)))

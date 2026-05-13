@@ -5,7 +5,11 @@ import no.kompilator.situs.model.SuiteRunStatus;
 import no.kompilator.situs.service.AlreadyRunningException;
 import no.kompilator.situs.service.TestFrameworkService;
 import no.kompilator.situs.spring.model.RunSuiteRequest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Spring REST controller that exposes Situs over HTTP.
@@ -69,8 +74,23 @@ public final class TestFrameworkController {
      * @return {@code "OK"} when the application is running
      */
     @GetMapping("/status")
-    public String getStatus() {
-        return "OK";
+    public ResponseEntity<String> getStatus() {
+        return noStore(ResponseEntity.ok())
+                .body("OK");
+    }
+
+    /**
+     * Returns the built-in HTML control panel for running and inspecting tests
+     * inside the current service instance.
+     *
+     * @return the static HTML resource served by the library
+     */
+    @GetMapping(value = "/ui", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<Resource> getUi() {
+        Resource resource = new ClassPathResource("META-INF/situs/test-framework-ui.html");
+        return noStore(ResponseEntity.ok())
+                .contentType(MediaType.TEXT_HTML)
+                .body(resource);
     }
 
     /**
@@ -79,8 +99,9 @@ public final class TestFrameworkController {
      * @return list of {@link TestSuite} descriptors
      */
     @GetMapping("/suites")
-    public List<TestSuite> getSuites() {
-        return testFrameworkService.getAllSuites();
+    public ResponseEntity<List<TestSuite>> getSuites() {
+        return noStore(ResponseEntity.ok())
+                .body(testFrameworkService.getAllSuites());
     }
 
     /**
@@ -129,8 +150,9 @@ public final class TestFrameworkController {
      * @return the live {@link SuiteRunStatus} snapshot
      */
     @GetMapping("/runs/{runId}/status")
-    public SuiteRunStatus getRunStatus(@PathVariable String runId) {
-        return testFrameworkService.getRunStatus(runId);
+    public ResponseEntity<SuiteRunStatus> getRunStatus(@PathVariable String runId) {
+        return noStore(ResponseEntity.ok())
+                .body(testFrameworkService.getRunStatus(runId));
     }
 
     /**
@@ -166,5 +188,11 @@ public final class TestFrameworkController {
     public ResponseEntity<Map<String, String>> handleAlreadyRunning(AlreadyRunningException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", ex.getMessage()));
+    }
+
+    private static ResponseEntity.BodyBuilder noStore(ResponseEntity.BodyBuilder builder) {
+        return builder.cacheControl(CacheControl.noStore().mustRevalidate().sMaxAge(0, TimeUnit.SECONDS))
+                .header("Pragma", "no-cache")
+                .header("Expires", "0");
     }
 }
