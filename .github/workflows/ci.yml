@@ -75,7 +75,7 @@ jobs:
           set -euo pipefail
           sed -i 's/\r//' situs/gradlew
           chmod +x situs/gradlew
-          ./situs/gradlew :situs:build --scan | tee gradle-situs.log
+          ./situs/gradlew --project-dir . :situs:build --scan | tee gradle-situs.log
           SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-situs.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {
@@ -111,7 +111,7 @@ jobs:
           set -euo pipefail
           sed -i 's/\r//' situs/gradlew
           chmod +x situs/gradlew
-          ./situs/gradlew :plugins:build --scan | tee gradle-plugins.log
+          ./situs/gradlew --project-dir . :plugins:build --scan | tee gradle-plugins.log
           SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-plugins.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {
@@ -147,7 +147,7 @@ jobs:
           set -euo pipefail
           sed -i 's/\r//' situs/gradlew
           chmod +x situs/gradlew
-          ./situs/gradlew :java-spring-boot-sample-app:build --scan | tee gradle-java-spring-boot-sample-app.log
+          ./situs/gradlew --project-dir . :java-spring-boot-sample-app:build --scan | tee gradle-java-spring-boot-sample-app.log
           SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-java-spring-boot-sample-app.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {
@@ -183,7 +183,7 @@ jobs:
           set -euo pipefail
           sed -i 's/\r//' situs/gradlew
           chmod +x situs/gradlew
-          ./situs/gradlew :kotlin-spring-boot-sample-app:build --scan | tee gradle-kotlin-spring-boot-sample-app.log
+          ./situs/gradlew --project-dir . :kotlin-spring-boot-sample-app:build --scan | tee gradle-kotlin-spring-boot-sample-app.log
           SCAN_URL="$(grep -o 'https://gradle.com/s/[A-Za-z0-9]*' gradle-kotlin-spring-boot-sample-app.log | tail -n 1 || true)"
           if [ -n "$SCAN_URL" ]; then
             {
