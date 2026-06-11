@@ -269,6 +269,16 @@ class TestSuiteRegistryTest {
     }
 
     @Test
+    void csvFileSourceExpandsClasspathRowsIntoLogicalTestCases() {
+        List<TestSuiteDefinition> suites = registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedCsvFileSuite.class));
+
+        assertThat(suites.getFirst().getTestCases())
+                .extracting(TestCaseDefinition::getName)
+                .containsExactly("csv-file[1] 1+2=3", "csv-file[2] 20+22=42", "csv-file[3] -5+8=3");
+    }
+
+    @Test
     void parameterizedTestsWithoutSourceFailFast() {
         assertThatThrownBy(() -> registry.getAllSuites(Set.of(
                 no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedMissingSourceSuite.class)))
@@ -283,6 +293,23 @@ class TestSuiteRegistryTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("@ValueSource")
                 .hasMessageContaining("exactly one non-empty attribute");
+    }
+
+    @Test
+    void missingCsvFileSourceFailsFast() {
+        assertThatThrownBy(() -> registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedMissingCsvFileSuite.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("was not found on the classpath");
+    }
+
+    @Test
+    void invalidCsvFileRowShapeFailsFast() {
+        assertThatThrownBy(() -> registry.getAllSuites(Set.of(
+                no.kompilator.situs.fixtures.TestSuiteFixtures.ParameterizedInvalidCsvFileSuite.class)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("line 2")
+                .hasMessageContaining("declares 2 values but method expects 3");
     }
 
     @Test

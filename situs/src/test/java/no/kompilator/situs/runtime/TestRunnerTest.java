@@ -482,6 +482,19 @@ class TestRunnerTest {
     }
 
     @Test
+    void parameterizedCsvFileSourceLoadsRowsFromClasspathResource() {
+        TestSuiteFixtures.ParameterizedCsvFileSuite.SUMS.clear();
+
+        List<TestCaseExecutionResult> results = runner.runTests(TestSuiteFixtures.ParameterizedCsvFileSuite.class);
+
+        assertThat(results).hasSize(3);
+        assertThat(results).allMatch(TestCaseExecutionResult::isPassed);
+        assertThat(results).extracting(TestCaseExecutionResult::getName)
+                .containsExactly("csv-file[1] 1+2=3", "csv-file[2] 20+22=42", "csv-file[3] -5+8=3");
+        assertThat(TestSuiteFixtures.ParameterizedCsvFileSuite.SUMS).containsExactly(3, 42, 3);
+    }
+
+    @Test
     void parameterizedMethodSourceSupportsMultipleParameters() {
         TestSuiteFixtures.ParameterizedMethodSourceSuite.OBSERVED.clear();
 

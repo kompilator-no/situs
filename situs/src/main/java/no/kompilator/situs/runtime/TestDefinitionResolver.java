@@ -1,6 +1,7 @@
 package no.kompilator.situs.runtime;
 
 import no.kompilator.situs.annotations.CsvSource;
+import no.kompilator.situs.annotations.CsvFileSource;
 import no.kompilator.situs.annotations.EmptySource;
 import no.kompilator.situs.annotations.EnumSource;
 import no.kompilator.situs.annotations.MethodSource;
@@ -12,12 +13,19 @@ import no.kompilator.situs.annotations.ValueSource;
 import no.kompilator.situs.domain.TestCaseDefinition;
 import no.kompilator.situs.params.Arguments;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -138,6 +146,7 @@ final class TestDefinitionResolver {
         int count = 0;
         count += method.isAnnotationPresent(ValueSource.class) ? 1 : 0;
         count += method.isAnnotationPresent(CsvSource.class) ? 1 : 0;
+        count += method.isAnnotationPresent(CsvFileSource.class) ? 1 : 0;
         count += method.isAnnotationPresent(MethodSource.class) ? 1 : 0;
         count += method.isAnnotationPresent(EnumSource.class) ? 1 : 0;
         count += method.isAnnotationPresent(NullSource.class) ? 1 : 0;
@@ -159,6 +168,9 @@ final class TestDefinitionResolver {
         }
         if (method.isAnnotationPresent(CsvSource.class)) {
             resolved.addAll(resolveCsvSourceArguments(suiteClass, method));
+        }
+        if (method.isAnnotationPresent(CsvFileSource.class)) {
+            resolved.addAll(resolveCsvFileSourceArguments(suiteClass, method));
         }
         if (method.isAnnotationPresent(MethodSource.class)) {
             resolved.addAll(resolveMethodSourceArguments(suiteClass, method));
@@ -213,6 +225,68 @@ final class TestDefinitionResolver {
                 .map(row -> parseCsvRow(row, source.delimiter()))
                 .map(values -> convertCsvRowToArguments(suiteClass, method, values))
                 .toList();
+    }
+
+    private List<Object[]> resolveCsvFileSourceArguments(Class<?> suiteClass, Method method) {
+        CsvFileSource source = method.getAnnotation(CsvFileSource.class);
+        if (source.resources().length == 0) {
+            throw new IllegalArgumentException("@CsvFileSource on method '" + method.getName() + "' in suite '"
+                    + suiteClass.getName() + "' must declare at least one resource");
+        }
+        if (source.numLinesToSkip() < 0) {
+            throw new IllegalArgumentException("@CsvFileSource on method '" + method.getName() + "' in suite '"
+                    + suiteClass.getName() + "' must not use a negative numLinesToSkip");
+        }
+        Charset charset;
+        try {
+            charset = Charset.forName(source.encoding());
+        } catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+            throw new IllegalArgumentException("@CsvFileSource on method '" + method.getName() + "' in suite '"
+                    + suiteClass.getName() + "' uses unsupported encoding '" + source.encoding() + "'", e);
+        }
+
+        List<Object[]> resolved = new ArrayList<>();
+        for (String resource : source.resources()) {
+            resolved.addAll(loadCsvResourceArguments(suiteClass, method, source, charset, resource));
+        }
+        return resolved;
+    }
+
+    private List<Object[]> loadCsvResourceArguments(
+            Class<?> suiteClass, Method method, CsvFileSource source, Charset charset, String resource) {
+        String normalizedResource = resource.startsWith("/") ? resource.substring(1) : resource;
+        InputStream stream = suiteClass.getClassLoader().getResourceAsStream(normalizedResource);
+        if (stream == null) {
+            throw new IllegalArgumentException("@CsvFileSource resource '" + resource + "' for method '"
+                    + method.getName() + "' in suite '" + suiteClass.getName() + "' was not found on the classpath");
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, charset))) {
+            List<Object[]> resolved = new ArrayList<>();
+            String line;
+            int lineNumber = 0;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                if (lineNumber <= source.numLinesToSkip()) {
+                    continue;
+                }
+                if (line.isBlank()) {
+                    continue;
+                }
+                List<String> values = parseCsvRow(line, source.delimiter());
+                try {
+                    resolved.add(convertCsvRowToArguments(suiteClass, method, values));
+                } catch (IllegalArgumentException e) {
+                    throw new IllegalArgumentException("@CsvFileSource resource '" + resource + "' line " + lineNumber
+                            + " for method '" + method.getName() + "' in suite '" + suiteClass.getName()
+                            + "' is invalid: " + e.getMessage(), e);
+                }
+            }
+            return resolved;
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Failed to read @CsvFileSource resource '" + resource
+                    + "' for method '" + method.getName() + "' in suite '" + suiteClass.getName() + "'", e);
+        }
     }
 
     private List<Object[]> resolveMethodSourceArguments(Class<?> suiteClass, Method method) {
