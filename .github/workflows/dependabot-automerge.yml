@@ -1,0 +1,41 @@
+name: dependabot-automerge
+
+on:
+  workflow_run:
+    workflows: ["ci"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable-automerge:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0].number
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Enable auto-merge for Dependabot minor and patch PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+        run: |
+          set -euo pipefail
+
+          PR_JSON="$(gh pr view "$PR_NUMBER" --repo "$REPO" \
+            --json author,labels,number,state,title)"
+
+          AUTHOR="$(jq -r '.author.login' <<< "$PR_JSON")"
+          STATE="$(jq -r '.state' <<< "$PR_JSON")"
+          HAS_AUTOMERGE_LABEL="$(jq -r '.labels[].name' <<< "$PR_JSON" | grep -Fxq automerge && echo true || echo false)"
+
+          if [ "$AUTHOR" != "dependabot[bot]" ] || [ "$STATE" != "OPEN" ] || [ "$HAS_AUTOMERGE_LABEL" != "true" ]; then
+            echo "Skipping PR #$PR_NUMBER: author=$AUTHOR state=$STATE automerge_label=$HAS_AUTOMERGE_LABEL"
+            exit 0
+          fi
+
+          gh pr merge "$PR_NUMBER" --repo "$REPO" --squash --auto --delete-branch
