@@ -1,3 +1,21 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+
+    val springBootVersion: String by settings
+    val springDependencyManagementVersion: String by settings
+    val kotlinVersion: String by settings
+
+    plugins {
+        id("org.springframework.boot") version springBootVersion
+        id("io.spring.dependency-management") version springDependencyManagementVersion
+        id("org.jetbrains.kotlin.jvm") version kotlinVersion
+        id("org.jetbrains.kotlin.plugin.spring") version kotlinVersion
+    }
+}
+
 plugins {
     id("com.gradle.develocity") version "4.3.2"
 }

@@ -31,10 +31,10 @@ jobs:
 
           AUTHOR="$(jq -r '.author.login' <<< "$PR_JSON")"
           STATE="$(jq -r '.state' <<< "$PR_JSON")"
-          HAS_AUTOMERGE_LABEL="$(jq -r '.labels[].name' <<< "$PR_JSON" | grep -Fxq automerge && echo true || echo false)"
+          HAS_DEPENDENCIES_LABEL="$(jq -r '.labels[].name' <<< "$PR_JSON" | grep -Fxq dependencies && echo true || echo false)"
 
-          if [ "$AUTHOR" != "dependabot[bot]" ] || [ "$STATE" != "OPEN" ] || [ "$HAS_AUTOMERGE_LABEL" != "true" ]; then
-            echo "Skipping PR #$PR_NUMBER: author=$AUTHOR state=$STATE automerge_label=$HAS_AUTOMERGE_LABEL"
+          if [ "$AUTHOR" != "dependabot[bot]" ] || [ "$STATE" != "OPEN" ] || [ "$HAS_DEPENDENCIES_LABEL" != "true" ]; then
+            echo "Skipping PR #$PR_NUMBER: author=$AUTHOR state=$STATE dependencies_label=$HAS_DEPENDENCIES_LABEL"
             exit 0
           fi
 

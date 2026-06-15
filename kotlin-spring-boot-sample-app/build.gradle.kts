@@ -1,35 +1,14 @@
 plugins {
-    kotlin("jvm") version "2.3.21"
-    kotlin("plugin.spring") version "2.3.21"
-    id("org.springframework.boot") version "4.0.6"
-    id("io.spring.dependency-management") version "1.1.7"
+    kotlin("jvm")
+    kotlin("plugin.spring")
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
 }
 
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 val javaVersion = providers.gradleProperty("javaVersion").map(String::toInt).get()
-val springBootVersion = providers.gradleProperty("springBootVersion").get()
-val springDependencyManagementVersion = providers.gradleProperty("springDependencyManagementVersion").get()
-val kotlinVersion = providers.gradleProperty("kotlinVersion").get()
 val assertjVersion = providers.gradleProperty("assertjVersion").get()
-
-plugins.withId("org.springframework.boot") {
-    check(springBootVersion == "4.0.3") {
-        "The org.springframework.boot plugin version must stay aligned with gradle.properties springBootVersion"
-    }
-}
-
-plugins.withId("io.spring.dependency-management") {
-    check(springDependencyManagementVersion == "1.1.7") {
-        "The io.spring.dependency-management plugin version must stay aligned with gradle.properties springDependencyManagementVersion"
-    }
-}
-
-plugins.withId("org.jetbrains.kotlin.jvm") {
-    check(kotlinVersion == "2.3.10") {
-        "The Kotlin plugin version must stay aligned with gradle.properties kotlinVersion"
-    }
-}
 
 kotlin {
     jvmToolchain(javaVersion)
