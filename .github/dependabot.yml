@@ -10,7 +10,6 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      - "automerge"
     groups:
       all-dependencies:
         update-types: ["minor", "patch"]
@@ -24,7 +23,6 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      - "automerge"
 
     groups:
       all-dependencies:
@@ -39,7 +37,6 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      - "automerge"
 
     groups:
       all-dependencies:
@@ -54,7 +51,6 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      - "automerge"
 
     groups:
       all-dependencies:
@@ -69,7 +65,6 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      - "automerge"
 
     groups:
       all-dependencies:
@@ -84,7 +79,6 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      - "automerge"
 
     groups:
       all-actions:
