@@ -1,30 +1,1023 @@
-# situs
+# Situs
 
 [![Maven Central - situs](https://img.shields.io/maven-central/v/no.kompilator/situs?label=situs)](https://central.sonatype.com/artifact/no.kompilator/situs)
 [![Maven Central - plugins](https://img.shields.io/maven-central/v/no.kompilator/plugins?label=plugins)](https://central.sonatype.com/artifact/no.kompilator/plugins)
 
-An annotation-driven system integration testing library for Java 21 under the `no.kompilator.situs` namespace. Define SIT suites as plain Java classes, run them on demand via a REST API or programmatically, and get structured reports in JUnit XML, Open Test Reporting XML, or JSON.
+**Runtime integration testing for Java microservices.**
 
-Like JUnit, but aimed at System Integration Testing (SIT): suites run **at runtime in production-like environments** instead of only at build time. They support Spring dependency injection, parallel execution, timeouts, delays, retries, and deterministic ordering.
+Situs lets you define integration tests alongside your application and execute them **inside a running microservice environment**.
+
+Instead of only testing integrations during CI, Situs lets you verify that your deployed service can actually communicate with the systems around it:
+
+- other microservices
+- REST APIs
+- databases
+- Kafka and message brokers
+- authentication services
+- external APIs
+- infrastructure dependencies
+
+Think of it as:
+
+> **JUnit-style tests for your running microservice environment.**
 
 ---
 
-## Repository structure
+## Why Situs?
 
+Unit tests tell you that your code works.
+
+Build-time integration tests tell you that your application works in a controlled test environment.
+
+But many microservice failures only appear **after deployment**.
+
+For example:
+
+```text
+Wrong service URL
+        ↓
+Broken DNS / service discovery
+        ↓
+Missing secret
+        ↓
+Invalid certificate
+        ↓
+Kafka ACL problem
+        ↓
+Network policy blocking traffic
+        ↓
+Different API version deployed
+        ↓
+Environment-specific configuration error
 ```
+
+These problems are difficult to catch with tests that only run during the build.
+
+Situs runs tests **inside the deployed application**, using the same configuration and dependencies as the service itself.
+
+```text
+                  Kubernetes / Docker / VM
+
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│   ┌───────────────────────────────┐                 │
+│   │         Order Service         │                 │
+│   │                               │                 │
+│   │  Application code             │                 │
+│   │                               │                 │
+│   │  ┌─────────────────────────┐  │                 │
+│   │  │      Situs tests        │  │                 │
+│   │  └────────────┬────────────┘  │                 │
+│   └───────────────┼───────────────┘                 │
+│                   │                                 │
+│          ┌────────┼────────┐                        │
+│          │        │        │                        │
+│          ▼        ▼        ▼                        │
+│      Payment    Kafka   Database                    │
+│      Service                                         │
+│          │                                           │
+│          ▼                                           │
+│     External API                                     │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+You're testing the system **where it actually runs**.
+
+---
+
+# Typical use cases
+
+## Post-deployment verification
+
+Deploy a microservice and immediately verify that its critical integrations work.
+
+```text
+Build
+  ↓
+Unit tests
+  ↓
+Deploy
+  ↓
+Run Situs
+  ↓
+PASS ───────→ Continue rollout
+  │
+ FAIL
+  ↓
+Stop / rollback
+```
+
+---
+
+## Microservice dependency testing
+
+Verify that one service can actually communicate with another.
+
+For example:
+
+```text
+Order Service
+     │
+     ├──► Payment Service
+     │
+     ├──► Inventory Service
+     │
+     ├──► Kafka
+     │
+     └──► PostgreSQL
+```
+
+A Situs test can verify all of these from the same runtime environment as your application.
+
+---
+
+## Environment validation
+
+Use Situs to verify environments such as:
+
+```text
+development
+test
+QA
+staging
+preview environments
+ephemeral environments
+production-like environments
+```
+
+The same test suite can be executed after every deployment.
+
+---
+
+## Smoke testing
+
+Expose lightweight tests that verify the most important functionality before traffic reaches a deployment.
+
+For example:
+
+```text
+✓ database reachable
+✓ Kafka reachable
+✓ authentication service reachable
+✓ payment service reachable
+✓ external provider credentials valid
+```
+
+---
+
+## CI/CD deployment gates
+
+Situs can be triggered over HTTP, making it easy to integrate with deployment pipelines.
+
+```text
+CI
+ │
+ ▼
+Build
+ │
+ ▼
+Deploy
+ │
+ ▼
+POST /api/test-framework/suites/DeploymentVerification/run
+ │
+ ▼
+Poll test status
+ │
+ ├── PASS → continue
+ │
+ └── FAIL → stop deployment
+```
+
+---
+
+# Quick start
+
+## 1. Add Situs
+
+Gradle Kotlin DSL:
+
+```kotlin
+dependencies {
+    implementation("no.kompilator:situs:2.0.0")
+}
+```
+
+Optional reporting support:
+
+```kotlin
+dependencies {
+    implementation("no.kompilator:plugins:2.0.0")
+}
+```
+
+The plugins module includes support for:
+
+- JUnit XML
+- Open Test Reporting XML
+- JSON
+
+---
+
+# 2. Create a test suite
+
+A Situs suite is a normal Java class.
+
+```java
+@TestSuite(
+    name = "OrderServiceIntegration",
+    description = "Integration checks for the Order Service"
+)
+public class OrderServiceIntegration {
+
+    @Test(name = "application-is-running")
+    public void applicationIsRunning() {
+        assertThat(true).isTrue();
+    }
+}
+```
+
+---
+
+# Spring Boot
+
+Situs integrates directly with Spring.
+
+That means your test suites can use the **same Spring beans, clients and configuration as your application**.
+
+```java
+@Component
+@TestSuite(name = "PaymentServiceIntegration")
+public class PaymentServiceIntegration {
+
+    private final PaymentClient paymentClient;
+
+    public PaymentServiceIntegration(
+            PaymentClient paymentClient
+    ) {
+        this.paymentClient = paymentClient;
+    }
+
+    @Test(
+        name = "payment-service-is-reachable",
+        timeout = "PT5S"
+    )
+    public void paymentServiceIsReachable() {
+
+        var health = paymentClient.health();
+
+        assertThat(health.isHealthy()).isTrue();
+    }
+}
+```
+
+This allows your tests to use the application's real:
+
+```text
+HTTP clients
+authentication
+configuration
+service URLs
+TLS configuration
+serializers
+connection pools
+database configuration
+message broker configuration
+```
+
+instead of recreating them in a separate test harness.
+
+---
+
+# Spring Boot configuration
+
+Configure which packages Situs should scan:
+
+```properties
+testframework.scan-packages=com.example.tests
+```
+
+Spring Boot auto-configuration is enabled automatically when Situs is on the classpath.
+
+For non-Boot Spring applications you can explicitly enable runtime tests using:
+
+```java
+@EnableRuntimeTests
+```
+
+Useful configuration:
+
+```properties
+testframework.scan-packages=com.example.tests
+
+testframework.full-classpath-scan=false
+
+testframework.max-stored-runs=200
+
+testframework.reporting.enabled=true
+
+testframework.reporting.output-dir=build/test-reports
+
+testframework.reporting.formats=JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON
+```
+
+---
+
+# Running tests
+
+Situs exposes an HTTP API through Spring Boot.
+
+## List available suites
+
+```bash
+curl \
+  http://localhost:8080/api/test-framework/suites
+```
+
+---
+
+## Start a suite
+
+```bash
+curl -X POST \
+  http://localhost:8080/api/test-framework/suites/PaymentServiceIntegration/run
+```
+
+Response:
+
+```json
+{
+  "runId": "abc-123"
+}
+```
+
+---
+
+## Check status
+
+```bash
+curl \
+  http://localhost:8080/api/test-framework/runs/abc-123/status
+```
+
+---
+
+## Cancel a run
+
+```bash
+curl -X POST \
+  http://localhost:8080/api/test-framework/runs/abc-123/cancel
+```
+
+---
+
+# Example: testing several microservices
+
+Consider an Order Service which depends on:
+
+```text
+Order Service
+   │
+   ├── Payment Service
+   │
+   ├── Inventory Service
+   │
+   ├── PostgreSQL
+   │
+   └── Kafka
+```
+
+You can create a deployment verification suite:
+
+```java
+@Component
+@TestSuite(
+    name = "DeploymentVerification",
+    description = "Verify runtime dependencies"
+)
+public class DeploymentVerification {
+
+    private final PaymentClient payment;
+    private final InventoryClient inventory;
+    private final JdbcTemplate database;
+
+    public DeploymentVerification(
+            PaymentClient payment,
+            InventoryClient inventory,
+            JdbcTemplate database
+    ) {
+        this.payment = payment;
+        this.inventory = inventory;
+        this.database = database;
+    }
+
+    @Test(
+        name = "payment-service",
+        timeout = "PT5S"
+    )
+    public void paymentService() {
+
+        assertThat(
+            payment.health().isHealthy()
+        ).isTrue();
+    }
+
+    @Test(
+        name = "inventory-service",
+        timeout = "PT5S"
+    )
+    public void inventoryService() {
+
+        assertThat(
+            inventory.health().isHealthy()
+        ).isTrue();
+    }
+
+    @Test(
+        name = "database",
+        timeout = "PT5S"
+    )
+    public void database() {
+
+        Integer result =
+            database.queryForObject(
+                "SELECT 1",
+                Integer.class
+            );
+
+        assertThat(result).isEqualTo(1);
+    }
+}
+```
+
+After deployment:
+
+```bash
+curl -X POST \
+  http://order-service:8080/api/test-framework/suites/DeploymentVerification/run
+```
+
+Now the service verifies its dependencies from **inside the deployed environment**.
+
+---
+
+# Parameterized tests
+
+Situs supports parameterized tests.
+
+```java
+@ParameterizedTest(
+    name = "service[{index}] {0}"
+)
+@ValueSource(strings = {
+    "payment",
+    "inventory",
+    "shipping"
+})
+public void serviceIsReachable(
+        String service
+) {
+
+    assertThat(
+        serviceRegistry.isHealthy(service)
+    ).isTrue();
+}
+```
+
+Supported sources:
+
+```text
+@ValueSource
+@CsvSource
+@CsvFileSource
+@MethodSource
+@EnumSource
+
+@NullSource
+@EmptySource
+@NullAndEmptySource
+```
+
+Each generated invocation is treated as a separate test case for:
+
+- execution
+- reporting
+- discovery
+- HTTP responses
+
+---
+
+# CSV parameterized tests
+
+```java
+@ParameterizedTest(
+    name = "addition[{index}] {0}+{1}={2}"
+)
+@CsvSource({
+    "1,2,3",
+    "2,3,5",
+    "40,2,42"
+})
+public void addition(
+        int left,
+        int right,
+        int expected
+) {
+
+    assertThat(
+        left + right
+    ).isEqualTo(expected);
+}
+```
+
+---
+
+# Method sources
+
+```java
+@ParameterizedTest(
+    name = "multiply[{index}] {0}*{1}={2}"
+)
+@MethodSource("cases")
+public void multiply(
+        int left,
+        int right,
+        int expected
+) {
+
+    assertThat(
+        left * right
+    ).isEqualTo(expected);
+}
+
+static Stream<Arguments> cases() {
+
+    return Stream.of(
+        Arguments.of(2, 3, 6),
+        Arguments.of(7, 6, 42)
+    );
+}
+```
+
+---
+
+# Lifecycle methods
+
+Situs supports familiar lifecycle annotations.
+
+```java
+@BeforeAll
+public void beforeSuite() {
+}
+
+@BeforeEach
+public void beforeTest() {
+}
+
+@Test
+public void test() {
+}
+
+@AfterEach
+public void afterTest() {
+}
+
+@AfterAll
+public void afterSuite() {
+}
+```
+
+---
+
+# Parallel execution
+
+Suites can execute tests in parallel.
+
+```java
+@TestSuite(
+    name = "DependencyChecks",
+    parallel = true
+)
+public class DependencyChecks {
+
+    @Test
+    public void payment() {
+    }
+
+    @Test
+    public void inventory() {
+    }
+
+    @Test
+    public void shipping() {
+    }
+}
+```
+
+This is useful when validating multiple independent microservice dependencies.
+
+---
+
+# Timeouts
+
+Tests can use millisecond or ISO-8601 duration timeouts.
+
+```java
+@Test(
+    name = "fast-check",
+    timeoutMs = 500
+)
+public void fastCheck() {
+}
+```
+
+Or:
+
+```java
+@Test(
+    name = "external-api",
+    timeout = "PT30S"
+)
+public void externalApi() {
+}
+```
+
+Examples:
+
+```text
+PT0.5S = 500 ms
+PT30S  = 30 seconds
+PT5M   = 5 minutes
+PT1H   = 1 hour
+```
+
+---
+
+# Retries
+
+Transient failures can automatically be retried.
+
+```java
+@Test(
+    name = "external-service",
+    retries = 2
+)
+public void externalService() {
+
+    assertThat(
+        client.health()
+    ).isTrue();
+}
+```
+
+Retries are useful for dependencies which may take a short time to become ready during deployment.
+
+---
+
+# Delays
+
+Tests can wait before execution.
+
+```java
+@Test(
+    name = "service-ready",
+    delayMs = 500
+)
+public void serviceReady() {
+}
+```
+
+---
+
+# Deterministic ordering
+
+Tests can explicitly define execution order.
+
+```java
+@Test(
+    name = "create-order",
+    order = 1
+)
+public void createOrder() {
+}
+
+@Test(
+    name = "verify-order",
+    order = 2
+)
+public void verifyOrder() {
+}
+
+@Test(
+    name = "delete-order",
+    order = 3
+)
+public void deleteOrder() {
+}
+```
+
+Tests with lower `order` values run first.
+
+Ties are resolved using the method name.
+
+---
+
+# Reporting
+
+Add the reporting plugin:
+
+```kotlin
+dependencies {
+    implementation("no.kompilator:plugins:2.0.0")
+}
+```
+
+Configure output:
+
+```properties
+testframework.reporting.enabled=true
+
+testframework.reporting.output-dir=build/test-reports
+
+testframework.reporting.formats=
+JUNIT_XML,
+OPEN_TEST_REPORTING_XML,
+JSON
+```
+
+Supported formats:
+
+```text
+JUnit XML
+Open Test Reporting XML
+JSON
+```
+
+Reports are automatically generated after suite execution.
+
+---
+
+# Programmatic reporting
+
+Reporting plugins can also be created manually.
+
+```java
+ReportingPlugin reporter =
+    ReportingPlugin.builder()
+        .outputDir(
+            Path.of("build/test-reports")
+        )
+        .format(
+            ReportFormat.JUNIT_XML
+        )
+        .format(
+            ReportFormat.JSON
+        )
+        .build();
+
+testFrameworkService.addListener(
+    reporter
+);
+```
+
+Plugins can observe test progress using:
+
+```java
+SuiteRunListener#onTestCompleted(...)
+```
+
+---
+
+# Runtime status
+
+Asynchronous execution exposes runtime progress information.
+
+For example:
+
+```text
+completedCount
+totalCount
+
+runStartedAtEpochMs
+lastUpdatedAtEpochMs
+
+startedAtEpochMs
+completedAtEpochMs
+```
+
+Runs can finish with statuses such as:
+
+```text
+COMPLETED
+CANCELLED
+```
+
+---
+
+# Kotlin
+
+Situs works with Kotlin.
+
+```kotlin
+@Component
+@TestSuite(
+    name = "PaymentServiceIntegration"
+)
+class PaymentServiceIntegration(
+    private val paymentClient: PaymentClient
+) {
+
+    @Test(
+        name = "payment-service-is-reachable"
+    )
+    fun paymentServiceIsReachable() {
+
+        assertThat(
+            paymentClient.health().isHealthy
+        ).isTrue()
+    }
+}
+```
+
+When using Spring, use:
+
+```kotlin
+kotlin("plugin.spring")
+```
+
+so Spring-managed classes can be proxied correctly.
+
+---
+
+# Situs vs traditional integration tests
+
+Situs is not intended to replace normal unit or integration tests.
+
+It fills a different part of the testing lifecycle.
+
+| Capability | Traditional CI integration tests | Situs |
+|---|---:|---:|
+| Unit-level testing | ✓ | — |
+| Runs during build | ✓ | Optional |
+| Runs after deployment | Usually not | ✓ |
+| Uses deployed service configuration | Usually not | ✓ |
+| Uses real service discovery | Limited | ✓ |
+| Tests runtime networking | Limited | ✓ |
+| Tests environment secrets/configuration | Limited | ✓ |
+| Tests real microservice connectivity | Limited | ✓ |
+| Trigger tests over HTTP | Usually not | ✓ |
+| Spring dependency injection | ✓ | ✓ |
+| Deployment verification | Indirect | ✓ |
+| Machine-readable reports | ✓ | ✓ |
+
+A typical setup might therefore look like:
+
+```text
+               TESTING PIPELINE
+
+                  Source code
+                       │
+                       ▼
+                  Unit tests
+                       │
+                       ▼
+             Integration tests
+                       │
+                       ▼
+                    Build
+                       │
+                       ▼
+                    Deploy
+                       │
+                       ▼
+                 Situs tests
+                       │
+                       ▼
+              Runtime verified
+```
+
+---
+
+# Situs and Testcontainers
+
+Testcontainers is excellent for creating temporary infrastructure during automated tests.
+
+For example:
+
+```text
+JUnit
+  │
+  ├── temporary PostgreSQL
+  ├── temporary Kafka
+  └── temporary Redis
+```
+
+Situs solves a different problem.
+
+```text
+Deployed application
+      │
+      ├── real PostgreSQL
+      ├── real Kafka
+      ├── real service discovery
+      ├── real authentication
+      └── real microservices
+```
+
+Testcontainers answers:
+
+> Does my application work with these dependencies in a controlled test environment?
+
+Situs answers:
+
+> Does my deployed application actually work with the dependencies configured in this environment?
+
+The two approaches can complement each other.
+
+---
+
+# Kubernetes example
+
+A typical Kubernetes deployment might look like:
+
+```text
+┌──────────────── Kubernetes ─────────────────┐
+│                                             │
+│  ┌──────────────┐                           │
+│  │ Order Service│                           │
+│  │              │                           │
+│  │    Situs     │                           │
+│  └──────┬───────┘                           │
+│         │                                   │
+│   ┌─────┼──────────────┐                    │
+│   │     │              │                    │
+│   ▼     ▼              ▼                    │
+│ Payment Inventory    Kafka                  │
+│ Service Service                             │
+│                                             │
+└─────────────────────────────────────────────┘
+```
+
+After the deployment becomes ready:
+
+```bash
+curl -X POST \
+  http://order-service/api/test-framework/suites/DeploymentVerification/run
+```
+
+The result can then be used by your deployment pipeline to determine whether rollout should continue.
+
+---
+
+# Features
+
+| Feature | Situs |
+|---|---|
+| Test suites | `@TestSuite` |
+| Tests | `@Test` |
+| Parameterized tests | `@ParameterizedTest` |
+| Setup / teardown | `@BeforeAll`, `@BeforeEach`, `@AfterEach`, `@AfterAll` |
+| Parallel execution | ✓ |
+| Deterministic ordering | ✓ |
+| Timeouts | ✓ |
+| Delays | ✓ |
+| Retries | ✓ |
+| Spring dependency injection | ✓ |
+| Package-based discovery | ✓ |
+| Runtime HTTP API | ✓ |
+| Run cancellation | ✓ |
+| JUnit XML reports | ✓ |
+| Open Test Reporting XML | ✓ |
+| JSON reports | ✓ |
+| Java | ✓ |
+| Kotlin | ✓ |
+
+---
+
+# Repository structure
+
+```text
 .
-├── situs/                   Core library — annotations, engine, Spring integration
-├── plugins/                        Ready-made plugins (reporting: JUnit XML, OTR XML, JSON)
-├── java-spring-boot-sample-app/    Java Spring Boot example using the library
-└── kotlin-spring-boot-sample-app/  Kotlin Spring Boot example using the library
+├── situs/
+│   Core runtime testing library
+│
+├── plugins/
+│   Reporting plugins
+│
+├── java-spring-boot-sample-app/
+│   Java Spring Boot example
+│
+└── kotlin-spring-boot-sample-app/
+    Kotlin Spring Boot example
 ```
 
 | Module | Artifact | Description |
 |---|---|---|
-| `situs` | `no.kompilator:situs` | SIT annotations, execution engine, and HTTP API |
-| `plugins` | `no.kompilator:plugins` | Reporting plugin — writes structured test reports |
-| `java-spring-boot-sample-app` | — | Java sample app (not published) |
-| `kotlin-spring-boot-sample-app` | — | Kotlin sample app (not published) |
+| `situs` | `no.kompilator:situs` | Runtime test engine, annotations, Spring integration and HTTP API |
+| `plugins` | `no.kompilator:plugins` | JUnit XML, OTR XML and JSON reporting |
+| `java-spring-boot-sample-app` | — | Java example |
+| `kotlin-spring-boot-sample-app` | — | Kotlin example |
 
 Published artifacts:
 
@@ -33,441 +1026,193 @@ Published artifacts:
 
 ---
 
-## Supported API Surface
+# Supported API
 
 Supported packages:
 
-- `no.kompilator.situs.annotations`
-- `no.kompilator.situs.model`
-- `no.kompilator.situs.params`
-- `no.kompilator.situs.plugin`
-- `no.kompilator.situs.service`
-- `no.kompilator.situs.spring`
-- `no.kompilator.situs.spring.model`
+```text
+no.kompilator.situs.annotations
+no.kompilator.situs.model
+no.kompilator.situs.params
+no.kompilator.situs.plugin
+no.kompilator.situs.service
+no.kompilator.situs.spring
+no.kompilator.situs.spring.model
+```
 
-Internal packages that may change without notice:
+Internal packages may change without notice:
 
-- `no.kompilator.situs.domain`
-- `no.kompilator.situs.runtime`
+```text
+no.kompilator.situs.domain
+no.kompilator.situs.runtime
+```
 
-Build against the supported packages only.
+Applications should build against supported packages only.
 
 ---
 
-## Quick start
+# Validation
 
-### 1. Add the dependency
+Situs fails fast during suite registration when it detects invalid configuration.
 
-```kotlin
-// build.gradle.kts
-dependencies {
-    implementation("no.kompilator:situs:2.0.0")
+Examples include:
 
-    // Optional — adds structured report writing (pulls in situs transitively)
-    implementation("no.kompilator:plugins:2.0.0")
-}
-```
+- duplicate suite names
+- duplicate test names
+- invalid timeouts
+- negative delays
+- negative retry counts
+- invalid lifecycle methods
+- static test methods
+- parameterized tests without argument sources
+- invalid parameter sources
 
-### 2. Define a test suite
+This helps configuration errors appear at application startup instead of during test execution.
 
-```java
-@TestSuite(name = "CalculatorTestSuite", description = "Tests for Calculator")
-public class CalculatorTestSuite {
+---
 
-    @Test(name = "addition", description = "2 + 3 should equal 5", order = 1)
-    public void testAddition() {
-        assertThat(2 + 3).isEqualTo(5);
-    }
+# Building
 
-    @Test(name = "divisionByZero", timeout = "PT0.5S", order = 2)
-    public void testDivisionByZero() {
-        assertThatThrownBy(() -> 1 / 0)
-                .isInstanceOf(ArithmeticException.class);
-    }
-
-    @ParameterizedTest(name = "addition[{index}] {0}+{1}={2}")
-    @CsvSource({"1,2,3", "2,3,5", "40,2,42"})
-    public void testAdditionCases(int left, int right, int expected) {
-        assertThat(left + right).isEqualTo(expected);
-    }
-}
-```
-
-### 3. Spring Boot — package-scoped discovery
-
-```java
-@SpringBootApplication
-public class MyApp {
-    public static void main(String[] args) {
-        SpringApplication.run(MyApp.class, args);
-    }
-}
-```
-
-```properties
-testframework.scan-packages=com.example.tests
-```
-
-Spring Boot auto-configuration is enabled automatically when the library is on the classpath. `@EnableRuntimeTests` is only needed for explicit opt-in in non-Boot Spring applications.
-
-Useful Spring properties:
-
-```properties
-testframework.scan-packages=com.example.tests
-testframework.full-classpath-scan=false
-testframework.max-stored-runs=200
-testframework.reporting.enabled=true
-testframework.reporting.output-dir=build/test-reports
-testframework.reporting.formats=JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON
-```
-
-### 4. Run tests via HTTP
+Build everything:
 
 ```bash
-# List all discovered suites
-curl http://localhost:8080/api/test-framework/suites
+./situs/gradlew --project-dir . build
+```
 
-# Start a suite run (async)
-curl -X POST http://localhost:8080/api/test-framework/suites/CalculatorTestSuite/run
-# → {"runId":"abc-123"}
+Build the core library:
 
-# Poll until COMPLETED
-curl http://localhost:8080/api/test-framework/runs/abc-123/status
+```bash
+./situs/gradlew :situs:build
+```
 
-# Cancel a running suite
-curl -X POST http://localhost:8080/api/test-framework/runs/abc-123/cancel
+Build plugins:
+
+```bash
+./situs/gradlew :plugins:build
 ```
 
 ---
 
-## Key features
+# Running the project tests
 
-| Feature | Annotation / API |
-|---|---|
-| Define a test suite | `@TestSuite` |
-| Define a test method | `@Test` |
-| Define parameterized tests | `@ParameterizedTest` with `@ValueSource`, `@CsvSource`, `@CsvFileSource`, `@MethodSource`, `@EnumSource` |
-| Setup / teardown | `@BeforeAll`, `@AfterAll`, `@BeforeEach`, `@AfterEach` |
-| Parallel execution | `@TestSuite(parallel = true)` |
-| Deterministic ordering | `order = ...` on `@Test`, `@BeforeAll`, `@BeforeEach`, `@AfterEach`, `@AfterAll` |
-| Timeout per test | `@Test(timeoutMs = 500)` or `@Test(timeout = "PT30S")` |
-| Delay before test | `@Test(delayMs = 300)` |
-| Retry on failure | `@Test(retries = 2)` |
-| Spring DI in suites | Annotate suite with `@Component` |
-| Auto-discovery | Package-scoped scan via `testframework.scan-packages` |
-| HTTP API | Built-in REST controller via Spring auto-configuration |
-| Run cancellation | `POST /api/test-framework/runs/{runId}/cancel` |
-| Structured reports | `ReportingPlugin` — JUnit XML, OTR XML, JSON |
-| Incremental plugin hook | `SuiteRunListener#onTestCompleted(...)` |
+```bash
+./situs/gradlew :situs:test
+```
 
----
+```bash
+./situs/gradlew :plugins:test
+```
 
-## Spring DI in test suites
+Or run verification across modules:
 
-Annotate your suite with `@Component` and declare dependencies as constructor parameters — the framework injects them automatically:
+```bash
+./situs/gradlew testAll
+```
 
-```java
-@Component
-@TestSuite(name = "PaymentTestSuite")
-public class PaymentTestSuite {
-
-    private final PaymentService paymentService;
-
-    public PaymentTestSuite(PaymentService paymentService) {
-        this.paymentService = paymentService;
-    }
-
-    @Test(name = "chargeSucceeds")
-    public void chargeSucceeds() {
-        assertThat(paymentService.charge(100)).isTrue();
-    }
-}
+```bash
+./situs/gradlew buildAll
 ```
 
 ---
 
-## Reporting plugin
-
-```kotlin
-dependencies {
-    implementation("no.kompilator:plugins:2.0.0")
-}
-```
-
-Reports are written automatically after every suite run. Opt in to specific formats via `application.properties`:
-
-```properties
-testframework.reporting.enabled=true
-testframework.reporting.output-dir=build/test-reports
-testframework.reporting.formats=JUNIT_XML,OPEN_TEST_REPORTING_XML,JSON
-```
-
-Or build the plugin manually and register it as a listener:
-
-```java
-ReportingPlugin reporter = ReportingPlugin.builder()
-        .outputDir(Path.of("build/test-reports"))
-        .format(ReportFormat.JUNIT_XML)
-        .format(ReportFormat.JSON)
-        .build();
-
-testFrameworkService.addListener(reporter);
-```
-
-Plugins can also observe per-test progress through `SuiteRunListener#onTestCompleted(...)`.
-
-Async status polling exposes explicit progress and timing fields:
-
-- `completedCount` / `totalCount` for cheap progress tracking
-- `runStartedAtEpochMs` / `lastUpdatedAtEpochMs` on `SuiteRunStatus`
-- `startedAtEpochMs` / `completedAtEpochMs` on each `TestCaseResult`
-- `status = CANCELLED` when a caller stops a run explicitly
-
----
-
-## Kotlin support
-
-The framework works with Kotlin out of the box. Use the `kotlin("plugin.spring")` Gradle plugin to make `@Component`-annotated classes `open` for Spring proxying:
-
-```kotlin
-@Component
-@TestSuite(name = "CalculatorTestSuite", description = "Tests for Calculator")
-class CalculatorTestSuite(private val calculator: Calculator) {
-
-    @Test(name = "addition")
-    fun testAddition() {
-        assertThat(calculator.add(2, 3)).isEqualTo(5)
-    }
-
-    @ParameterizedTest(name = "addition[{index}] {0}+{1}={2}")
-    @CsvSource("1,2,3", "2,3,5")
-    fun additionCases(left: Int, right: Int, expected: Int) {
-        assertThat(calculator.add(left, right)).isEqualTo(expected)
-    }
-}
-```
-
----
-
-## Parameterized tests
-
-Supported sources:
-
-- `@ValueSource` for single-argument literals
-- `@CsvSource` for multi-argument rows
-- `@CsvFileSource` for classpath CSV resources
-- `@MethodSource` for provider methods returning `Stream`, `Iterable`, `Iterator`, or arrays
-- `@EnumSource` for enum constants
-- `@NullSource`, `@EmptySource`, and `@NullAndEmptySource` for single-argument nullable/empty cases
-
-Each resolved argument set becomes a separate logical test case in discovery, reporting,
-HTTP responses, and single-test execution. Use the `name` template on `@ParameterizedTest`
-to control the generated invocation names with:
-
-- `{index}` for the 1-based invocation index
-- `{arguments}` for the rendered full argument list
-- `{0}`, `{1}`, ... for individual argument values
-
-Example:
-
-```java
-@ParameterizedTest(name = "blank[{index}]={0}")
-@NullAndEmptySource
-@ValueSource(strings = {" ", "\t"})
-public void rejectsBlankNames(String value) {
-    assertThat(value == null || value.isBlank()).isTrue();
-}
-```
-
-`@MethodSource` can emit either raw values for single-parameter tests or `Arguments.of(...)`
-for multi-parameter invocations:
-
-```java
-@ParameterizedTest(name = "multiply[{index}] {0}*{1}={2}")
-@MethodSource("cases")
-public void multiplies(int left, int right, int expected) {
-    assertThat(left * right).isEqualTo(expected);
-}
-
-static Stream<Arguments> cases() {
-    return Stream.of(
-            Arguments.of(2, 3, 6),
-            Arguments.of(7, 6, 42));
-}
-```
-
-`@CsvFileSource` reads rows from classpath resources:
-
-```java
-@ParameterizedTest(name = "add[{index}] {0}+{1}={2}")
-@CsvFileSource(resources = "csv/addition-cases.csv", numLinesToSkip = 1)
-public void additionCases(int left, int right, int expected) {
-    assertThat(left + right).isEqualTo(expected);
-}
-```
-
----
-
-## Timeout configuration
-
-You can configure timeouts in either of these forms:
-
-- `timeoutMs = 500` for a millisecond value
-- `timeout = "PT30S"` for an ISO-8601 duration
-
-Examples:
-
-```java
-@Test(name = "fastCheck", timeoutMs = 500)
-public void fastCheck() {
-    // ...
-}
-
-@ParameterizedTest(name = "poll[{index}] {0}", timeout = "PT2M")
-@ValueSource(strings = {"node-a", "node-b"})
-public void pollNode(String nodeName) {
-    // ...
-}
-```
-
-Duration strings use `java.time.Duration` syntax:
-
-- `PT0.5S` = 500 ms
-- `PT30S` = 30 seconds
-- `PT5M` = 5 minutes
-- `PT1H` = 1 hour
-
-Rules:
-
-- `timeout` and `timeoutMs` are mutually exclusive on the same test
-- blank `timeout` means "not set"
-- negative `timeoutMs` is still only supported as `-1` for "no timeout"
-- invalid duration strings fail fast during suite registration
-
----
-
-## Validation rules
-
-The framework now fails fast during startup/registration when:
-
-- suite names are duplicated
-- test names are duplicated within a suite
-- `timeoutMs < -1`
-- `timeout` is not a valid ISO-8601 duration
-- both `timeoutMs` and `timeout` are configured on the same test
-- `delayMs < 0`
-- `retries < 0`
-- a `@Test` or lifecycle method is not `public`
-- a `@Test` or lifecycle method is `static`
-- a `@Test` or lifecycle method declares parameters
-- an `@ParameterizedTest` declares zero parameters
-- an `@ParameterizedTest` has no argument source
-- `@ValueSource` configures more than one non-empty literal array
-- `@NullSource` is used with primitive parameters
-
-Ordering is deterministic:
-
-- lower `order` values run first
-- ties are resolved by method name
-
----
-
-## Release
-
-Local publish:
+# Publishing locally
 
 ```bash
 ./situs/gradlew publishAllToMavenLocal
 ```
 
-Parallel multi-module verification:
+---
 
-```bash
-./situs/gradlew testAll
-./situs/gradlew buildAll
-```
+# Release
 
-Project-level parallel execution is enabled in `gradle.properties`, so independent
-subprojects run concurrently where Gradle can schedule them safely.
+Publishing to Maven Central requires credentials and signing configuration.
 
-Remote publish requires credentials and signing material in `~/.gradle/gradle.properties` or env vars:
+Configure:
 
 ```properties
 centralUsername=...
 centralPassword=...
+
 signingKey=...
 signingPassword=...
 ```
 
-Equivalent environment variables:
+Or environment variables:
 
 ```bash
 export CENTRAL_USERNAME=...
 export CENTRAL_PASSWORD=...
+
 export SIGNING_KEY=...
 export SIGNING_PASSWORD=...
 ```
 
-Then publish:
+Publish:
 
 ```bash
 ./situs/gradlew publishRelease
 ```
 
-The root release tasks are:
+Available release tasks:
 
-- `releaseCheck` — runs tests and Javadocs for the releasable modules and sample apps
-- `publishAllToMavenLocal` — publishes `situs` and `plugins` to `mavenLocal`
-- `publishRelease` — runs `releaseCheck` and then publishes `situs` and `plugins`
-
-GitHub Actions release flow:
-
-- push a tag like `v2.0.0`
-- or trigger the `release` workflow manually with `version`
-- the workflow runs `publishRelease` with `-Pversion=<tag>`
-- required repository secrets:
-  - `CENTRAL_USERNAME`
-  - `CENTRAL_PASSWORD`
-  - `SIGNING_KEY`
-  - `SIGNING_PASSWORD`
-
-See [`kotlin-spring-boot-sample-app`](kotlin-spring-boot-sample-app/README.md) for a full example.
-
----
-
-## Build
-
-```bash
-# Build everything from the repo root
-./situs/gradlew --project-dir . build
-
-# Build a specific module
-./situs/gradlew :situs:build
-./situs/gradlew :plugins:build
+```text
+releaseCheck
+publishAllToMavenLocal
+publishRelease
 ```
 
-## Run tests
+GitHub Actions releases can be triggered by pushing a version tag:
 
 ```bash
-./situs/gradlew :situs:test
-./situs/gradlew :plugins:test
+git tag v2.0.0
+git push origin v2.0.0
 ```
 
 ---
 
-## Modules — further reading
+# Requirements
 
-- [`situs/README.md`](situs/README.md) — annotations, runtime engine, Spring integration, full API reference
-- [`plugins/README.md`](plugins/README.md) — reporting plugin, report formats, configuration
-- [`java-spring-boot-sample-app/README.md`](java-spring-boot-sample-app/README.md) — Java Spring Boot sample
-- [`kotlin-spring-boot-sample-app/README.md`](kotlin-spring-boot-sample-app/README.md) — Kotlin Spring Boot sample
-
----
-
-## Requirements
-
-| | |
+| Requirement | Version |
 |---|---|
 | Java | 21 |
-| Gradle | Wrapper included — no local install needed |
-| Spring Boot | 4.0.x (optional — core engine has no Spring dependency) |
+| Gradle | Wrapper included |
+| Spring Boot | 4.0.x optional |
+
+The core Situs execution engine does not require Spring.
+
+---
+
+# Further reading
+
+- [`situs/README.md`](situs/README.md) — annotations, runtime engine and API reference
+- [`plugins/README.md`](plugins/README.md) — reporting
+- [`java-spring-boot-sample-app`](java-spring-boot-sample-app/) — Java example
+- [`kotlin-spring-boot-sample-app`](kotlin-spring-boot-sample-app/) — Kotlin example
+
+---
+
+# The idea
+
+Modern microservices are tested extensively before deployment.
+
+But deployment itself introduces another layer of failure:
+
+```text
+Code
++
+Configuration
++
+Infrastructure
++
+Networking
++
+Authentication
++
+Other services
+=
+The actual running system
+```
+
+Situs gives the running application a way to verify those assumptions.
+
+**Test your microservices where they actually run.**
