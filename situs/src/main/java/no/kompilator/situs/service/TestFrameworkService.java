@@ -19,15 +19,16 @@ import no.kompilator.situs.runtime.TestSuiteRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -75,18 +76,24 @@ public class TestFrameworkService implements AutoCloseable {
     private static final Logger log = LoggerFactory.getLogger(TestFrameworkService.class);
     private static final int DEFAULT_MAX_STORED_RUNS = 200;
     private static final int DEFAULT_ASYNC_THREADS = Math.max(2, Runtime.getRuntime().availableProcessors());
+    private static final long AWAIT_POLL_INTERVAL_MS = 50;
 
     private final TestRunner testRunner;
     private final Set<Class<?>> registeredSuites;
     private final List<TestSuiteDefinition> suiteDefinitions;
-    private final int maxStoredRuns;
+    private final RunStore runStore;
     private final ExecutorService asyncExecutor;
 
-    /** Live status map — keyed by runId. */
+    /**
+     * Runs that are still {@code PENDING} or {@code RUNNING}, keyed by runId. A run leaves this
+     * map only after its terminal snapshot has been saved to the {@link RunStore}.
+     */
     private final ConcurrentHashMap<String, SuiteRunStatus> runStatuses = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, CompletableFuture<Void>> runningTasks = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> runActiveKeys = new ConcurrentHashMap<>();
-    private final ConcurrentLinkedDeque<String> terminalRunIds = new ConcurrentLinkedDeque<>();
+
+    /** Guards every transition of a live run, so a run reaches exactly one terminal state. */
+    private final Object stateLock = new Object();
 
     /**
      * Tracks suite/test keys that are currently PENDING or RUNNING.
@@ -125,10 +132,22 @@ public class TestFrameworkService implements AutoCloseable {
      * @param maxStoredRuns    maximum number of terminal runs retained in memory
      */
     public TestFrameworkService(InstanceFactory instanceFactory, Set<Class<?>> registeredSuites, int maxStoredRuns) {
+        this(instanceFactory, registeredSuites, new InMemoryRunStore(maxStoredRuns));
+    }
+
+    /**
+     * Creates the service with an explicit set of suite classes, using the given instance factory
+     * and run store.
+     *
+     * @param instanceFactory  instance creation strategy used for suite execution
+     * @param registeredSuites the suite classes to register; copied defensively
+     * @param runStore         where finished runs are kept, e.g. a {@link FileRunStore} to survive restarts
+     */
+    public TestFrameworkService(InstanceFactory instanceFactory, Set<Class<?>> registeredSuites, RunStore runStore) {
         this.testRunner = new TestRunner(instanceFactory);
         this.registeredSuites = Set.copyOf(registeredSuites);
         this.suiteDefinitions = List.copyOf(new TestSuiteRegistry().getAllSuites(this.registeredSuites));
-        this.maxStoredRuns = validateMaxStoredRuns(maxStoredRuns);
+        this.runStore = Objects.requireNonNull(runStore, "runStore");
         this.asyncExecutor = createAsyncExecutor();
         log.info("TestFrameworkService initialised with {} suite(s)", suiteDefinitions.size());
     }
@@ -151,12 +170,7 @@ public class TestFrameworkService implements AutoCloseable {
      * @param maxStoredRuns    maximum number of terminal runs retained in memory
      */
     public TestFrameworkService(Set<Class<?>> registeredSuites, int maxStoredRuns) {
-        this.testRunner = new TestRunner(InstanceFactory.reflective());
-        this.registeredSuites = Set.copyOf(registeredSuites);
-        this.suiteDefinitions = List.copyOf(new TestSuiteRegistry().getAllSuites(this.registeredSuites));
-        this.maxStoredRuns = validateMaxStoredRuns(maxStoredRuns);
-        this.asyncExecutor = createAsyncExecutor();
-        log.info("TestFrameworkService initialised with {} suite(s)", suiteDefinitions.size());
+        this(InstanceFactory.reflective(), registeredSuites, new InMemoryRunStore(maxStoredRuns));
     }
 
     /**
@@ -244,6 +258,7 @@ public class TestFrameworkService implements AutoCloseable {
                 runId, suiteName, SuiteRunStatus.Status.PENDING, new ArrayList<>(),
                 0, definition.getTestCases().size(), 0, 0, now, now));
 
+        TestSuite suite = toTestSuite(definition);
         submitAsyncRun(runId, suiteName, () -> {
             updateStatus(runId, SuiteRunStatus.Status.RUNNING, List.of(), null);
             log.debug("Suite run started: runId={} suite={}", runId, suiteName);
@@ -252,11 +267,11 @@ public class TestFrameworkService implements AutoCloseable {
                         testRunner.runTests(
                                 definition.getSuiteClass(),
                                 definition.isParallel(),
-                                result -> appendCompletedResult(runId, result));
+                                result -> appendCompletedResult(runId, suite, result));
                 List<TestCaseResult> converted = toTestCaseResults(results);
                 SuiteReporter.report(suiteName, definition.getDescription(), results);
                 SuiteCompletedEvent event = new SuiteCompletedEvent(
-                        toTestSuite(definition),
+                        suite,
                         toTestSuiteResult(definition, converted));
                 listeners.forEach(l -> {
                     try { l.onSuiteCompleted(event); }
@@ -329,40 +344,63 @@ public class TestFrameworkService implements AutoCloseable {
     public SuiteRunStatus getRunStatus(String runId) {
         SuiteRunStatus status = runStatuses.get(runId);
         if (status == null) {
-            throw new IllegalArgumentException("Run not found: " + runId);
+            status = runStore.find(runId)
+                    .orElseThrow(() -> new IllegalArgumentException("Run not found: " + runId));
         }
         return copyStatus(status);
     }
 
     /**
-     * Cancels an in-flight run and returns the updated terminal snapshot.
+     * Waits until the run reaches a terminal state or the timeout elapses, whichever comes first.
+     * The run is not cancelled when the timeout elapses.
+     *
+     * @param runId   the run identifier returned by a start-run method
+     * @param timeout the longest time to wait
+     * @return the latest snapshot; check {@link SuiteRunStatus.Status#isTerminal()} to tell whether
+     *         the run finished before the timeout
+     * @throws IllegalArgumentException if {@code runId} is not recognised
+     * @throws InterruptedException     if the calling thread is interrupted while waiting
+     */
+    public SuiteRunStatus awaitRun(String runId, Duration timeout) throws InterruptedException {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        SuiteRunStatus status = getRunStatus(runId);
+        while (!status.getStatus().isTerminal() && System.nanoTime() < deadline) {
+            Thread.sleep(AWAIT_POLL_INTERVAL_MS);
+            status = getRunStatus(runId);
+        }
+        return status;
+    }
+
+    /**
+     * Cancels an in-flight run and returns the updated terminal snapshot. Cancelling a run that has
+     * already finished returns its existing snapshot unchanged.
      *
      * @param runId the run identifier returned by a start-run endpoint
      * @return the terminal {@link SuiteRunStatus} after cancellation
      * @throws IllegalArgumentException if {@code runId} is not recognised
      */
     public SuiteRunStatus cancelRun(String runId) {
-        SuiteRunStatus current = runStatuses.get(runId);
-        if (current == null) {
-            throw new IllegalArgumentException("Run not found: " + runId);
-        }
-        if (isTerminal(current.getStatus())) {
-            return copyStatus(current);
-        }
+        CompletableFuture<Void> runningTask;
+        SuiteRunStatus cancelled;
+        synchronized (stateLock) {
+            SuiteRunStatus current = runStatuses.get(runId);
+            if (current == null) {
+                return getRunStatus(runId);
+            }
 
-        String activeKey = runActiveKeys.remove(runId);
-        if (activeKey != null) {
-            activeRuns.remove(activeKey);
-        }
+            String activeKey = runActiveKeys.remove(runId);
+            if (activeKey != null) {
+                activeRuns.remove(activeKey);
+            }
+            runningTask = runningTasks.remove(runId);
 
-        CompletableFuture<Void> runningTask = runningTasks.remove(runId);
+            cancelled = finishRun(current, SuiteRunStatus.Status.CANCELLED, current.getCompletedResults(),
+                    new CancellationException("Run cancelled"));
+        }
         if (runningTask != null) {
             runningTask.cancel(true);
         }
-
-        updateStatus(runId, SuiteRunStatus.Status.CANCELLED, current.getCompletedResults(),
-                new CancellationException("Run cancelled"));
-        return getRunStatus(runId);
+        return copyStatus(cancelled);
     }
 
     // -------------------------------------------------------------------------
@@ -395,18 +433,38 @@ public class TestFrameworkService implements AutoCloseable {
 
     private void updateStatus(String runId, SuiteRunStatus.Status newStatus,
                               List<TestCaseResult> results, Throwable error) {
-        SuiteRunStatus current = runStatuses.get(runId);
-        if (current == null) {
-            return;
+        synchronized (stateLock) {
+            SuiteRunStatus current = runStatuses.get(runId);
+            if (current == null) {
+                return;
+            }
+            if (newStatus.isTerminal()) {
+                finishRun(current, newStatus, results, error);
+            } else {
+                runStatuses.put(runId, snapshot(current, newStatus, results, error));
+            }
         }
-        if (current.getStatus() == SuiteRunStatus.Status.CANCELLED && newStatus != SuiteRunStatus.Status.CANCELLED) {
-            return;
-        }
+    }
+
+    /**
+     * Moves a live run to a terminal state. Saves the snapshot to the {@link RunStore} before the
+     * live entry is removed, so a concurrent {@link #getRunStatus(String)} never misses the run.
+     * The caller must hold {@code stateLock}.
+     */
+    private SuiteRunStatus finishRun(SuiteRunStatus current, SuiteRunStatus.Status newStatus,
+                                     List<TestCaseResult> results, Throwable error) {
+        SuiteRunStatus terminal = snapshot(current, newStatus, results, error);
+        runStore.save(terminal);
+        runStatuses.remove(current.getRunId());
+        return terminal;
+    }
+
+    private SuiteRunStatus snapshot(SuiteRunStatus current, SuiteRunStatus.Status newStatus,
+                                    List<TestCaseResult> results, Throwable error) {
         long passed = results.stream().filter(TestCaseResult::isPassed).count();
         long failed = results.stream().filter(r -> !r.isPassed()).count();
-        long now = System.currentTimeMillis();
-        runStatuses.put(runId, new SuiteRunStatus(
-                runId,
+        return new SuiteRunStatus(
+                current.getRunId(),
                 current.getSuiteName(),
                 newStatus,
                 List.copyOf(results),
@@ -415,42 +473,22 @@ public class TestFrameworkService implements AutoCloseable {
                 passed,
                 failed,
                 current.getRunStartedAtEpochMs(),
-                now,
+                System.currentTimeMillis(),
                 error == null ? null : error.getMessage(),
                 error == null ? null : error.getClass().getName(),
-                error == null ? null : stackTraceOf(error)));
-        if (isTerminal(newStatus)) {
-            terminalRunIds.addLast(runId);
-            evictTerminalRunsIfNeeded();
-        }
+                error == null ? null : stackTraceOf(error));
     }
 
-    private void appendCompletedResult(String runId, TestCaseExecutionResult result) {
+    private void appendCompletedResult(String runId, TestSuite suite, TestCaseExecutionResult result) {
         TestCaseResult converted = toTestCaseResult(result);
-        TestSuite suite = findSuiteNameForRun(runId);
-        runStatuses.computeIfPresent(runId, (ignored, current) -> {
-            if (current.getStatus() != SuiteRunStatus.Status.RUNNING) {
-                return current;
+        synchronized (stateLock) {
+            SuiteRunStatus current = runStatuses.get(runId);
+            if (current != null && current.getStatus() == SuiteRunStatus.Status.RUNNING) {
+                List<TestCaseResult> updatedResults = new ArrayList<>(current.getCompletedResults());
+                updatedResults.add(converted);
+                runStatuses.put(runId, snapshot(current, SuiteRunStatus.Status.RUNNING, updatedResults, null));
             }
-            List<TestCaseResult> updatedResults = new ArrayList<>(current.getCompletedResults());
-            updatedResults.add(converted);
-            long passed = updatedResults.stream().filter(TestCaseResult::isPassed).count();
-            long failed = updatedResults.size() - passed;
-            return new SuiteRunStatus(
-                    current.getRunId(),
-                    current.getSuiteName(),
-                    SuiteRunStatus.Status.RUNNING,
-                    List.copyOf(updatedResults),
-                    updatedResults.size(),
-                    current.getTotalCount(),
-                    passed,
-                    failed,
-                    current.getRunStartedAtEpochMs(),
-                    System.currentTimeMillis(),
-                    null,
-                    null,
-                    null);
-        });
+        }
         listeners.forEach(listener -> {
             try {
                 listener.onTestCompleted(new TestCompletedEvent(runId, suite, converted));
@@ -458,32 +496,6 @@ public class TestFrameworkService implements AutoCloseable {
                 log.error("SuiteRunListener threw an exception while handling test completion", ex);
             }
         });
-    }
-
-    private TestSuite findSuiteNameForRun(String runId) {
-        SuiteRunStatus status = runStatuses.get(runId);
-        if (status == null) {
-            throw new IllegalArgumentException("Run not found: " + runId);
-        }
-        String suiteName = status.getSuiteName();
-        String resolvedSuiteName = suiteName.contains(" / ")
-                ? suiteName.substring(0, suiteName.indexOf(" / "))
-                : suiteName;
-        return suiteDefinitions.stream()
-                .filter(definition -> definition.getName().equals(resolvedSuiteName))
-                .findFirst()
-                .map(this::toTestSuite)
-                .orElseThrow(() -> new IllegalArgumentException("Suite not found: " + resolvedSuiteName));
-    }
-
-    private void evictTerminalRunsIfNeeded() {
-        while (runStatuses.size() > maxStoredRuns) {
-            String oldestTerminalRunId = terminalRunIds.pollFirst();
-            if (oldestTerminalRunId == null) {
-                return;
-            }
-            runStatuses.remove(oldestTerminalRunId);
-        }
     }
 
     private TestSuiteDefinition findSuite(String suiteName) {
@@ -523,19 +535,6 @@ public class TestFrameworkService implements AutoCloseable {
                 passedCount,
                 failedCount,
                 failedCount == 0);
-    }
-
-    private int validateMaxStoredRuns(int maxStoredRuns) {
-        if (maxStoredRuns < 1) {
-            throw new IllegalArgumentException("maxStoredRuns must be at least 1");
-        }
-        return maxStoredRuns;
-    }
-
-    private boolean isTerminal(SuiteRunStatus.Status status) {
-        return status == SuiteRunStatus.Status.COMPLETED
-                || status == SuiteRunStatus.Status.FAILED
-                || status == SuiteRunStatus.Status.CANCELLED;
     }
 
     private ExecutorService createAsyncExecutor() {

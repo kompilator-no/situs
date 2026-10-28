@@ -32,9 +32,25 @@ public class TestFrameworkProperties {
     private boolean fullClasspathScan = false;
 
     /**
-     * Maximum number of completed/failed run snapshots kept in memory.
+     * Maximum number of completed/failed run snapshots kept, in memory or on disk.
      */
     private int maxStoredRuns = 200;
+
+    /**
+     * Bearer token required on the HTTP API, sent as {@code Authorization: Bearer <token>}.
+     *
+     * <p>When unset or blank the API is open and a warning is logged at startup.
+     * The {@code /status} health check never requires the token.
+     */
+    private String apiToken;
+
+    /**
+     * Directory where finished run results are written, one file per run. Results written here
+     * survive application restarts.
+     *
+     * <p>When unset, finished runs are kept in memory only and are lost on restart.
+     */
+    private String resultDirectory;
 
     public List<String> getScanPackages() {
         return scanPackages;
@@ -58,5 +74,21 @@ public class TestFrameworkProperties {
 
     public void setMaxStoredRuns(int maxStoredRuns) {
         this.maxStoredRuns = maxStoredRuns;
+    }
+
+    public String getApiToken() {
+        return apiToken;
+    }
+
+    public void setApiToken(String apiToken) {
+        this.apiToken = apiToken;
+    }
+
+    public String getResultDirectory() {
+        return resultDirectory;
+    }
+
+    public void setResultDirectory(String resultDirectory) {
+        this.resultDirectory = resultDirectory;
     }
 }

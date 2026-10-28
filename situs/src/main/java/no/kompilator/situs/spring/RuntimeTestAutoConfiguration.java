@@ -2,6 +2,9 @@ package no.kompilator.situs.spring;
 
 import no.kompilator.situs.plugin.PluginRunner;
 import no.kompilator.situs.runtime.ClasspathScanner;
+import no.kompilator.situs.service.FileRunStore;
+import no.kompilator.situs.service.InMemoryRunStore;
+import no.kompilator.situs.service.RunStore;
 import no.kompilator.situs.service.TestFrameworkService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -74,15 +78,21 @@ public class RuntimeTestAutoConfiguration {
     }
 
     /**
-     * Creates the {@link TestFrameworkController} that exposes the REST endpoints.
+     * Creates the {@link TestFrameworkController} that exposes the REST endpoints. Requires
+     * {@code testframework.api-token} when that property is set.
      *
      * @param testFrameworkService the service bean
+     * @param properties           Situs system integration testing configuration properties
      * @return the controller
      */
     @Bean
     @ConditionalOnMissingBean(TestFrameworkController.class)
-    public TestFrameworkController testFrameworkController(TestFrameworkService testFrameworkService) {
-        return new TestFrameworkController(testFrameworkService);
+    public TestFrameworkController testFrameworkController(TestFrameworkService testFrameworkService,
+                                                           TestFrameworkProperties properties) {
+        if (properties.getApiToken() == null || properties.getApiToken().isBlank()) {
+            log.warn("Situs HTTP API is unauthenticated; set 'testframework.api-token' to require a bearer token");
+        }
+        return new TestFrameworkController(testFrameworkService, properties.getApiToken());
     }
 
     /**
@@ -105,26 +115,30 @@ public class RuntimeTestAutoConfiguration {
             BeanFactory beanFactory,
             TestFrameworkProperties properties) {
         SpringInstanceFactory instanceFactory = new SpringInstanceFactory(applicationContext);
+        RunStore runStore = createRunStore(properties);
 
         if (properties.isFullClasspathScan()) {
             log.warn("Full classpath scanning is enabled via 'testframework.full-classpath-scan=true'");
-            return new TestFrameworkService(
-                    instanceFactory,
-                    ClasspathScanner.findAllTestSuites(),
-                    properties.getMaxStoredRuns());
+            return new TestFrameworkService(instanceFactory, ClasspathScanner.findAllTestSuites(), runStore);
         }
 
         Set<String> scanPackages = resolveScanPackages(beanFactory, properties);
         if (!scanPackages.isEmpty()) {
             log.info("Runtime test discovery scanning packages: {}", scanPackages);
-            return new TestFrameworkService(instanceFactory, findSuites(scanPackages), properties.getMaxStoredRuns());
+            return new TestFrameworkService(instanceFactory, findSuites(scanPackages), runStore);
         }
 
         log.warn("No scan packages configured or inferred; falling back to full classpath scan");
-        return new TestFrameworkService(
-                instanceFactory,
-                ClasspathScanner.findAllTestSuites(),
-                properties.getMaxStoredRuns());
+        return new TestFrameworkService(instanceFactory, ClasspathScanner.findAllTestSuites(), runStore);
+    }
+
+    private RunStore createRunStore(TestFrameworkProperties properties) {
+        String resultDirectory = properties.getResultDirectory();
+        if (resultDirectory == null || resultDirectory.isBlank()) {
+            return new InMemoryRunStore(properties.getMaxStoredRuns());
+        }
+        log.info("Persisting Situs run results to {}", resultDirectory);
+        return new FileRunStore(Path.of(resultDirectory), properties.getMaxStoredRuns());
     }
 
     private Set<String> resolveScanPackages(BeanFactory beanFactory, TestFrameworkProperties properties) {

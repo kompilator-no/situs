@@ -6,6 +6,16 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ## [Unreleased]
 
+### Added
+- Bearer token authentication for the HTTP API via `testframework.api-token` (or `TESTFRAMEWORK_API_TOKEN`); `/status` stays open
+- `POST /api/test-framework/suites/{suiteName}/gate` runs a suite, waits for the outcome, and reports it as `200`, `422`, `500`, or `504`
+- Durable run results via `testframework.result-directory`, backed by the new `RunStore` interface and `FileRunStore`
+- `TestFrameworkService#awaitRun(...)` and `SuiteRunStatus.Status#isTerminal()`
+
+### Changed
+- Without `testframework.api-token` the HTTP API stays open, and a startup warning is logged
+- Finished runs are handed to the `RunStore` and no longer kept in the live run map
+
 ## [3.0.1] - 2026-03-10
 
 ### Changed
