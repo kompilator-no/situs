@@ -315,6 +315,12 @@ testframework.full-classpath-scan=false
 
 testframework.max-stored-runs=200
 
+# Require "Authorization: Bearer <token>" on the HTTP API (except /status)
+testframework.api-token=${SITUS_API_TOKEN}
+
+# Keep finished run results on disk so they survive restarts
+testframework.result-directory=/var/lib/situs/runs
+
 testframework.reporting.enabled=true
 
 testframework.reporting.output-dir=build/test-reports
@@ -369,6 +375,39 @@ curl \
 curl -X POST \
   http://localhost:8080/api/test-framework/runs/abc-123/cancel
 ```
+
+---
+
+## Gate a deployment
+
+`POST /suites/{suiteName}/gate` runs a suite, waits for it to finish, and reports the outcome in the HTTP status. It is the simplest option for a pipeline step, because no polling is needed:
+
+```bash
+curl -f -X POST \
+  "http://localhost:8080/api/test-framework/suites/DeploymentVerification/gate?timeout=PT2M"
+```
+
+| Status | Meaning |
+|---|---|
+| `200` | Suite completed and every test passed |
+| `422` | Suite completed with one or more failing tests |
+| `500` | The run itself failed |
+| `504` | The suite did not finish within `timeout` (default `PT5M`); the run is cancelled |
+
+The body is always the run status, so pipelines can log the failing tests. The request blocks until the run ends, so give the HTTP client a timeout longer than `timeout`.
+
+---
+
+## Authentication
+
+Set `testframework.api-token` (or the environment variable `TESTFRAMEWORK_API_TOKEN`) and send the token with every request except `/status`:
+
+```bash
+curl -H "Authorization: Bearer $SITUS_API_TOKEN" \
+  http://localhost:8080/api/test-framework/suites
+```
+
+Requests without the correct token get `401 Unauthorized`. If no token is configured, the API is open and a warning is logged at startup.
 
 ---
 

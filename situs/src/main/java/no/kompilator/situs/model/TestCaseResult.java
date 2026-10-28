@@ -1,5 +1,7 @@
 package no.kompilator.situs.model;
 
+import java.io.Serializable;
+
 /**
  * Immutable result of executing a single test case.
  *
@@ -10,7 +12,10 @@ package no.kompilator.situs.model;
  * <p>On failure the {@code exceptionType}, {@code errorMessage}, and {@code stackTrace}
  * fields are populated so callers can diagnose the problem without needing server log access.
  */
-public class TestCaseResult {
+public class TestCaseResult implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
 
     private String name;
     private boolean passed;

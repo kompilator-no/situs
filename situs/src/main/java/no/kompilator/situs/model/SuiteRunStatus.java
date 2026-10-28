@@ -1,5 +1,6 @@
 package no.kompilator.situs.model;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -18,9 +19,12 @@ import java.util.List;
  * tests finish — in parallel mode multiple results may appear between polls.
  *
  * <p>Mutable fields with setters allow Jackson to serialise and deserialise this
- * class without extra configuration.
+ * class without extra configuration. The class is also {@link Serializable} so that
+ * terminal snapshots can be persisted by a {@link no.kompilator.situs.service.RunStore}.
  */
-public class SuiteRunStatus {
+public class SuiteRunStatus implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Lifecycle states of an asynchronous suite run.
@@ -33,7 +37,14 @@ public class SuiteRunStatus {
      *   <li>{@link #CANCELLED} — the run was cancelled explicitly before completion</li>
      * </ul>
      */
-    public enum Status { PENDING, RUNNING, COMPLETED, FAILED, CANCELLED }
+    public enum Status {
+        PENDING, RUNNING, COMPLETED, FAILED, CANCELLED;
+
+        /** @return {@code true} once the run can no longer change state */
+        public boolean isTerminal() {
+            return this == COMPLETED || this == FAILED || this == CANCELLED;
+        }
+    }
 
     private String runId;
     private String suiteName;
